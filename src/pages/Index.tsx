@@ -7,7 +7,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { teams, weeklyRecaps, comments, Comment, getAvgPPW } from '@/data/leagueData';
+import { teams, comments, Comment, getAvgPPW } from '@/data/leagueData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,7 +21,7 @@ const Index = () => {
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
 
   // Fetch latest published recap from database
-  const { data: latestRecap } = useQuery({
+  const { data: latestRecap, isLoading: recapLoading } = useQuery({
     queryKey: ['latest-recap'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -29,7 +29,6 @@ const Index = () => {
         .select('*')
         .eq('published', true)
         .order('recap_date', { ascending: false, nullsFirst: false })
-        .order('published_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -42,25 +41,22 @@ const Index = () => {
   const sortedTeams = [...teams].sort((a, b) => b.totalPoints - a.totalPoints);
 
   // Split into playoff tiers
-  const playoffTeams = sortedTeams.slice(0, 4); // "If the Playoffs Started Tomorrow"
-  const purgatoryTeam = sortedTeams[4]; // #5 - "Purgatory"
-  const toiletBowlTeams = sortedTeams.slice(5); // #6-10 - "The Toilet Bowl"
-
-  // Get the most recent recap (featured or latest) - fallback to static data if no DB recap
-  const featuredRecap = weeklyRecaps.find((r) => r.featured) || weeklyRecaps[0];
+  const playoffTeams = sortedTeams.slice(0, 4);
+  const purgatoryTeam = sortedTeams[4];
+  const toiletBowlTeams = sortedTeams.slice(5);
 
   // Get comments for the current recap
-  const recapComments = localComments.filter((c) => c.recapId === featuredRecap.id);
+  const recapComments = localComments.filter((c) => c.recapId === latestRecap?.id);
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newComment.teamName.trim() && newComment.comment.trim()) {
+    if (newComment.teamName.trim() && newComment.comment.trim() && latestRecap) {
       const comment: Comment = {
         id: Date.now().toString(),
         teamName: newComment.teamName,
         comment: newComment.comment,
         date: new Date().toISOString().split('T')[0],
-        recapId: featuredRecap.id,
+        recapId: latestRecap.id,
       };
       setLocalComments([...localComments, comment]);
       setNewComment({ teamName: '', comment: '' });
@@ -80,96 +76,42 @@ const Index = () => {
               variants={fadeInUp}
               transition={{ duration: 0.5 }}
             >
-              <div className="mb-6">
-                <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full mb-4">
-                  Season {featuredRecap.season} • Week {featuredRecap.week}
-                </span>
-                <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                  {featuredRecap.title}
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  {new Date(featuredRecap.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </p>
-              </div>
-
-              {/* The Lede */}
-              <div className="prose prose-lg max-w-none mb-10">
-                <p className="text-lg md:text-xl leading-relaxed text-foreground first-letter:text-5xl first-letter:font-display first-letter:font-bold first-letter:float-left first-letter:mr-3 first-letter:mt-1">
-                  {featuredRecap.lede}
-                </p>
-              </div>
-
-              {/* G.O.A.T. and goat sections */}
-              <div className="grid md:grid-cols-2 gap-6 mb-10">
-                {/* G.O.A.T. of the Week */}
-                <motion.div
-                  variants={fadeInUp}
-                  transition={{ delay: 0.1 }}
-                  className="bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/30 rounded-lg p-6"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <Crown className="text-gold" size={24} />
-                    <h3 className="font-display text-lg font-bold uppercase tracking-wider">
-                      G.O.A.T. of the Week
-                    </h3>
+              {recapLoading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="h-8 bg-muted rounded w-1/4" />
+                  <div className="h-12 bg-muted rounded w-3/4" />
+                  <div className="h-4 bg-muted rounded w-1/3" />
+                </div>
+              ) : latestRecap ? (
+                <>
+                  <div className="mb-6">
+                    <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full mb-4">
+                      Season {latestRecap.season_year} • Week {latestRecap.week_number}
+                    </span>
+                    <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+                      {latestRecap.title}
+                    </h1>
+                    <p className="text-muted-foreground text-sm">
+                      {latestRecap.recap_date && new Date(latestRecap.recap_date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </p>
                   </div>
-                  <p className="font-display text-2xl font-bold text-gold mb-2">
-                    {featuredRecap.goatOfWeek.name}
-                  </p>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {featuredRecap.goatOfWeek.description}
-                  </p>
-                </motion.div>
 
-                {/* goat of the Week (lowercase) */}
-                <motion.div
-                  variants={fadeInUp}
-                  transition={{ delay: 0.2 }}
-                  className="bg-gradient-to-br from-loss/20 to-loss/5 border border-loss/30 rounded-lg p-6"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <Skull className="text-loss" size={24} />
-                    <h3 className="font-display text-lg font-bold uppercase tracking-wider">
-                      goat of the Week
-                    </h3>
-                  </div>
-                  <p className="font-display text-2xl font-bold text-loss mb-2">
-                    {featuredRecap.goatLowercase.name}
-                  </p>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {featuredRecap.goatLowercase.description}
-                  </p>
-                </motion.div>
-              </div>
-
-              {/* 10 Things I Know, I Know */}
-              <motion.div
-                variants={fadeInUp}
-                transition={{ delay: 0.3 }}
-                className="mb-10"
-              >
-                <h2 className="font-display text-2xl font-bold mb-6 flex items-center gap-2">
-                  <span className="text-accent">10 Things</span> I Know, I Know
-                </h2>
-                <ol className="space-y-4">
-                  {featuredRecap.tenThings.map((thing, index) => (
-                    <li
-                      key={index}
-                      className="flex gap-4 items-start p-4 bg-card rounded-lg border border-border hover:border-accent/30 transition-colors"
-                    >
-                      <span className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground font-display font-bold text-sm rounded-full flex items-center justify-center">
-                        {index + 1}
-                      </span>
-                      <p className="text-foreground pt-1">{thing}</p>
-                    </li>
-                  ))}
-                </ol>
-              </motion.div>
+                  {/* Content from WYSIWYG */}
+                  <div 
+                    className="prose prose-lg max-w-none mb-10 [&>p:first-child]:first-letter:text-5xl [&>p:first-child]:first-letter:font-display [&>p:first-child]:first-letter:font-bold [&>p:first-child]:first-letter:float-left [&>p:first-child]:first-letter:mr-3 [&>p:first-child]:first-letter:mt-1"
+                    dangerouslySetInnerHTML={{ __html: latestRecap.content || '' }}
+                  />
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No weekly recaps published yet.</p>
+                </div>
+              )}
 
               {/* View All Recaps Link */}
               <div className="border-t border-border pt-6 mb-10">

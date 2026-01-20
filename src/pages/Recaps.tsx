@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
-import { weeklyRecaps } from '@/data/leagueData';
-import { Crown, Skull, Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Select,
   SelectContent,
@@ -12,19 +13,43 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+interface Recap {
+  id: string;
+  title: string;
+  content: string | null;
+  season_year: number | null;
+  week_number: number | null;
+  recap_date: string | null;
+  published: boolean;
+}
+
 const Recaps = () => {
-  const seasons = [...new Set(weeklyRecaps.map((r) => r.season))].sort((a, b) => b - a);
   const [selectedSeason, setSelectedSeason] = useState<string>('all');
 
-  const filteredRecaps =
-    selectedSeason === 'all'
-      ? weeklyRecaps
-      : weeklyRecaps.filter((r) => r.season === parseInt(selectedSeason));
+  // Fetch all published recaps from database
+  const { data: recaps, isLoading } = useQuery({
+    queryKey: ['recaps'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('id, title, content, season_year, week_number, recap_date, published')
+        .eq('published', true)
+        .order('recap_date', { ascending: false, nullsFirst: false });
 
-  const sortedRecaps = [...filteredRecaps].sort((a, b) => {
-    if (a.season !== b.season) return b.season - a.season;
-    return b.week - a.week;
+      if (error) throw error;
+      return data as Recap[];
+    },
   });
+
+  // Get unique seasons for filter
+  const seasons = recaps 
+    ? [...new Set(recaps.map((r) => r.season_year).filter(Boolean) as number[])].sort((a, b) => b - a)
+    : [];
+
+  // Filter recaps by season
+  const filteredRecaps = recaps?.filter((r) => 
+    selectedSeason === 'all' || r.season_year === parseInt(selectedSeason)
+  ) || [];
 
   return (
     <Layout>
@@ -64,98 +89,66 @@ const Recaps = () => {
             </Select>
           </motion.div>
 
-          <div className="space-y-8">
-            {sortedRecaps.map((recap, index) => (
-              <motion.article
-                key={recap.id}
-                id={`week-${recap.season}-${recap.week}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 * Math.min(index, 5) }}
-                className="scroll-mt-24"
-              >
-                <div className="bg-card rounded-lg border border-border overflow-hidden shadow-md hover-lift">
-                  {/* Header */}
-                  <div className="bg-gradient-to-r from-primary to-primary/90 p-6 md:p-8">
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full">
-                        <Calendar size={12} />
-                        Season {recap.season} • Week {recap.week}
-                      </span>
-                      {recap.featured && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gold text-gold-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full">
-                          Latest
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredRecaps.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No recaps found.</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {filteredRecaps.map((recap, index) => (
+                <motion.article
+                  key={recap.id}
+                  id={`week-${recap.season_year}-${recap.week_number}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 * Math.min(index, 5) }}
+                  className="scroll-mt-24"
+                >
+                  <div className="bg-card rounded-lg border border-border overflow-hidden shadow-md hover-lift">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-primary to-primary/90 p-6 md:p-8">
+                      <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full">
+                          <Calendar size={12} />
+                          {recap.season_year && recap.week_number 
+                            ? `Season ${recap.season_year} • Week ${recap.week_number}`
+                            : 'Recap'
+                          }
                         </span>
-                      )}
-                      <span className="text-primary-foreground/60 text-sm ml-auto">
-                        {new Date(recap.date).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    </div>
-                    <h2 className="font-display text-2xl md:text-3xl font-bold text-primary-foreground">
-                      {recap.title}
-                    </h2>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6 md:p-8">
-                    {/* The Lede */}
-                    <p className="text-lg text-foreground mb-6 leading-relaxed first-letter:text-4xl first-letter:font-display first-letter:font-bold first-letter:float-left first-letter:mr-2 first-letter:mt-1">
-                      {recap.lede}
-                    </p>
-
-                    {/* G.O.A.T. and goat */}
-                    <div className="grid md:grid-cols-2 gap-4 mb-6">
-                      <div className="bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/30 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Crown className="text-gold" size={18} />
-                          <span className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">
-                            G.O.A.T. of the Week
+                        {index === 0 && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gold text-gold-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full">
+                            Latest
                           </span>
-                        </div>
-                        <p className="font-display font-bold text-gold mb-1">{recap.goatOfWeek.name}</p>
-                        <p className="text-sm text-muted-foreground">{recap.goatOfWeek.description}</p>
+                        )}
+                        <span className="text-primary-foreground/60 text-sm ml-auto">
+                          {recap.recap_date && new Date(recap.recap_date).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
                       </div>
-
-                      <div className="bg-gradient-to-br from-loss/20 to-loss/5 border border-loss/30 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Skull className="text-loss" size={18} />
-                          <span className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">
-                            goat of the Week
-                          </span>
-                        </div>
-                        <p className="font-display font-bold text-loss mb-1">{recap.goatLowercase.name}</p>
-                        <p className="text-sm text-muted-foreground">{recap.goatLowercase.description}</p>
-                      </div>
+                      <h2 className="font-display text-2xl md:text-3xl font-bold text-primary-foreground">
+                        {recap.title}
+                      </h2>
                     </div>
 
-                    {/* 10 Things I Know, I Know */}
-                    <div className="border-t border-border pt-6">
-                      <h3 className="font-display text-lg font-bold mb-4">
-                        <span className="text-accent">10 Things</span> I Know, I Know
-                      </h3>
-                      <ol className="grid gap-2">
-                        {recap.tenThings.map((thing, thingIndex) => (
-                          <li
-                            key={thingIndex}
-                            className="flex items-start gap-3 text-sm"
-                          >
-                            <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary font-display font-bold text-xs rounded-full flex items-center justify-center">
-                              {thingIndex + 1}
-                            </span>
-                            <span className="pt-0.5">{thing}</span>
-                          </li>
-                        ))}
-                      </ol>
+                    {/* Content */}
+                    <div className="p-6 md:p-8">
+                      <div 
+                        className="prose prose-invert max-w-none [&>p:first-child]:text-lg [&>p:first-child]:leading-relaxed [&>p:first-child]:first-letter:text-4xl [&>p:first-child]:first-letter:font-display [&>p:first-child]:first-letter:font-bold [&>p:first-child]:first-letter:float-left [&>p:first-child]:first-letter:mr-2 [&>p:first-child]:first-letter:mt-1"
+                        dangerouslySetInnerHTML={{ __html: recap.content || '' }}
+                      />
                     </div>
                   </div>
-                </div>
-              </motion.article>
-            ))}
-          </div>
+                </motion.article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </Layout>
