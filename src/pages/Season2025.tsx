@@ -188,17 +188,6 @@ const Season2025 = () => {
             </div>
           </motion.div>
 
-          {/* Week indicator */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.12 }}
-            className="mb-6 text-center"
-          >
-            <p className="text-muted-foreground text-sm">
-              Current standings from database
-            </p>
-          </motion.div>
 
           {/* Playoff Bracket Placeholder */}
           <motion.div
