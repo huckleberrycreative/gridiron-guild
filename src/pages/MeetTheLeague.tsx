@@ -1,29 +1,95 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
-import { owners, teams } from '@/data/leagueData';
-import { User, Trophy, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { useGovernorStats, GovernorStats } from '@/hooks/useGovernorStats';
+import { User, Trophy, TrendingUp, TrendingDown, Calendar, Loader2 } from 'lucide-react';
 
-// Governor profiles with extended info
-const governors = owners.map((owner) => {
-  const team = teams.find((t) => t.name === owner.teamName);
-  return {
-    ...owner,
-    shieldBio: `${owner.name} has been a stalwart of Men's League for ${owner.yearsActive} seasons, commanding the ${owner.teamName} with a blend of shrewd drafting and calculated risk-taking. Known for ${owner.championships > 0 ? 'clutch playoff performances' : 'building competitive rosters year after year'}.`,
-    governorResponse: `"The Shield's bio is generous, but I'd add that my success comes from trusting the process and never panicking mid-season. Also, I've made some trades I'd rather forget."`,
-    highestHigh: owner.championships > 0 
-      ? `Winning the ${2024 - owner.championships + 1} Championship` 
-      : `Making the playoffs in ${2024 - owner.playoffAppearances + 1}`,
-    lowestLow: owner.worstFinish === 10 
-      ? 'Finishing dead last and enduring The Toilet Bowl' 
-      : `A disappointing ${owner.worstFinish}th place finish`,
-    totalFantasyPoints: owner.avgPointsPerYear * owner.yearsActive,
-    playoffPercentage: Math.round((owner.playoffAppearances / owner.yearsActive) * 100),
-  };
-});
+// Generate dynamic bio content based on stats
+const generateShieldBio = (governor: GovernorStats) => {
+  const championshipText = governor.championships > 0 
+    ? `a ${governor.championships}-time champion known for clutch playoff performances`
+    : 'building competitive rosters year after year';
+  
+  return `${governor.name} has been a stalwart of Men's League for ${governor.yearsActive} seasons, commanding the ${governor.teamName} with a blend of shrewd drafting and calculated risk-taking. Known for ${championshipText}.`;
+};
+
+const generateGovernorResponse = (governor: GovernorStats) => {
+  if (governor.championships >= 3) {
+    return `"The Shield's bio is generous, but I'd add that my success comes from trusting the process and never panicking mid-season. Dynasty status achieved."`;
+  } else if (governor.championships > 0) {
+    return `"The Shield's bio is generous, but I'd add that my success comes from trusting the process and never panicking mid-season. Also, I've made some trades I'd rather forget."`;
+  } else if (governor.playoffAppearances >= 5) {
+    return `"Still chasing that elusive championship, but I've been knocking on the door. One of these years, it's going to break through."`;
+  } else {
+    return `"We're building something here. The foundation is solid, and the future is bright. Trust the process."`;
+  }
+};
+
+const generateHighestHigh = (governor: GovernorStats) => {
+  if (governor.championships > 0) {
+    return `Winning ${governor.championships} Championship${governor.championships > 1 ? 's' : ''} - the ultimate glory`;
+  } else if (governor.finalsAppearances > 0) {
+    return `Making ${governor.finalsAppearances} Finals appearance${governor.finalsAppearances > 1 ? 's' : ''} - so close to glory`;
+  } else if (governor.playoffAppearances > 0) {
+    return `Making the playoffs ${governor.playoffAppearances} time${governor.playoffAppearances > 1 ? 's' : ''}`;
+  }
+  return `A strong regular season finish of ${governor.bestFinish}${getOrdinalSuffix(governor.bestFinish)} place`;
+};
+
+const generateLowestLow = (governor: GovernorStats) => {
+  if (governor.worstFinish >= 9) {
+    return `Finishing ${governor.worstFinish}${getOrdinalSuffix(governor.worstFinish)} place - a season best forgotten`;
+  } else if (governor.worstFinish >= 7) {
+    return `A disappointing ${governor.worstFinish}${getOrdinalSuffix(governor.worstFinish)} place finish`;
+  }
+  return `Even at worst, finishing ${governor.worstFinish}${getOrdinalSuffix(governor.worstFinish)} place`;
+};
+
+const getOrdinalSuffix = (n: number) => {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+};
 
 const MeetTheLeague = () => {
-  const [selectedGovernor, setSelectedGovernor] = useState(governors[0]);
+  const { data: governors, isLoading, error } = useGovernorStats();
+  const [selectedGovernor, setSelectedGovernor] = useState<GovernorStats | null>(null);
+
+  // Set default selected governor when data loads
+  useEffect(() => {
+    if (governors && governors.length > 0 && !selectedGovernor) {
+      setSelectedGovernor(governors[0]);
+    }
+  }, [governors, selectedGovernor]);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <section className="py-12 md:py-16">
+          <div className="container mx-auto px-4 flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (error || !governors) {
+    return (
+      <Layout>
+        <section className="py-12 md:py-16">
+          <div className="container mx-auto px-4">
+            <p className="text-destructive">Failed to load governor data.</p>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  const currentGovernor = selectedGovernor || governors[0];
+  const playoffPercentage = currentGovernor.yearsActive > 0 
+    ? Math.round((currentGovernor.playoffAppearances / currentGovernor.yearsActive) * 100)
+    : 0;
 
   return (
     <Layout>
@@ -61,7 +127,7 @@ const MeetTheLeague = () => {
                       key={governor.id}
                       onClick={() => setSelectedGovernor(governor)}
                       className={`w-full text-left px-4 py-3 transition-colors hover:bg-accent/10 ${
-                        selectedGovernor.id === governor.id
+                        currentGovernor.id === governor.id
                           ? 'bg-accent/20 border-l-4 border-accent'
                           : ''
                       }`}
@@ -78,7 +144,7 @@ const MeetTheLeague = () => {
             <div className="md:w-3/4">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={selectedGovernor.id}
+                  key={currentGovernor.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -94,20 +160,20 @@ const MeetTheLeague = () => {
                       </div>
                       <div className="flex-1">
                         <h2 className="font-display text-2xl md:text-3xl font-bold mb-1">
-                          {selectedGovernor.name}
+                          {currentGovernor.name}
                         </h2>
                         <p className="text-lg text-accent font-semibold mb-2">
-                          {selectedGovernor.teamName}
+                          {currentGovernor.teamName}
                         </p>
                         <div className="flex flex-wrap gap-3">
                           <span className="inline-flex items-center gap-1 text-sm bg-background/50 px-3 py-1 rounded-full">
                             <Calendar size={14} />
-                            {selectedGovernor.yearsActive} Seasons
+                            {currentGovernor.yearsActive} Seasons
                           </span>
-                          {selectedGovernor.championships > 0 && (
+                          {currentGovernor.championships > 0 && (
                             <span className="inline-flex items-center gap-1 text-sm bg-gold/20 text-gold px-3 py-1 rounded-full">
                               <Trophy size={14} />
-                              {selectedGovernor.championships}x Champion
+                              {currentGovernor.championships}x Champion
                             </span>
                           )}
                         </div>
@@ -123,7 +189,7 @@ const MeetTheLeague = () => {
                         Official Shield Bio
                       </h3>
                       <p className="text-foreground leading-relaxed">
-                        {selectedGovernor.shieldBio}
+                        {generateShieldBio(currentGovernor)}
                       </p>
                     </div>
 
@@ -133,7 +199,7 @@ const MeetTheLeague = () => {
                         Governor's Response to the Shield's Bio
                       </h3>
                       <p className="text-foreground italic leading-relaxed">
-                        {selectedGovernor.governorResponse}
+                        {generateGovernorResponse(currentGovernor)}
                       </p>
                     </div>
 
@@ -146,7 +212,7 @@ const MeetTheLeague = () => {
                             Highest High
                           </h3>
                         </div>
-                        <p className="text-foreground">{selectedGovernor.highestHigh}</p>
+                        <p className="text-foreground">{generateHighestHigh(currentGovernor)}</p>
                       </div>
                       <div className="bg-red-500/10 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -155,7 +221,7 @@ const MeetTheLeague = () => {
                             Lowest Low
                           </h3>
                         </div>
-                        <p className="text-foreground">{selectedGovernor.lowestLow}</p>
+                        <p className="text-foreground">{generateLowestLow(currentGovernor)}</p>
                       </div>
                     </div>
 
@@ -179,24 +245,24 @@ const MeetTheLeague = () => {
                           <tbody>
                             <tr>
                               <td className="py-2 px-3 font-mono">
-                                {selectedGovernor.totalWins}-{selectedGovernor.totalLosses}
+                                {currentGovernor.totalWins}-{currentGovernor.totalLosses}
                               </td>
                               <td className="py-2 px-3 font-mono">
-                                {selectedGovernor.playoffPercentage}%
+                                {playoffPercentage}%
                               </td>
                               <td className="py-2 px-3 font-mono">
-                                {selectedGovernor.playoffWins}-{selectedGovernor.playoffLosses}
+                                {currentGovernor.playoffWins}-{currentGovernor.playoffLosses}
                               </td>
                               <td className="py-2 px-3 font-mono">
-                                {selectedGovernor.avgPointsPerYear.toFixed(1)}
+                                {currentGovernor.avgPointsPerYear.toFixed(1)}
                               </td>
                               <td className="py-2 px-3 font-mono">
-                                {selectedGovernor.totalFantasyPoints.toFixed(0)}
+                                {currentGovernor.totalPointsFor.toFixed(0)}
                               </td>
                               <td className="py-2 px-3">
-                                {selectedGovernor.championships > 0 ? (
+                                {currentGovernor.championships > 0 ? (
                                   <span className="text-gold font-bold">
-                                    {selectedGovernor.championships}
+                                    {currentGovernor.championships}
                                   </span>
                                 ) : (
                                   <span className="text-muted-foreground">0</span>
