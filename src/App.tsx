@@ -28,9 +28,14 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTeams from "./pages/admin/Teams";
+import AdminSeasons from "./pages/admin/Seasons";
+import AdminStandings from "./pages/admin/Standings";
+import AdminPlayoffs from "./pages/admin/Playoffs";
+import AdminPlayerSalaries from "./pages/admin/PlayerSalaries";
 import AdminBlog from "./pages/admin/Blog";
 import AdminMedia from "./pages/admin/Media";
 import AdminPages from "./pages/admin/Pages";
+import AdminPantheon from "./pages/admin/PantheonAdmin";
 import DynamicPage from "./pages/DynamicPage";
 
 const queryClient = new QueryClient();
@@ -76,10 +81,14 @@ const App = () => (
             >
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="teams" element={<AdminTeams />} />
+              <Route path="seasons" element={<AdminSeasons />} />
+              <Route path="standings" element={<AdminStandings />} />
+              <Route path="playoffs" element={<AdminPlayoffs />} />
+              <Route path="salaries" element={<AdminPlayerSalaries />} />
               <Route path="blog" element={<AdminBlog />} />
               <Route path="media" element={<AdminMedia />} />
               <Route path="pages" element={<AdminPages />} />
-              {/* Additional admin routes can be added here */}
+              <Route path="pantheon" element={<AdminPantheon />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
