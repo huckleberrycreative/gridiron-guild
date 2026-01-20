@@ -26,6 +26,7 @@ const navLinks: NavItem[] = [
   {
     label: 'Dynasty Information',
     children: [
+      { href: '/rookie-draft', label: 'Rookie Draft', description: 'Annual rookie selection board' },
       { href: '/salaries', label: 'Player Salaries', description: 'Contract values and salary progression' },
       { href: '/team-captains', label: 'Team Captains', description: 'Weekly captain selections' },
       { href: '/practice-squad', label: 'Practice Squad', description: 'Roster management' },
