@@ -462,7 +462,7 @@ const Lore = () => {
                               
                               return (
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                  {sortedByScore.map((team) => {
+                                  {allSemifinalTeams.map((team) => {
                                     const isAdvancing = top2Teams.has(team.team);
                                     return (
                                       <div 
