@@ -56,6 +56,54 @@ export type Database = {
         }
         Relationships: []
       }
+      draft_picks: {
+        Row: {
+          created_at: string
+          draft_year: number
+          id: string
+          pick_number: number
+          round: number
+          selected_player_id: string | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          draft_year: number
+          id?: string
+          pick_number: number
+          round: number
+          selected_player_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          draft_year?: number
+          id?: string
+          pick_number?: number
+          round?: number
+          selected_player_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_picks_selected_player_id_fkey"
+            columns: ["selected_player_id"]
+            isOneToOne: false
+            referencedRelation: "rookie_pool"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_picks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media: {
         Row: {
           alt_text: string | null
@@ -479,6 +527,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rookie_pool: {
+        Row: {
+          college: string | null
+          created_at: string
+          draft_year: number
+          id: string
+          notes: string | null
+          player_name: string
+          position: string
+          updated_at: string
+        }
+        Insert: {
+          college?: string | null
+          created_at?: string
+          draft_year: number
+          id?: string
+          notes?: string | null
+          player_name: string
+          position: string
+          updated_at?: string
+        }
+        Update: {
+          college?: string | null
+          created_at?: string
+          draft_year?: number
+          id?: string
+          notes?: string | null
+          player_name?: string
+          position?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       seasons: {
         Row: {

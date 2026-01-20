@@ -22,6 +22,7 @@ import Pantheon from "./pages/Pantheon";
 import Manifesto from "./pages/Manifesto";
 import Season2025 from "./pages/Season2025";
 import RivalryWeek from "./pages/RivalryWeek";
+import RookieDraft from "./pages/RookieDraft";
 import NotFound from "./pages/NotFound";
 
 // Admin pages
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/manifesto" element={<Manifesto />} />
             <Route path="/season-2025" element={<Season2025 />} />
             <Route path="/rivalry-week" element={<RivalryWeek />} />
+            <Route path="/rookie-draft" element={<RookieDraft />} />
 
             {/* Dynamic pages route */}
             <Route path="/pages/:slug" element={<DynamicPage />} />
