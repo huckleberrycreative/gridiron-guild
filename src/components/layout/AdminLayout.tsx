@@ -5,6 +5,7 @@ import {
   LogOut,
   Home,
   Users,
+  UserCog,
   Trophy,
   DollarSign,
   FileText,
@@ -28,6 +29,7 @@ export default function AdminLayout() {
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Users, label: 'Teams', path: '/admin/teams' },
+    { icon: UserCog, label: 'Coaches', path: '/admin/coaches' },
     { icon: Calendar, label: 'Seasons', path: '/admin/seasons' },
     { icon: BarChart3, label: 'Standings', path: '/admin/standings' },
     { icon: Trophy, label: 'Playoffs', path: '/admin/playoffs' },
