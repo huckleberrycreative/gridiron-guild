@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
-import { useActiveSeasonStandings, TeamWithStandings } from '@/hooks/useLeagueData';
-import { Trophy, Medal, AlertTriangle, Skull, TrendingUp, TrendingDown, Swords, Loader2 } from 'lucide-react';
+import { useActiveSeasonStandings, usePlayoffOutcomes } from '@/hooks/useLeagueData';
+import { Trophy, Medal, AlertTriangle, Skull, Swords, Loader2, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const getPlayoffTier = (rank: number): 'playoff' | 'purgatory' | 'toilet' => {
@@ -12,7 +12,24 @@ const getPlayoffTier = (rank: number): 'playoff' | 'purgatory' | 'toilet' => {
 };
 
 const Season2025 = () => {
-  const { data: standings = [], isLoading, error } = useActiveSeasonStandings();
+  const { data: standings = [], isLoading: standingsLoading, error: standingsError } = useActiveSeasonStandings();
+  const { data: playoffs = [], isLoading: playoffsLoading, error: playoffsError } = usePlayoffOutcomes();
+
+  const isLoading = standingsLoading || playoffsLoading;
+  const error = standingsError || playoffsError;
+
+  // Derive playoff bracket info from outcomes
+  const playoffBracket = useMemo(() => {
+    if (playoffs.length === 0) return null;
+
+    const champion = playoffs.find(p => p.rank === 1);
+    const runnerUp = playoffs.find(p => p.isFinalist && p.rank !== 1);
+    const thirdPlace = playoffs.find(p => !p.isFinalist && p.finalsScore);
+    const fourthPlace = playoffs.find(p => !p.isFinalist && !p.finalsScore && p.rank <= 4);
+    const fifthSeed = playoffs.find(p => p.rank === 5);
+
+    return { champion, runnerUp, thirdPlace, fourthPlace, fifthSeed };
+  }, [playoffs]);
 
   if (isLoading) {
     return (
@@ -183,14 +200,146 @@ const Season2025 = () => {
           >
             <div className="flex items-center gap-3 mb-6">
               <Swords className="h-6 w-6 text-accent" />
-              <h2 className="font-display text-2xl font-bold">Playoff Bracket</h2>
+              <h2 className="font-display text-2xl font-bold">Playoff Bracket Results</h2>
             </div>
             
-            <div className="bg-card border border-border rounded-lg p-8 text-center">
-              <p className="text-muted-foreground">
-                Playoff brackets will be populated when the regular season ends.
-              </p>
-            </div>
+            {playoffBracket && playoffs.length > 0 ? (
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Championship Match */}
+                <div className="bg-card border border-gold/30 rounded-lg overflow-hidden">
+                  <div className="bg-gold/10 px-4 py-3 border-b border-gold/20">
+                    <h3 className="font-display font-bold text-sm uppercase tracking-wider text-gold flex items-center gap-2">
+                      <Crown size={16} />
+                      Championship (Weeks 16-17)
+                    </h3>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {/* Champion */}
+                    {playoffBracket.champion && (
+                      <div className="flex items-center justify-between p-3 rounded-md bg-gold/10 border-2 border-gold/40">
+                        <div className="flex items-center gap-3">
+                          <Trophy size={20} className="text-gold" />
+                          <div>
+                            <p className="font-bold text-gold">{playoffBracket.champion.teamName}</p>
+                            <p className="text-xs text-muted-foreground">{playoffBracket.champion.ownerName}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono font-bold text-gold text-lg">{playoffBracket.champion.finalsScore}</p>
+                          <p className="text-xs text-gold uppercase">Champion</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* Runner-up */}
+                    {playoffBracket.runnerUp && (
+                      <div className="flex items-center justify-between p-3 rounded-md bg-muted/30 border border-border">
+                        <div className="flex items-center gap-3">
+                          <Medal size={18} className="text-muted-foreground" />
+                          <div>
+                            <p className="font-semibold">{playoffBracket.runnerUp.teamName}</p>
+                            <p className="text-xs text-muted-foreground">{playoffBracket.runnerUp.ownerName}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono font-bold text-muted-foreground">{playoffBracket.runnerUp.finalsScore}</p>
+                          <p className="text-xs text-muted-foreground uppercase">Runner-Up</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3rd Place Match */}
+                <div className="bg-card border border-amber-700/30 rounded-lg overflow-hidden">
+                  <div className="bg-amber-700/10 px-4 py-3 border-b border-amber-700/20">
+                    <h3 className="font-display font-bold text-sm uppercase tracking-wider text-amber-700 flex items-center gap-2">
+                      <Medal size={16} />
+                      3rd Place Match (Weeks 16-17)
+                    </h3>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {/* 3rd Place */}
+                    {playoffBracket.thirdPlace && (
+                      <div className="flex items-center justify-between p-3 rounded-md bg-amber-700/10 border border-amber-700/30">
+                        <div className="flex items-center gap-3">
+                          <Medal size={18} className="text-amber-700" />
+                          <div>
+                            <p className="font-semibold">{playoffBracket.thirdPlace.teamName}</p>
+                            <p className="text-xs text-muted-foreground">{playoffBracket.thirdPlace.ownerName}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono font-bold text-amber-700">{playoffBracket.thirdPlace.finalsScore}</p>
+                          <p className="text-xs text-amber-700 uppercase">3rd Place</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* 4th Place */}
+                    {playoffBracket.fourthPlace && (
+                      <div className="flex items-center justify-between p-3 rounded-md bg-muted/30 border border-border">
+                        <div className="flex items-center gap-3">
+                          <span className="font-display font-bold text-muted-foreground">4th</span>
+                          <div>
+                            <p className="font-semibold">{playoffBracket.fourthPlace.teamName}</p>
+                            <p className="text-xs text-muted-foreground">{playoffBracket.fourthPlace.ownerName}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono font-bold text-muted-foreground">{playoffBracket.fourthPlace.semifinalScore}</p>
+                          <p className="text-xs text-muted-foreground uppercase">4th Place</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Semifinals */}
+                <div className="md:col-span-2 bg-card border border-border rounded-lg overflow-hidden">
+                  <div className="bg-accent/10 px-4 py-3 border-b border-border">
+                    <h3 className="font-display font-bold text-sm uppercase tracking-wider text-accent flex items-center gap-2">
+                      <Swords size={16} />
+                      Semifinals (Weeks 14-15)
+                    </h3>
+                  </div>
+                  <div className="p-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    {playoffs.map((outcome) => (
+                      <div
+                        key={outcome.id}
+                        className={cn(
+                          "flex flex-col p-3 rounded-md border",
+                          outcome.isFinalist 
+                            ? "bg-win/5 border-win/30" 
+                            : "bg-loss/5 border-loss/30"
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-display font-bold text-xs text-muted-foreground">
+                            Seed #{outcome.rank}
+                          </span>
+                          <span className={cn(
+                            "text-xs font-medium px-2 py-0.5 rounded",
+                            outcome.isFinalist 
+                              ? "bg-win/20 text-win" 
+                              : "bg-loss/20 text-loss"
+                          )}>
+                            {outcome.isFinalist ? "Advanced" : "Eliminated"}
+                          </span>
+                        </div>
+                        <p className="font-semibold text-sm truncate">{outcome.teamName}</p>
+                        <p className="text-xs text-muted-foreground">{outcome.ownerName}</p>
+                        <p className="font-mono text-sm mt-1">{outcome.semifinalScore} pts</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-lg p-8 text-center">
+                <p className="text-muted-foreground">
+                  Playoff brackets will be populated when the regular season ends.
+                </p>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
