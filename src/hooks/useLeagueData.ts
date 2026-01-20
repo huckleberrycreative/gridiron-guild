@@ -142,3 +142,57 @@ export function useSeasons() {
     },
   });
 }
+
+export interface PlayoffOutcome {
+  id: string;
+  teamId: string;
+  teamName: string;
+  ownerName: string;
+  rank: number;
+  semifinalScore: number | null;
+  isFinalist: boolean;
+  finalsScore: number | null;
+}
+
+// Fetch playoff outcomes for the active season
+export function usePlayoffOutcomes() {
+  return useQuery({
+    queryKey: ['active-playoff-outcomes'],
+    queryFn: async () => {
+      // First get the active season
+      const { data: season, error: seasonError } = await supabase
+        .from('seasons')
+        .select('*')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (seasonError) throw seasonError;
+      if (!season) return [];
+
+      // Get playoff outcomes for the active season
+      const { data: outcomes, error } = await supabase
+        .from('playoff_outcomes')
+        .select(`
+          *,
+          team:teams(*)
+        `)
+        .eq('season_id', season.id)
+        .order('rank');
+
+      if (error) throw error;
+
+      const transformedOutcomes: PlayoffOutcome[] = (outcomes || []).map((o) => ({
+        id: o.id,
+        teamId: o.team_id,
+        teamName: o.team?.name || 'Unknown Team',
+        ownerName: o.team?.owner_name || 'Unknown Owner',
+        rank: o.rank,
+        semifinalScore: o.semifinal_score,
+        isFinalist: o.is_finalist,
+        finalsScore: o.finals_score,
+      }));
+
+      return transformedOutcomes;
+    },
+  });
+}
