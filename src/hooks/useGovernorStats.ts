@@ -24,40 +24,27 @@ export function useGovernorStats() {
   return useQuery({
     queryKey: ['governor-stats'],
     queryFn: async () => {
-      // Get regular season stats
-      const { data: seasonStats, error: seasonError } = await supabase
-        .from('regular_season_standings')
-        .select(`
-          team_id,
-          season_id,
-          wins,
-          losses,
-          total_points_for,
-          rank,
-          teams!inner(id, name, owner_name)
-        `);
-
-      if (seasonError) throw seasonError;
-
-      // Get playoff stats
-      const { data: playoffStats, error: playoffError } = await supabase
-        .from('playoff_outcomes')
-        .select(`
-          team_id,
-          rank,
-          is_finalist,
-          teams!inner(id, name, owner_name)
-        `);
-
-      if (playoffError) throw playoffError;
-
-      // Get teams list
+      // Get teams list first
       const { data: teams, error: teamsError } = await supabase
         .from('teams')
         .select('id, name, owner_name')
         .neq('name', 'Bellevue Crackdown');
 
       if (teamsError) throw teamsError;
+
+      // Get regular season stats (without join)
+      const { data: seasonStats, error: seasonError } = await supabase
+        .from('regular_season_standings')
+        .select('team_id, season_id, wins, losses, total_points_for, rank');
+
+      if (seasonError) throw seasonError;
+
+      // Get playoff stats (without join)
+      const { data: playoffStats, error: playoffError } = await supabase
+        .from('playoff_outcomes')
+        .select('team_id, rank, is_finalist');
+
+      if (playoffError) throw playoffError;
 
       // Aggregate stats by team
       const governorMap = new Map<string, GovernorStats>();
