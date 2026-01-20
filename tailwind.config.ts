@@ -17,6 +17,7 @@ export default {
         display: ["'Cormorant Garamond'", "Georgia", "serif"],
         body: ["'Source Sans 3'", "system-ui", "sans-serif"],
         serif: ["'Playfair Display'", "Georgia", "serif"],
+        oldEnglish: ["'IM Fell English'", "Georgia", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",

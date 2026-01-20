@@ -204,10 +204,10 @@ const Constitution = () => {
                     <div className="text-center mb-16 relative">
                       <Flourish className="w-48 h-8 mx-auto mb-6 text-neutral-400" />
                       
-                      <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-wide text-black">
+                      <h1 className="font-oldEnglish text-4xl md:text-5xl lg:text-6xl mb-4 tracking-wide text-black">
                         The Constitution
                       </h1>
-                      <p className="font-serif text-lg md:text-xl text-neutral-600 italic tracking-wider">
+                      <p className="font-oldEnglish text-lg md:text-xl text-neutral-600 italic tracking-wider">
                         of Men's League Fantasy Football
                       </p>
                       
@@ -248,7 +248,7 @@ const Constitution = () => {
                               <span className="text-neutral-400">✦</span>
                               <span className="text-neutral-400">✦</span>
                             </div>
-                            <h2 className="font-serif text-2xl md:text-3xl font-semibold text-black tracking-wide">
+                            <h2 className="font-oldEnglish text-2xl md:text-3xl text-black tracking-wide">
                               {amendment.title}
                             </h2>
                             <div className="w-32 h-px bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-4" />
@@ -259,10 +259,13 @@ const Constitution = () => {
                             {amendment.content.map((paragraph, pIndex) => (
                               <p
                                 key={pIndex}
-                                className="font-serif text-lg md:text-xl text-black leading-relaxed text-justify first-letter:text-3xl first-letter:font-bold first-letter:text-neutral-600 first-letter:float-left first-letter:mr-2 first-letter:mt-1"
+                                className="font-oldEnglish text-lg md:text-xl text-black leading-loose text-justify"
                                 style={{ textIndent: pIndex === 0 ? '0' : '2em' }}
                               >
-                                {paragraph}
+                                <span className="float-left text-5xl font-oldEnglish leading-none mr-2 mt-1 text-neutral-700">
+                                  {paragraph.charAt(0)}
+                                </span>
+                                {paragraph.slice(1)}
                               </p>
                             ))}
                           </div>
