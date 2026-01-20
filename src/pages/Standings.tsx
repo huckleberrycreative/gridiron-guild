@@ -1,16 +1,26 @@
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { SortableTable, Column } from '@/components/SortableTable';
-import { RANKING_POINTS, calculate2025Standings, get2025CompletedWeeks } from '@/data/leagueData';
-import { Trophy, Medal, AlertTriangle, Skull } from 'lucide-react';
+import { useActiveSeasonStandings, TeamWithStandings } from '@/hooks/useLeagueData';
+import { Trophy, Medal, AlertTriangle, Skull, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const Standings = () => {
-  // Get standings calculated from 2025 weekly scores
-  const standings = calculate2025Standings();
-  const currentWeek = get2025CompletedWeeks();
+// Ranking points by position (1st through 10th)
+const RANKING_POINTS: Record<number, number> = {
+  1: 20,
+  2: 18,
+  3: 16,
+  4: 14,
+  5: 12,
+  6: 5,
+  7: 4,
+  8: 3,
+  9: 2,
+  10: 1,
+};
 
-  type StandingTeam = typeof standings[0];
+const Standings = () => {
+  const { data: standings = [], isLoading, error } = useActiveSeasonStandings();
 
   const getPlayoffTier = (rank: number): 'playoff' | 'purgatory' | 'toilet' => {
     if (rank <= 4) return 'playoff';
@@ -18,7 +28,7 @@ const Standings = () => {
     return 'toilet';
   };
 
-  const columns: Column<StandingTeam>[] = [
+  const columns: Column<TeamWithStandings>[] = [
     {
       key: 'rank',
       label: 'Rank',
@@ -94,6 +104,26 @@ const Standings = () => {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <p className="text-destructive">Error loading standings</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <section className="py-12 md:py-16">
@@ -107,11 +137,6 @@ const Standings = () => {
             <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">LEAGUE STANDINGS</h1>
             <p className="text-muted-foreground">
               Points-based ranking system. Earn standings points based on weekly finish.
-              {currentWeek > 0 && (
-                <span className="ml-2 text-foreground font-medium">
-                  (Through Week {currentWeek})
-                </span>
-              )}
             </p>
           </motion.div>
 
