@@ -14,16 +14,476 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      blog_posts: {
+        Row: {
+          author_id: string | null
+          content: string | null
+          created_at: string
+          excerpt: string | null
+          featured_image: string | null
+          id: string
+          published: boolean
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      media: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string | null
+          original_filename: string
+          size_bytes: number | null
+          updated_at: string
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type?: string | null
+          original_filename: string
+          size_bytes?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string | null
+          original_filename?: string
+          size_bytes?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
+      pages: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          published: boolean
+          slug: string
+          template: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          published?: boolean
+          slug: string
+          template?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          published?: boolean
+          slug?: string
+          template?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      player_salaries: {
+        Row: {
+          acquired_via_waivers: boolean
+          contract_year: string | null
+          created_at: string
+          franchise_tag: boolean
+          id: string
+          number: number | null
+          player_id: string
+          rookie_draft_round: string | null
+          salary_2025: string | null
+          salary_2026: string | null
+          salary_2027: string | null
+          salary_2028: string | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          acquired_via_waivers?: boolean
+          contract_year?: string | null
+          created_at?: string
+          franchise_tag?: boolean
+          id?: string
+          number?: number | null
+          player_id: string
+          rookie_draft_round?: string | null
+          salary_2025?: string | null
+          salary_2026?: string | null
+          salary_2027?: string | null
+          salary_2028?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acquired_via_waivers?: boolean
+          contract_year?: string | null
+          created_at?: string
+          franchise_tag?: boolean
+          id?: string
+          number?: number | null
+          player_id?: string
+          rookie_draft_round?: string | null
+          salary_2025?: string | null
+          salary_2026?: string | null
+          salary_2027?: string | null
+          salary_2028?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_salaries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_salaries_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          created_at: string
+          first_name: string
+          full_name: string
+          id: string
+          last_name: string
+          position: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name: string
+          full_name: string
+          id?: string
+          last_name: string
+          position: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          full_name?: string
+          id?: string
+          last_name?: string
+          position?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      playoff_outcomes: {
+        Row: {
+          created_at: string
+          finals_score: number | null
+          id: string
+          is_finalist: boolean
+          rank: number
+          season_id: string
+          semifinal_score: number | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          finals_score?: number | null
+          id?: string
+          is_finalist?: boolean
+          rank: number
+          season_id: string
+          semifinal_score?: number | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          finals_score?: number | null
+          id?: string
+          is_finalist?: boolean
+          rank?: number
+          season_id?: string
+          semifinal_score?: number | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playoff_outcomes_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playoff_outcomes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playoff_statistics: {
+        Row: {
+          created_at: string
+          finals_appearances: number
+          finals_losses: number
+          finals_win_percentage: number | null
+          finals_wins: number
+          id: string
+          playoff_appearances: number
+          playoff_losses: number
+          playoff_win_percentage: number | null
+          playoff_wins: number
+          playoffs_percentage: number | null
+          team_id: string
+          total_seasons: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          finals_appearances?: number
+          finals_losses?: number
+          finals_win_percentage?: number | null
+          finals_wins?: number
+          id?: string
+          playoff_appearances?: number
+          playoff_losses?: number
+          playoff_win_percentage?: number | null
+          playoff_wins?: number
+          playoffs_percentage?: number | null
+          team_id: string
+          total_seasons?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          finals_appearances?: number
+          finals_losses?: number
+          finals_win_percentage?: number | null
+          finals_wins?: number
+          id?: string
+          playoff_appearances?: number
+          playoff_losses?: number
+          playoff_win_percentage?: number | null
+          playoff_wins?: number
+          playoffs_percentage?: number | null
+          team_id?: string
+          total_seasons?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playoff_statistics_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regular_season_standings: {
+        Row: {
+          average_finish: number | null
+          average_ppw: number | null
+          created_at: string
+          id: string
+          losses: number | null
+          median_ppw: number | null
+          points_accumulated: number | null
+          rank: number
+          season_id: string
+          team_id: string
+          total_points_for: number | null
+          updated_at: string
+          winning_percentage: number | null
+          wins: number | null
+        }
+        Insert: {
+          average_finish?: number | null
+          average_ppw?: number | null
+          created_at?: string
+          id?: string
+          losses?: number | null
+          median_ppw?: number | null
+          points_accumulated?: number | null
+          rank: number
+          season_id: string
+          team_id: string
+          total_points_for?: number | null
+          updated_at?: string
+          winning_percentage?: number | null
+          wins?: number | null
+        }
+        Update: {
+          average_finish?: number | null
+          average_ppw?: number | null
+          created_at?: string
+          id?: string
+          losses?: number | null
+          median_ppw?: number | null
+          points_accumulated?: number | null
+          rank?: number
+          season_id?: string
+          team_id?: string
+          total_points_for?: number | null
+          updated_at?: string
+          winning_percentage?: number | null
+          wins?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regular_season_standings_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regular_season_standings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +610,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
