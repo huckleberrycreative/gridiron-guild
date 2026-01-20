@@ -157,9 +157,9 @@ const RookieDraft = () => {
                     {[1, 2, 3].map(r => (
                       <Card key={r}>
                         <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-                        <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <CardContent className="space-y-2">
                           {Array(10).fill(0).map((_, i) => (
-                            <Skeleton key={i} className="h-24" />
+                            <Skeleton key={i} className="h-12" />
                           ))}
                         </CardContent>
                       </Card>
@@ -178,12 +178,19 @@ const RookieDraft = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                          {/* Header Row */}
+                          <div className="grid grid-cols-[80px_1fr_1fr] gap-4 pb-2 mb-2 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <div>Pick</div>
+                            <div>Team</div>
+                            <div>Player</div>
+                          </div>
+                          {/* Pick Rows */}
+                          <div className="space-y-2">
                             {(picksByRound[round] || []).map(pick => (
                               <div
                                 key={pick.id}
                                 className={cn(
-                                  "border-2 rounded-lg p-3 min-h-[120px] transition-all",
+                                  "grid grid-cols-[80px_1fr_1fr] gap-4 items-center p-3 rounded-lg border transition-all",
                                   draggedPlayer && !pick.selected_player_id && "border-dashed border-accent bg-accent/5",
                                   pick.selected_player_id && "bg-secondary/50"
                                 )}
@@ -193,60 +200,65 @@ const RookieDraft = () => {
                                 onDrop={() => handleDrop(pick)}
                               >
                                 {/* Pick Number */}
-                                <div className="text-xs text-muted-foreground mb-2 font-medium">
-                                  Pick {round}.{pick.pick_number}
+                                <div className="font-bold text-foreground">
+                                  {round}.{pick.pick_number}
                                 </div>
 
-                                {/* Team Selector */}
-                                {isAdmin ? (
-                                  <Select
-                                    value={pick.team_id || 'none'}
-                                    onValueChange={(v) => handleTeamChange(pick.id, v)}
-                                  >
-                                    <SelectTrigger className="h-7 text-xs mb-2">
-                                      <SelectValue placeholder="Select team" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">No team</SelectItem>
-                                      {teams?.map(team => (
-                                        <SelectItem key={team.id} value={team.id}>
-                                          {team.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <div className="text-xs font-medium text-foreground mb-2 truncate">
-                                    {pick.team?.name || 'TBD'}
-                                  </div>
-                                )}
-
-                                {/* Selected Player or Empty Slot */}
-                                {pick.selected_player_id && pick.selected_player ? (
-                                  <div className="relative group">
-                                    <div className="text-sm font-semibold truncate">
-                                      {pick.selected_player.player_name}
-                                    </div>
-                                    <Badge 
-                                      variant="outline" 
-                                      className={cn("text-xs mt-1", positionColors[pick.selected_player.position])}
+                                {/* Team */}
+                                <div>
+                                  {isAdmin ? (
+                                    <Select
+                                      value={pick.team_id || 'none'}
+                                      onValueChange={(v) => handleTeamChange(pick.id, v)}
                                     >
-                                      {pick.selected_player.position}
-                                    </Badge>
-                                    {isAdmin && (
-                                      <button
-                                        onClick={() => handleRemovePlayer(pick)}
-                                        className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                      <SelectTrigger className="h-9 text-sm bg-background">
+                                        <SelectValue placeholder="Select team" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-popover border shadow-lg z-50">
+                                        <SelectItem value="none">No team</SelectItem>
+                                        {teams?.map(team => (
+                                          <SelectItem key={team.id} value={team.id}>
+                                            {team.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <div className="text-sm font-medium text-foreground">
+                                      {pick.team?.name || 'TBD'}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Player Space */}
+                                <div className="min-h-[36px] flex items-center">
+                                  {pick.selected_player_id && pick.selected_player ? (
+                                    <div className="flex items-center gap-2 group w-full">
+                                      <Badge 
+                                        variant="outline" 
+                                        className={cn("text-xs flex-shrink-0", positionColors[pick.selected_player.position])}
                                       >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center justify-center h-12 text-muted-foreground/50">
-                                    <Users className="w-6 h-6" />
-                                  </div>
-                                )}
+                                        {pick.selected_player.position}
+                                      </Badge>
+                                      <span className="text-sm font-semibold truncate">
+                                        {pick.selected_player.player_name}
+                                      </span>
+                                      {isAdmin && (
+                                        <button
+                                          onClick={() => handleRemovePlayer(pick)}
+                                          className="ml-auto w-6 h-6 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center flex-shrink-0"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2 text-muted-foreground/50">
+                                      <Users className="w-4 h-4" />
+                                      <span className="text-sm italic">Drop player here</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ))}
                           </div>
