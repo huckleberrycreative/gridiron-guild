@@ -403,6 +403,83 @@ export type Database = {
           },
         ]
       }
+      rivalries: {
+        Row: {
+          created_at: string
+          game_name: string
+          id: string
+          origin_story: string[] | null
+          slogan: string | null
+          team1_governor: string
+          team2_governor: string
+          trophy_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          game_name: string
+          id?: string
+          origin_story?: string[] | null
+          slogan?: string | null
+          team1_governor: string
+          team2_governor: string
+          trophy_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          game_name?: string
+          id?: string
+          origin_story?: string[] | null
+          slogan?: string | null
+          team1_governor?: string
+          team2_governor?: string
+          trophy_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rivalry_matchups: {
+        Row: {
+          created_at: string
+          id: string
+          rivalry_id: string
+          season: number
+          team1_score: number
+          team2_score: number
+          updated_at: string
+          winner: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rivalry_id: string
+          season: number
+          team1_score: number
+          team2_score: number
+          updated_at?: string
+          winner: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rivalry_id?: string
+          season?: number
+          team1_score?: number
+          team2_score?: number
+          updated_at?: string
+          winner?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rivalry_matchups_rivalry_id_fkey"
+            columns: ["rivalry_id"]
+            isOneToOne: false
+            referencedRelation: "rivalries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seasons: {
         Row: {
           created_at: string
