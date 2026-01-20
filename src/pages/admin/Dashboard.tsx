@@ -81,24 +81,21 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {adminCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <Link key={card.link} to={card.link}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-gray-100 ${card.color}`}>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <CardTitle className="text-lg">{card.title}</CardTitle>
+        {adminCards.map((card) => (
+          <Link key={card.link} to={card.link}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg bg-gray-100 ${card.color}`}>
+                    <card.icon className="h-6 w-6" />
                   </div>
-                  <CardDescription>{card.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          );
-        })}
+                  <CardTitle className="text-lg">{card.title}</CardTitle>
+                </div>
+                <CardDescription>{card.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   );
