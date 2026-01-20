@@ -6,7 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Trophy, Target, Flame, Award, ArrowRightLeft } from 'lucide-react';
+import { Trophy, Target, Flame, Award, ArrowRightLeft, Check, X } from 'lucide-react';
 
 interface Trade {
   date: string;
@@ -441,31 +441,58 @@ const Lore = () => {
 
                         {/* Bracket Matchups */}
                         <div className="space-y-3">
-                          {/* Semifinals */}
+                          {/* Semifinals - Top 2 Scores Advance */}
                           <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Semifinals</p>
-                            <div className="grid md:grid-cols-2 gap-3">
-                              {season.playoffs.semifinals.map((game, i) => (
-                                <div key={i} className="bg-card/60 rounded border border-border p-3">
-                                  <div className={`flex justify-between items-center text-sm mb-1 ${game.winner === game.team1 ? 'font-bold' : 'text-muted-foreground'}`}>
-                                    <span className="flex items-center gap-1.5">
-                                      <span className="text-xs text-accent">#{game.team1Seed}</span>
-                                      {game.team1}
-                                      {game.winner === game.team1 && <span className="text-green-500">✓</span>}
-                                    </span>
-                                    <span className="font-mono">{game.team1Score.toFixed(1)}</span>
-                                  </div>
-                                  <div className={`flex justify-between items-center text-sm ${game.winner === game.team2 ? 'font-bold' : 'text-muted-foreground'}`}>
-                                    <span className="flex items-center gap-1.5">
-                                      <span className="text-xs text-accent">#{game.team2Seed}</span>
-                                      {game.team2}
-                                      {game.winner === game.team2 && <span className="text-green-500">✓</span>}
-                                    </span>
-                                    <span className="font-mono">{game.team2Score.toFixed(1)}</span>
-                                  </div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Semifinals · Top 2 Scores Advance</p>
+                            {(() => {
+                              // Collect all semifinal teams with their scores
+                              const allSemifinalTeams = season.playoffs.seeds.map((s) => {
+                                // Find this team's score from semifinals
+                                let score = 0;
+                                for (const game of season.playoffs.semifinals) {
+                                  if (game.team1 === s.team) score = game.team1Score;
+                                  if (game.team2 === s.team) score = game.team2Score;
+                                }
+                                return { ...s, score };
+                              });
+                              
+                              // Sort by score descending to determine top 2
+                              const sortedByScore = [...allSemifinalTeams].sort((a, b) => b.score - a.score);
+                              const top2Teams = new Set(sortedByScore.slice(0, 2).map(t => t.team));
+                              
+                              return (
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                  {sortedByScore.map((team) => {
+                                    const isAdvancing = top2Teams.has(team.team);
+                                    return (
+                                      <div 
+                                        key={team.seed} 
+                                        className={`rounded-lg border p-3 text-center transition-colors ${
+                                          isAdvancing 
+                                            ? 'bg-green-500/15 border-green-500/40' 
+                                            : 'bg-red-500/10 border-red-500/30'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                                          {isAdvancing ? (
+                                            <Check className="text-green-500" size={16} />
+                                          ) : (
+                                            <X className="text-red-400" size={16} />
+                                          )}
+                                          <span className="text-xs text-accent font-bold">#{team.seed}</span>
+                                        </div>
+                                        <p className={`text-xs font-semibold leading-tight mb-1 ${isAdvancing ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                          {team.team}
+                                        </p>
+                                        <p className={`font-mono text-sm font-bold ${isAdvancing ? 'text-green-600 dark:text-green-400' : 'text-red-500/80'}`}>
+                                          {team.score.toFixed(1)}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Finals & 3rd Place */}
