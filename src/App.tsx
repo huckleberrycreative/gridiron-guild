@@ -33,7 +33,7 @@ import AdminSeasons from "./pages/admin/Seasons";
 import AdminStandings from "./pages/admin/Standings";
 import AdminPlayoffs from "./pages/admin/Playoffs";
 import AdminPlayerSalaries from "./pages/admin/PlayerSalaries";
-import AdminBlog from "./pages/admin/Blog";
+import AdminWeeklyRecaps from "./pages/admin/WeeklyRecaps";
 import AdminMedia from "./pages/admin/Media";
 import AdminPages from "./pages/admin/Pages";
 import AdminPantheon from "./pages/admin/PantheonAdmin";
@@ -87,7 +87,7 @@ const App = () => (
               <Route path="standings" element={<AdminStandings />} />
               <Route path="playoffs" element={<AdminPlayoffs />} />
               <Route path="salaries" element={<AdminPlayerSalaries />} />
-              <Route path="blog" element={<AdminBlog />} />
+              <Route path="weekly-recaps" element={<AdminWeeklyRecaps />} />
               <Route path="media" element={<AdminMedia />} />
               <Route path="pages" element={<AdminPages />} />
               <Route path="pantheon" element={<AdminPantheon />} />

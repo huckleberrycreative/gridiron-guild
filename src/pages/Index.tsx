@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { Trophy, Crown, Skull, AlertTriangle, ChevronRight, Send } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { teams, weeklyRecaps, comments, Comment, getAvgPPW } from '@/data/leagueData';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -18,6 +20,24 @@ const Index = () => {
   const [newComment, setNewComment] = useState({ teamName: '', comment: '' });
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
 
+  // Fetch latest published recap from database
+  const { data: latestRecap } = useQuery({
+    queryKey: ['latest-recap'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('published', true)
+        .order('recap_date', { ascending: false, nullsFirst: false })
+        .order('published_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Sort teams by total ranking points
   const sortedTeams = [...teams].sort((a, b) => b.totalPoints - a.totalPoints);
 
@@ -26,7 +46,7 @@ const Index = () => {
   const purgatoryTeam = sortedTeams[4]; // #5 - "Purgatory"
   const toiletBowlTeams = sortedTeams.slice(5); // #6-10 - "The Toilet Bowl"
 
-  // Get the most recent recap (featured or latest)
+  // Get the most recent recap (featured or latest) - fallback to static data if no DB recap
   const featuredRecap = weeklyRecaps.find((r) => r.featured) || weeklyRecaps[0];
 
   // Get comments for the current recap

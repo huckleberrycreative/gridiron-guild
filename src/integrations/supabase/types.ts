@@ -24,9 +24,12 @@ export type Database = {
           id: string
           published: boolean
           published_at: string | null
+          recap_date: string | null
+          season_year: number | null
           slug: string
           title: string
           updated_at: string
+          week_number: number | null
         }
         Insert: {
           author_id?: string | null
@@ -37,9 +40,12 @@ export type Database = {
           id?: string
           published?: boolean
           published_at?: string | null
+          recap_date?: string | null
+          season_year?: number | null
           slug: string
           title: string
           updated_at?: string
+          week_number?: number | null
         }
         Update: {
           author_id?: string | null
@@ -50,9 +56,12 @@ export type Database = {
           id?: string
           published?: boolean
           published_at?: string | null
+          recap_date?: string | null
+          season_year?: number | null
           slug?: string
           title?: string
           updated_at?: string
+          week_number?: number | null
         }
         Relationships: []
       }
