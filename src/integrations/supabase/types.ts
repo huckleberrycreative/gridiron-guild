@@ -78,8 +78,8 @@ export type Database = {
           playoff_losses: number
           playoff_wins: number
           team_id: string | null
-          tenure_end: number | null
-          tenure_start: number
+          tenure_end: string | null
+          tenure_start: string
           tenure_summary: string | null
           updated_at: string
           wins: number
@@ -96,8 +96,8 @@ export type Database = {
           playoff_losses?: number
           playoff_wins?: number
           team_id?: string | null
-          tenure_end?: number | null
-          tenure_start: number
+          tenure_end?: string | null
+          tenure_start: string
           tenure_summary?: string | null
           updated_at?: string
           wins?: number
@@ -114,8 +114,8 @@ export type Database = {
           playoff_losses?: number
           playoff_wins?: number
           team_id?: string | null
-          tenure_end?: number | null
-          tenure_start?: number
+          tenure_end?: string | null
+          tenure_start?: string
           tenure_summary?: string | null
           updated_at?: string
           wins?: number

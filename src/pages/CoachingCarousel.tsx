@@ -209,9 +209,9 @@ const CoachCard = ({ coach, isHighlighted }: CoachCardProps) => {
 
   const getTenureDisplay = () => {
     if (coach.is_current) {
-      return `${coach.tenure_start}-Present`;
+      return `${coach.tenure_start} - Present`;
     }
-    return `${coach.tenure_start}-${coach.tenure_end || '?'}`;
+    return `${coach.tenure_start} - ${coach.tenure_end || '?'}`;
   };
 
   return (

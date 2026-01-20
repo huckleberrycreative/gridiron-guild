@@ -5,8 +5,8 @@ export interface Coach {
   team_id: string | null;
   name: string;
   photo_url: string | null;
-  tenure_start: number;
-  tenure_end: number | null;
+  tenure_start: string;
+  tenure_end: string | null;
   tenure_summary: string | null;
   wins: number;
   losses: number;

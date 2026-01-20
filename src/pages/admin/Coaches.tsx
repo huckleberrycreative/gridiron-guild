@@ -45,8 +45,8 @@ type CoachFormData = {
   team_id: string;
   name: string;
   photo_url: string;
-  tenure_start: number;
-  tenure_end: number | null;
+  tenure_start: string;
+  tenure_end: string;
   tenure_summary: string;
   wins: number;
   losses: number;
@@ -61,8 +61,8 @@ const defaultFormData: CoachFormData = {
   team_id: '',
   name: '',
   photo_url: '',
-  tenure_start: new Date().getFullYear(),
-  tenure_end: null,
+  tenure_start: '',
+  tenure_end: '',
   tenure_summary: '',
   wins: 0,
   losses: 0,
@@ -99,6 +99,7 @@ export default function AdminCoaches() {
       const coach = await coachesApi.create({
         ...data,
         photo_url: data.photo_url || null,
+        tenure_end: data.tenure_end || null,
         tenure_summary: data.tenure_summary || null,
       });
       
@@ -133,6 +134,7 @@ export default function AdminCoaches() {
       return coachesApi.update(id, {
         ...data,
         photo_url: data.photo_url || null,
+        tenure_end: data.tenure_end || null,
         tenure_summary: data.tenure_summary || null,
       });
     },
@@ -177,8 +179,8 @@ export default function AdminCoaches() {
       team_id: coach.team_id || '',
       name: coach.name,
       photo_url: coach.photo_url || '',
-      tenure_start: coach.tenure_start,
-      tenure_end: coach.tenure_end,
+      tenure_start: coach.tenure_start || '',
+      tenure_end: coach.tenure_end || '',
       tenure_summary: coach.tenure_summary || '',
       wins: coach.wins,
       losses: coach.losses,
@@ -216,9 +218,9 @@ export default function AdminCoaches() {
 
   const getTenureDisplay = (coach: CoachWithTeam) => {
     if (coach.is_current) {
-      return `${coach.tenure_start}-Present`;
+      return `${coach.tenure_start} - Present`;
     }
-    return `${coach.tenure_start}-${coach.tenure_end || '?'}`;
+    return `${coach.tenure_start} - ${coach.tenure_end || '?'}`;
   };
 
   if (coachesLoading) {
@@ -368,32 +370,31 @@ export default function AdminCoaches() {
             {/* Tenure */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tenure_start">Start Year</Label>
+                <Label htmlFor="tenure_start">Start (Week Year)</Label>
                 <Input
                   id="tenure_start"
-                  type="number"
-                  min={2000}
-                  max={2100}
+                  type="text"
                   value={formData.tenure_start}
-                  onChange={(e) => setFormData({ ...formData, tenure_start: parseInt(e.target.value) || new Date().getFullYear() })}
+                  onChange={(e) => setFormData({ ...formData, tenure_start: e.target.value })}
+                  placeholder="e.g., Week 1 2024"
                   required
                 />
+                <p className="text-xs text-muted-foreground">Format: Week # Year</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tenure_end">End Year</Label>
+                <Label htmlFor="tenure_end">End (Week Year)</Label>
                 <Input
                   id="tenure_end"
-                  type="number"
-                  min={2000}
-                  max={2100}
-                  value={formData.tenure_end || ''}
-                  onChange={(e) => setFormData({ ...formData, tenure_end: e.target.value ? parseInt(e.target.value) : null })}
-                  placeholder="Leave blank if current"
+                  type="text"
+                  value={formData.tenure_end}
+                  onChange={(e) => setFormData({ ...formData, tenure_end: e.target.value })}
+                  placeholder="e.g., Week 18 2025"
                 />
+                <p className="text-xs text-muted-foreground">Leave blank if current</p>
               </div>
 
-              <div className="flex items-end pb-2">
+              <div className="flex items-end pb-6">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="is_current"
