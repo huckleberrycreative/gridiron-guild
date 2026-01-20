@@ -256,18 +256,29 @@ const Constitution = () => {
 
                           {/* Article content */}
                           <div className="space-y-6">
-                            {amendment.content.map((paragraph, pIndex) => (
-                              <p
-                                key={pIndex}
-                                className="font-oldEnglish text-lg md:text-xl text-black leading-loose text-justify"
-                                style={{ textIndent: pIndex === 0 ? '0' : '2em' }}
-                              >
-                                <span className="float-left text-5xl font-oldEnglish leading-none mr-2 mt-1 text-neutral-700">
-                                  {paragraph.charAt(0)}
-                                </span>
-                                {paragraph.slice(1)}
-                              </p>
-                            ))}
+                            {amendment.content.map((paragraph, pIndex) => {
+                              // Bold "Section X." at the start of paragraphs
+                              const sectionMatch = paragraph.match(/^(Section \d+\.)/);
+                              if (sectionMatch) {
+                                return (
+                                  <p
+                                    key={pIndex}
+                                    className="font-oldEnglish text-lg md:text-xl text-black leading-loose text-justify"
+                                  >
+                                    <span className="font-bold">{sectionMatch[1]}</span>
+                                    {paragraph.slice(sectionMatch[1].length)}
+                                  </p>
+                                );
+                              }
+                              return (
+                                <p
+                                  key={pIndex}
+                                  className="font-oldEnglish text-lg md:text-xl text-black leading-loose text-justify"
+                                >
+                                  {paragraph}
+                                </p>
+                              );
+                            })}
                           </div>
 
                           {/* Section divider */}
