@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Trophy, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
+import logoImage from '@/assets/logo.png';
 
 interface NavItem {
   href?: string;
@@ -60,17 +61,11 @@ export function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-primary flex items-center justify-center group-hover:bg-accent transition-colors duration-300">
-              <Trophy className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground group-hover:text-accent-foreground transition-colors duration-300" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-display text-lg md:text-xl font-bold text-foreground leading-none">
-                MEN'S LEAGUE
-              </h1>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                Fantasy Football
-              </p>
-            </div>
+            <img 
+              src={logoImage} 
+              alt="Men's League" 
+              className="h-10 md:h-14 w-auto object-contain"
+            />
           </Link>
 
           {/* Desktop Navigation */}

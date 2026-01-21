@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import shieldIcon from '@/assets/shield.png';
+import rudolphBg from '@/assets/rudolph-bg.jpg';
 
 const SITE_PASSWORD = 'theshield';
 const STORAGE_KEY = 'site-authenticated';
@@ -37,7 +39,7 @@ export const PasswordGate = ({ children }: PasswordGateProps) => {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Shield className="h-12 w-12 animate-pulse text-primary" />
+        <img src={shieldIcon} alt="Loading..." className="h-12 w-12 animate-pulse" />
       </div>
     );
   }
@@ -49,13 +51,15 @@ export const PasswordGate = ({ children }: PasswordGateProps) => {
 
   // Show password form
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-card border border-border rounded-lg p-8 shadow-lg">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${rudolphBg})` }}
+    >
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg p-8 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-8 w-8 text-primary" />
-            </div>
+            <img src={shieldIcon} alt="Shield" className="w-20 h-20 mb-4" />
             <h1 className="font-display text-2xl font-bold text-center">MEN'S LEAGUE</h1>
             <p className="text-muted-foreground text-center mt-2">
               Enter the password to access the site
