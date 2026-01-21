@@ -59,7 +59,7 @@ export const PasswordGate = ({ children }: PasswordGateProps) => {
       <div className="w-full max-w-md relative z-10">
         <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg p-8 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
-            <img src={shieldIcon} alt="Shield" className="w-20 h-20 mb-4" />
+            <img src={shieldIcon} alt="Shield" className="h-24 w-auto mb-4" />
             <h1 className="font-display text-2xl font-bold text-center">MEN'S LEAGUE</h1>
             <p className="text-muted-foreground text-center mt-2">
               Enter the password to access the site
