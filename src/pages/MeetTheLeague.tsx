@@ -206,7 +206,7 @@ const MeetTheLeague = () => {
                         </div>
                       </div>
                       {/* Team Logo - Right Side */}
-                      <TeamLogo teamName={currentGovernor.teamName} size="lg" className="w-16 h-16 md:w-20 md:h-20 hidden md:block" />
+                      <TeamLogo teamName={currentGovernor.teamName} size="lg" className="w-32 h-32 hidden md:block" />
                     </div>
                   </div>
 
