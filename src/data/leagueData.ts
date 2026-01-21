@@ -138,7 +138,7 @@ export const teams: Team[] = [
   { id: '7', name: 'The Florida Area Ken Francis Experience', owner: 'James Holcomb', totalPoints: 81, pointsFor: 1486, wins: 3, losses: 9 },
   { id: '8', name: 'The Germantown Gamblers', owner: 'John Aicklen', totalPoints: 79, pointsFor: 1484, wins: 3, losses: 9 },
   { id: '9', name: 'The Chicago Dawgs', owner: 'Will Hobart', totalPoints: 76, pointsFor: 1451, wins: 3, losses: 7 },
-  { id: '10', name: 'The California Crackdown', owner: 'Blake Blacklidge', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '10', name: 'The Nepo Beach Guppies', owner: 'Blake Blacklidge', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
 ];
 
 // ========================================
@@ -189,7 +189,7 @@ export const owners: Owner[] = [
   { id: '6', name: 'Will Hobart', teamName: 'The Chicago Dawgs', yearsActive: 8, totalWins: 41, totalLosses: 45, championships: 0, playoffAppearances: 1, playoffWins: 1, playoffLosses: 1, avgPointsPerYear: 1409, avgFinish: 8.25, bestFinish: 1, worstFinish: 10 },
   { id: '7', name: 'William Holcomb', teamName: 'The Queen City Harambes', yearsActive: 9, totalWins: 61, totalLosses: 54, championships: 0, playoffAppearances: 4, playoffWins: 0, playoffLosses: 4, avgPointsPerYear: 1363, avgFinish: 11.88, bestFinish: 3, worstFinish: 10 },
   { id: '8', name: 'Johnny Holcomb', teamName: 'The Abbattabad Geronimos', yearsActive: 9, totalWins: 56, totalLosses: 59, championships: 0, playoffAppearances: 3, playoffWins: 1, playoffLosses: 3, avgPointsPerYear: 1215, avgFinish: 14.50, bestFinish: 2, worstFinish: 11 },
-  { id: '9', name: 'Blake Blacklidge', teamName: 'The California Crackdown', yearsActive: 5, totalWins: 25, totalLosses: 39, championships: 0, playoffAppearances: 2, playoffWins: 0, playoffLosses: 2, avgPointsPerYear: 1425, avgFinish: 12.88, bestFinish: 3, worstFinish: 10 },
+  { id: '9', name: 'Blake Blacklidge', teamName: 'The Nepo Beach Guppies', yearsActive: 5, totalWins: 25, totalLosses: 39, championships: 0, playoffAppearances: 2, playoffWins: 0, playoffLosses: 2, avgPointsPerYear: 1425, avgFinish: 12.88, bestFinish: 3, worstFinish: 10 },
   { id: '10', name: 'Jackson Ferrell', teamName: 'The Nashville Kats', yearsActive: 5, totalWins: 35, totalLosses: 30, championships: 0, playoffAppearances: 2, playoffWins: 0, playoffLosses: 2, avgPointsPerYear: 1556, avgFinish: 14.88, bestFinish: 2, worstFinish: 10 },
 ];
 
@@ -328,16 +328,7 @@ export interface TeamCaptainPick {
 }
 
 export const teamCaptainPicks: TeamCaptainPick[] = [
-  { id: '1', fantasyTeam: 'The Sylvan Park Forresters', week: 13, season: 2025, captainName: 'Josh Allen', submittedAt: '2025-12-18' },
-  { id: '2', fantasyTeam: 'The Franklin Fanatics', week: 13, season: 2025, captainName: 'Saquon Barkley', submittedAt: '2025-12-18' },
-  { id: '3', fantasyTeam: 'The Nashville Kats', week: 13, season: 2025, captainName: 'Derrick Henry', submittedAt: '2025-12-17' },
-  { id: '4', fantasyTeam: 'The Abbattabad Geronimos', week: 13, season: 2025, captainName: 'Lamar Jackson', submittedAt: '2025-12-18' },
-  { id: '5', fantasyTeam: 'The Queen City Harambes', week: 13, season: 2025, captainName: 'Jahmyr Gibbs', submittedAt: '2025-12-18' },
-  { id: '6', fantasyTeam: 'The West NY Mary Washington Fire Ants', week: 13, season: 2025, captainName: 'Bijan Robinson', submittedAt: '2025-12-17' },
-  { id: '7', fantasyTeam: 'The Florida Area Ken Francis Experience', week: 13, season: 2025, captainName: 'Jalen Hurts', submittedAt: '2025-12-18' },
-  { id: '8', fantasyTeam: 'The Germantown Gamblers', week: 13, season: 2025, captainName: 'CeeDee Lamb', submittedAt: '2025-12-18' },
-  { id: '9', fantasyTeam: 'The Chicago Dawgs', week: 13, season: 2025, captainName: 'Patrick Mahomes', submittedAt: '2025-12-17' },
-  { id: '10', fantasyTeam: 'The California Crackdown', week: 13, season: 2025, captainName: 'Tyreek Hill', submittedAt: '2025-12-18' },
+  // 2026 Season - Reset for new year
 ];
 
 // ========================================
@@ -363,7 +354,7 @@ export const practiceSquadRosters: PracticeSquadRoster[] = [
   { fantasyTeam: 'The Florida Area Ken Francis Experience', players: [{ name: 'Brian Thomas Jr.', salary: 22 }, { name: 'Xavier Worthy', salary: 16 }, { name: 'Jonathon Brooks', salary: 14 }] },
   { fantasyTeam: 'The Germantown Gamblers', players: [{ name: 'Ladd McConkey', salary: 12 }, { name: 'Jaxon Smith-Njigba', salary: 24 }, { name: 'Jaleel McLaughlin', salary: 2 }] },
   { fantasyTeam: 'The Chicago Dawgs', players: [{ name: 'Xavier Legette', salary: 10 }, { name: 'Troy Franklin', salary: 5 }, { name: 'Cade Otton', salary: 4 }] },
-  { fantasyTeam: 'The California Crackdown', players: [{ name: 'Quentin Johnston', salary: 18 }, { name: 'Jaylen Wright', salary: 8 }, { name: 'Isaiah Likely', salary: 6 }] },
+  { fantasyTeam: 'The Nepo Beach Guppies', players: [{ name: 'Quentin Johnston', salary: 18 }, { name: 'Jaylen Wright', salary: 8 }, { name: 'Isaiah Likely', salary: 6 }] },
 ];
 
 // ========================================
@@ -395,7 +386,7 @@ export const coachingHistory: TeamCoachHistory[] = [
   { teamName: 'The Chicago Dawgs', coaches: [{ name: 'Will Hobart', yearsActive: '2017-Present', wins: 41, losses: 45, playoffWins: 1, playoffLosses: 1, championships: 0, isCurrent: true }] },
   { teamName: 'The Queen City Harambes', coaches: [{ name: 'William Holcomb', yearsActive: '2017-Present', wins: 61, losses: 54, playoffWins: 0, playoffLosses: 4, championships: 0, isCurrent: true }] },
   { teamName: 'The Abbattabad Geronimos', coaches: [{ name: 'Johnny Holcomb', yearsActive: '2017-Present', wins: 56, losses: 59, playoffWins: 1, playoffLosses: 3, championships: 0, isCurrent: true }] },
-  { teamName: 'The California Crackdown', coaches: [{ name: 'Blake Blacklidge', yearsActive: '2020-Present', wins: 25, losses: 39, playoffWins: 0, playoffLosses: 2, championships: 0, isCurrent: true }] },
+  { teamName: 'The Nepo Beach Guppies', coaches: [{ name: 'Blake Blacklidge', yearsActive: '2020-Present', wins: 25, losses: 39, playoffWins: 0, playoffLosses: 2, championships: 0, isCurrent: true }] },
   { teamName: 'The Nashville Kats', coaches: [{ name: 'Jackson Ferrell', yearsActive: '2021-Present', wins: 35, losses: 30, playoffWins: 0, playoffLosses: 2, championships: 0, isCurrent: true }] },
 ];
 
