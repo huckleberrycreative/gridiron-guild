@@ -240,13 +240,16 @@ const CornerOrnament = ({ className = '' }: { className?: string }) => (
   </svg>
 );
 
-// Thumbtack SVG component
+// Thumbtack SVG component - more realistic
 const Thumbtack = ({ className = '' }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <ellipse cx="12" cy="6" rx="6" ry="4" fill="#b91c1c" />
-    <ellipse cx="12" cy="5" rx="4" ry="2.5" fill="#dc2626" />
-    <rect x="11" y="8" width="2" height="10" fill="#6b7280" />
-    <polygon points="10,18 14,18 12,24" fill="#4b5563" />
+  <svg className={className} viewBox="0 0 32 40" fill="currentColor">
+    {/* Pin head - dome shape */}
+    <ellipse cx="16" cy="8" rx="10" ry="6" fill="#991b1b" />
+    <ellipse cx="16" cy="7" rx="8" ry="4" fill="#dc2626" />
+    <ellipse cx="14" cy="5" rx="3" ry="1.5" fill="#fca5a5" opacity="0.6" />
+    {/* Pin shaft */}
+    <path d="M14 12 L16 38 L18 12 Z" fill="#71717a" />
+    <path d="M15 12 L16 38 L16.5 12 Z" fill="#a1a1aa" />
   </svg>
 );
 
@@ -461,12 +464,9 @@ const Constitution = () => {
                     {/* AMENDMENTS SECTION - Sticky Notes (above signatures) */}
                     <div id="amendments-section" className="mt-24 pt-12 border-t-4 border-dashed border-neutral-400 scroll-mt-28">
                       <div className="text-center mb-12">
-                        <h2 className="font-oldEnglish text-3xl md:text-4xl text-black tracking-wide mb-2">
+                        <h2 className="font-oldEnglish text-3xl md:text-4xl text-black tracking-wide">
                           Amendments
                         </h2>
-                        <p className="font-serif text-neutral-500 italic text-sm">
-                          (hastily tacked on by subsequent Governors)
-                        </p>
                       </div>
 
                       <div className="space-y-8">
@@ -479,11 +479,12 @@ const Constitution = () => {
                             viewport={{ once: true }}
                             transition={{ duration: 0.4, delay: index * 0.05 }}
                             onViewportEnter={() => setActiveSection(`amendment-${amendment.number}`)}
-                            className={`relative ${amendment.rotation} transform hover:rotate-0 transition-transform duration-300 scroll-mt-28 max-w-2xl mx-auto`}
+                            className={`relative transform hover:rotate-0 transition-transform duration-300 scroll-mt-28 max-w-2xl mx-auto`}
+                            style={{ transform: `rotate(${index % 2 === 0 ? '3deg' : '-3deg'})` }}
                           >
                             {/* Thumbtack */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                              <Thumbtack className="w-6 h-8 drop-shadow-md" />
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                              <Thumbtack className="w-8 h-10 drop-shadow-lg" />
                             </div>
                             
                             {/* Sticky Note */}
