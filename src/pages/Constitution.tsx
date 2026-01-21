@@ -474,13 +474,13 @@ const Constitution = () => {
                           <motion.div
                             key={amendment.number}
                             id={`amendment-${amendment.number}`}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 20, rotate: index % 2 === 0 ? 3 : -3 }}
+                            whileInView={{ opacity: 1, y: 0, rotate: index % 2 === 0 ? 3 : -3 }}
+                            whileHover={{ rotate: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.4, delay: index * 0.05 }}
                             onViewportEnter={() => setActiveSection(`amendment-${amendment.number}`)}
-                            className={`relative transform hover:rotate-0 transition-transform duration-300 scroll-mt-28 max-w-2xl mx-auto`}
-                            style={{ transform: `rotate(${index % 2 === 0 ? '3deg' : '-3deg'})` }}
+                            className="relative scroll-mt-28 max-w-2xl mx-auto"
                           >
                             {/* Thumbtack */}
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
