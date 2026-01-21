@@ -45,7 +45,7 @@ const TeamCaptains = () => {
         id: Date.now().toString(),
         fantasyTeam: newPick.fantasyTeam,
         week: parseInt(newPick.week),
-        season: 2024,
+        season: 2026,
         captainName: newPick.captainName,
         submittedAt: new Date().toISOString().split('T')[0],
       };

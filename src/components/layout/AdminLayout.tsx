@@ -15,6 +15,7 @@ import {
   Medal,
   FileEdit
 } from 'lucide-react';
+import logoImage from '@/assets/logo.png';
 
 export default function AdminLayout() {
   const { signOut, user } = useAuth();
@@ -48,9 +49,13 @@ export default function AdminLayout() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link to="/admin/dashboard" className="flex items-center">
-                <Trophy className="h-8 w-8 text-blue-600" />
-                <span className="ml-2 text-xl font-bold text-gray-900">
-                  Gridiron Guild Admin
+                <img 
+                  src={logoImage} 
+                  alt="Men's League" 
+                  className="h-10 w-auto object-contain"
+                />
+                <span className="ml-3 text-xl font-bold text-gray-900">
+                  Men's League Commish Portal
                 </span>
               </Link>
             </div>
