@@ -13,7 +13,7 @@ export function Footer() {
               <img 
                 src={logo} 
                 alt="Men's League Logo" 
-                className="w-10 h-10 rounded-lg invert brightness-0 invert"
+                className="h-10 w-auto rounded-lg invert"
               />
               <div>
                 <h3 className="font-display text-lg font-bold leading-none">
@@ -35,7 +35,7 @@ export function Footer() {
             <ul className="space-y-2">
               {[
                 { href: '/standings', label: 'Standings' },
-                { href: '/stats', label: 'Player Stats' },
+                { href: '/historic-analytics', label: 'Governor Stats' },
                 { href: '/recaps', label: 'Weekly Recaps' },
               ].map((link) => (
                 <li key={link.href}>
@@ -58,7 +58,7 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="mailto:commissioner@mensleague.com"
+                  href="mailto:benholcomb35@gmail.com"
                   className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-accent transition-colors duration-200"
                 >
                   <Mail size={14} />
@@ -66,13 +66,13 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/constitution"
                   className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-accent transition-colors duration-200"
                 >
                   <ExternalLink size={14} />
-                  League Rules
-                </a>
+                  The Constitution
+                </Link>
               </li>
             </ul>
           </div>
