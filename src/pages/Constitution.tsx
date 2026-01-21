@@ -303,6 +303,29 @@ const Constitution = () => {
                           {amendment.title}
                         </button>
                       ))}
+                      
+                      {/* Amendments divider */}
+                      <div className="my-4 border-t border-neutral-300 pt-4">
+                        <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2 px-3">Amendments</p>
+                      </div>
+                      
+                      {constitutionalAmendments.map((amendment) => (
+                        <button
+                          key={`amend-${amendment.number}`}
+                          onClick={() => scrollToSection(`amendment-${amendment.number}`)}
+                          className={cn(
+                            'w-full text-left px-3 py-2 rounded-sm text-sm transition-all font-serif',
+                            activeSection === `amendment-${amendment.number}`
+                              ? 'bg-neutral-300 text-black border-l-2 border-neutral-600'
+                              : 'text-neutral-600 hover:text-black hover:bg-neutral-200'
+                          )}
+                        >
+                          <span className="text-neutral-500 text-xs mr-2">
+                            {amendment.number}
+                          </span>
+                          {amendment.title}
+                        </button>
+                      ))}
                     </nav>
                   </ScrollArea>
                 </div>
@@ -435,6 +458,66 @@ const Constitution = () => {
                       ))}
                     </div>
 
+                    {/* AMENDMENTS SECTION - Sticky Notes (above signatures) */}
+                    <div id="amendments-section" className="mt-24 pt-12 border-t-4 border-dashed border-neutral-400 scroll-mt-28">
+                      <div className="text-center mb-12">
+                        <h2 className="font-oldEnglish text-3xl md:text-4xl text-black tracking-wide mb-2">
+                          Amendments
+                        </h2>
+                        <p className="font-serif text-neutral-500 italic text-sm">
+                          (hastily tacked on by subsequent Governors)
+                        </p>
+                      </div>
+
+                      <div className="space-y-8">
+                        {constitutionalAmendments.map((amendment, index) => (
+                          <motion.div
+                            key={amendment.number}
+                            id={`amendment-${amendment.number}`}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.4, delay: index * 0.05 }}
+                            onViewportEnter={() => setActiveSection(`amendment-${amendment.number}`)}
+                            className={`relative ${amendment.rotation} transform hover:rotate-0 transition-transform duration-300 scroll-mt-28 max-w-2xl mx-auto`}
+                          >
+                            {/* Thumbtack */}
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                              <Thumbtack className="w-6 h-8 drop-shadow-md" />
+                            </div>
+                            
+                            {/* Sticky Note */}
+                            <div 
+                              className={`${amendment.color} p-6 pt-8 shadow-lg relative`}
+                              style={{
+                                boxShadow: '2px 4px 8px rgba(0,0,0,0.2), inset 0 0 40px rgba(255,255,255,0.3)',
+                              }}
+                            >
+                              {/* Folded corner effect */}
+                              <div 
+                                className="absolute bottom-0 right-0 w-8 h-8"
+                                style={{
+                                  background: 'linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.1) 50%)',
+                                }}
+                              />
+                              
+                              <h3 className="font-display text-lg font-bold text-neutral-800 mb-3">
+                                {amendment.number} Amendment: {amendment.title}
+                              </h3>
+                              
+                              <div className="space-y-2">
+                                {amendment.content.map((paragraph, pIndex) => (
+                                  <p key={pIndex} className="text-sm text-neutral-700 leading-relaxed">
+                                    {paragraph}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Footer / Ratification */}
                     <div className="mt-20 pt-12 border-t border-neutral-300">
                       <div className="text-center">
@@ -479,64 +562,6 @@ const Constitution = () => {
                         </div>
 
                         <Flourish className="w-32 h-6 mx-auto mt-8 text-neutral-400 rotate-180" />
-                      </div>
-                    </div>
-
-                    {/* AMENDMENTS SECTION - Sticky Notes */}
-                    <div className="mt-24 pt-12 border-t-4 border-dashed border-neutral-400">
-                      <div className="text-center mb-12">
-                        <h2 className="font-oldEnglish text-3xl md:text-4xl text-black tracking-wide mb-2">
-                          Amendments
-                        </h2>
-                        <p className="font-serif text-neutral-500 italic text-sm">
-                          (hastily tacked on by subsequent Governors)
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {constitutionalAmendments.map((amendment, index) => (
-                          <motion.div
-                            key={amendment.number}
-                            initial={{ opacity: 0, y: 20, rotate: 0 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.4, delay: index * 0.1 }}
-                            className={`relative ${amendment.rotation} transform hover:rotate-0 transition-transform duration-300`}
-                          >
-                            {/* Thumbtack */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                              <Thumbtack className="w-6 h-8 drop-shadow-md" />
-                            </div>
-                            
-                            {/* Sticky Note */}
-                            <div 
-                              className={`${amendment.color} p-6 pt-8 shadow-lg relative`}
-                              style={{
-                                boxShadow: '2px 4px 8px rgba(0,0,0,0.2), inset 0 0 40px rgba(255,255,255,0.3)',
-                              }}
-                            >
-                              {/* Folded corner effect */}
-                              <div 
-                                className="absolute bottom-0 right-0 w-8 h-8"
-                                style={{
-                                  background: 'linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.1) 50%)',
-                                }}
-                              />
-                              
-                              <h3 className="font-display text-lg font-bold text-neutral-800 mb-3">
-                                {amendment.number} Amendment: {amendment.title}
-                              </h3>
-                              
-                              <div className="space-y-2">
-                                {amendment.content.map((paragraph, pIndex) => (
-                                  <p key={pIndex} className="text-sm text-neutral-700 leading-relaxed">
-                                    {paragraph}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
                       </div>
                     </div>
                   </div>
