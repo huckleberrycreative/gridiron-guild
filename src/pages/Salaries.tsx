@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { SortableTable, Column } from '@/components/SortableTable';
 import { usePlayerSalaries, useTeams, PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
-import { Star, Loader2, ChevronDown } from 'lucide-react';
+import { Star, Loader2, ChevronDown, Check } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,14 +85,16 @@ const Salaries = () => {
       ),
     },
     {
-      key: 'rookieDraftRound',
-      label: 'Rd',
+      key: 'practiceSquad',
+      label: 'PS',
       sortable: true,
       align: 'center',
       render: (value) => (
-        <span className="font-mono text-sm">
-          {value ? `R${value}` : '-'}
-        </span>
+        value ? (
+          <Check size={16} className="text-emerald-500" />
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )
       ),
     },
     {
