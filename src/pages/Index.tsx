@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { teams, comments, Comment, getAvgPPW } from '@/data/leagueData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { TeamLogo } from '@/components/TeamLogo';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -324,12 +325,15 @@ const StandingsRow = ({ rank, team, variant }: StandingsRowProps) => {
       >
         {rank}
       </span>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate">{team.name}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="font-mono">{team.wins}-{team.losses}</span>
-          <span>•</span>
-          <span className="font-mono">{avgPPW.toFixed(1)} PPW</span>
+      <div className="flex items-center gap-3">
+        <TeamLogo teamName={team.name} size="sm" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{team.name}</p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-mono">{team.wins}-{team.losses}</span>
+            <span>•</span>
+            <span className="font-mono">{avgPPW.toFixed(1)} PPW</span>
+          </div>
         </div>
       </div>
       <div className="text-right">

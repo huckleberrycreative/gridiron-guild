@@ -4,7 +4,7 @@ import { SortableTable, Column } from '@/components/SortableTable';
 import { useActiveSeasonStandings, TeamWithStandings } from '@/hooks/useLeagueData';
 import { Trophy, Medal, AlertTriangle, Skull, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
+import { TeamLogo } from '@/components/TeamLogo';
 // Ranking points by position (1st through 10th)
 const RANKING_POINTS: Record<number, number> = {
   1: 20,
@@ -60,9 +60,12 @@ const Standings = () => {
       label: 'Team',
       sortable: true,
       render: (_, row) => (
-        <div>
-          <p className="font-semibold">{row.name}</p>
-          <p className="text-xs text-muted-foreground">{row.owner}</p>
+        <div className="flex items-center gap-3">
+          <TeamLogo teamName={row.name} size="md" />
+          <div>
+            <p className="font-semibold">{row.name}</p>
+            <p className="text-xs text-muted-foreground">{row.owner}</p>
+          </div>
         </div>
       ),
     },
