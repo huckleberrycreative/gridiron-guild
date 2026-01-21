@@ -84,6 +84,17 @@ const Index = () => {
                 </div>
               ) : latestRecap ? (
                 <>
+                  {/* Featured Image - Full Width Above Title */}
+                  {latestRecap.featured_image && (
+                    <div className="mb-6 -mx-4 md:-mx-0">
+                      <img 
+                        src={latestRecap.featured_image} 
+                        alt={latestRecap.title}
+                        className="w-full h-auto rounded-lg object-cover max-h-[400px]"
+                      />
+                    </div>
+                  )}
+
                   <div className="mb-6">
                     <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full mb-4">
                       Season {latestRecap.season_year} • Week {latestRecap.week_number}
@@ -101,9 +112,9 @@ const Index = () => {
                     </p>
                   </div>
 
-                  {/* Content from WYSIWYG */}
+                  {/* Content from WYSIWYG with improved styling */}
                   <div 
-                    className="prose prose-lg max-w-none mb-10 [&>p:first-child]:first-letter:text-5xl [&>p:first-child]:first-letter:font-display [&>p:first-child]:first-letter:font-bold [&>p:first-child]:first-letter:float-left [&>p:first-child]:first-letter:mr-3 [&>p:first-child]:first-letter:mt-1"
+                    className="blog-content prose prose-lg max-w-none mb-10"
                     dangerouslySetInnerHTML={{ __html: latestRecap.content || '' }}
                   />
                 </>

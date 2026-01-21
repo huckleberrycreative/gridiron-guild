@@ -159,6 +159,107 @@
   }
 }
 
+/* Blog Content Styling - Collegiate/Retro Headers */
+.blog-content {
+  line-height: 1.8;
+}
+
+.blog-content p {
+  margin-bottom: 1.5em;
+}
+
+.blog-content p:first-child {
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+.blog-content p:first-child::first-letter {
+  float: left;
+  font-size: 4rem;
+  line-height: 0.8;
+  font-weight: 700;
+  font-family: 'Playfair Display', Georgia, serif;
+  margin-right: 0.5rem;
+  margin-top: 0.1em;
+  color: hsl(var(--accent));
+}
+
+.blog-content h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  border-bottom: 3px solid hsl(var(--accent));
+  padding-bottom: 0.5rem;
+}
+
+.blog-content h2 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 800;
+  font-size: 1.875rem;
+  letter-spacing: -0.01em;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  color: hsl(var(--foreground));
+}
+
+.blog-content h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+  color: hsl(var(--accent));
+}
+
+.blog-content blockquote {
+  border-left: 4px solid hsl(var(--accent));
+  padding-left: 1.5rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+
+.blog-content img {
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  max-width: 100%;
+  height: auto;
+}
+
+.blog-content ul, .blog-content ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.blog-content li {
+  margin-bottom: 0.5rem;
+}
+
+.blog-content hr {
+  margin: 2rem 0;
+  border-color: hsl(var(--border));
+}
+
+/* Prose invert overrides for dark backgrounds */
+.prose-invert .blog-content h1,
+.prose-invert .blog-content h2 {
+  color: hsl(var(--primary-foreground));
+}
+
+.prose-invert .blog-content h3 {
+  color: hsl(var(--gold));
+}
+
+.prose-invert .blog-content p:first-child::first-letter {
+  color: hsl(var(--gold));
+}
+
 @keyframes fadeUp {
   from {
     opacity: 0;
