@@ -173,9 +173,6 @@ const MeetTheLeague = () => {
                   {/* Header */}
                   <div className="bg-gradient-to-r from-primary/20 to-accent/20 p-6 md:p-8">
                     <div className="flex flex-col md:flex-row items-start gap-6">
-                      {/* Team Logo */}
-                      <TeamLogo teamName={currentGovernor.teamName} size="lg" className="w-16 h-16 md:w-20 md:h-20" />
-                      
                       {/* Avatar */}
                       <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center border-4 border-background shadow-lg overflow-hidden">
                         {currentGovernor.profileImageUrl ? (
@@ -208,6 +205,8 @@ const MeetTheLeague = () => {
                           )}
                         </div>
                       </div>
+                      {/* Team Logo - Right Side */}
+                      <TeamLogo teamName={currentGovernor.teamName} size="lg" className="w-16 h-16 md:w-20 md:h-20 hidden md:block" />
                     </div>
                   </div>
 
