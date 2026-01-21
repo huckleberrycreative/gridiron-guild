@@ -67,9 +67,9 @@ const Index = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Main Content - Weekly Recap (75%) */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Main Content - Weekly Recap (66%) */}
+          <div className="lg:col-span-2 order-2 lg:order-1">
             {/* Featured Recap */}
             <motion.article
               initial="hidden"

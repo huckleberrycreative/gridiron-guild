@@ -10,8 +10,9 @@ import maryWashingtonFireAnts from '@/assets/logos/mary-washington-fire-ants.jpg
 import nepoBeachGuppies from '@/assets/logos/nepo-beach-guppies.png';
 import { cn } from '@/lib/utils';
 
-// Map team names to their logo imports
+// Map team names to their logo imports (supports both with and without "The" prefix)
 const teamLogos: Record<string, string> = {
+  // Without "The" prefix (database format)
   'Chicago Dawgs': chicagoDawgs,
   'Sylvan Park Forresters': sylvanParkForresters,
   'Germantown Gamblers': germantownGamblers,
@@ -22,6 +23,19 @@ const teamLogos: Record<string, string> = {
   'Miami Area Ken Francis Experience': kenFrancisExperience,
   'West NY Mary Washington Fire Ants': maryWashingtonFireAnts,
   'Nepo Beach Guppies': nepoBeachGuppies,
+  // With "The" prefix (local leagueData format)
+  'The Chicago Dawgs': chicagoDawgs,
+  'The Sylvan Park Forresters': sylvanParkForresters,
+  'The Germantown Gamblers': germantownGamblers,
+  'The Abbattabad Geronimos': geronimos,
+  'The Abbottabad Geronimos': geronimos,
+  'The Queen City Harambes': queenCityHarambes,
+  'The Franklin Fanatics': franklinFanatics,
+  'The Nashville Kats': nashvilleKats,
+  'The Miami Area Ken Francis Experience': kenFrancisExperience,
+  'The Florida Area Ken Francis Experience': kenFrancisExperience,
+  'The West NY Mary Washington Fire Ants': maryWashingtonFireAnts,
+  'The Nepo Beach Guppies': nepoBeachGuppies,
 };
 
 interface TeamLogoProps {
@@ -42,6 +56,7 @@ export const TeamLogo = ({ teamName, size = 'md', className }: TeamLogoProps) =>
   if (!logoUrl) {
     // Fallback to initials if no logo found
     const initials = teamName
+      .replace(/^The\s+/i, '') // Remove "The" prefix
       .split(' ')
       .map(word => word[0])
       .join('')
