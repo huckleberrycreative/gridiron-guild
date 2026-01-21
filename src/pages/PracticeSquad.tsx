@@ -139,26 +139,12 @@ const PracticeSquad = () => {
             </div>
           ) : practiceSquadPlayers && practiceSquadPlayers.length > 0 ? (
             <>
-              {/* Practice Squad Table */}
+            {/* Team Summary Cards */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <SortableTable
-                  data={practiceSquadPlayers}
-                  columns={columns}
-                  defaultSortKey="teamName"
-                  className="shadow-md"
-                />
-              </motion.div>
-
-              {/* Team Summary Cards */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
               >
                 {Object.entries(playersByTeam).map(([teamName, players]) => (
                   <div key={teamName} className="bg-card border border-border rounded-lg p-4">
