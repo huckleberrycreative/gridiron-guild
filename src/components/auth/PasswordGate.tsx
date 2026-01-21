@@ -56,7 +56,7 @@ export const PasswordGate = ({ children }: PasswordGateProps) => {
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Shield className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="font-display text-2xl font-bold text-center">THE SHIELD</h1>
+            <h1 className="font-display text-2xl font-bold text-center">MEN'S LEAGUE</h1>
             <p className="text-muted-foreground text-center mt-2">
               Enter the password to access the site
             </p>
