@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { PasswordGate } from "./components/auth/PasswordGate";
 import AdminLayout from "./components/layout/AdminLayout";
 import Index from "./pages/Index";
 import Standings from "./pages/Standings";
@@ -46,59 +47,61 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/standings" element={<Standings />} />
-            <Route path="/stats" element={<Stats />} />
-            <Route path="/salaries" element={<Salaries />} />
-            <Route path="/recaps" element={<Recaps />} />
-            <Route path="/constitution" element={<Constitution />} />
-            <Route path="/team-captains" element={<TeamCaptains />} />
-            <Route path="/practice-squad" element={<PracticeSquad />} />
-            <Route path="/coaching-carousel" element={<CoachingCarousel />} />
-            <Route path="/meet-the-league" element={<MeetTheLeague />} />
-            <Route path="/lore" element={<Lore />} />
-            <Route path="/historic-analytics" element={<HistoricAnalytics />} />
-            <Route path="/pantheon" element={<Pantheon />} />
-            <Route path="/manifesto" element={<Manifesto />} />
-            <Route path="/season-2025" element={<Season2025 />} />
-            <Route path="/rivalry-week" element={<RivalryWeek />} />
-            <Route path="/rookie-draft" element={<RookieDraft />} />
+        <PasswordGate>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/standings" element={<Standings />} />
+              <Route path="/stats" element={<Stats />} />
+              <Route path="/salaries" element={<Salaries />} />
+              <Route path="/recaps" element={<Recaps />} />
+              <Route path="/constitution" element={<Constitution />} />
+              <Route path="/team-captains" element={<TeamCaptains />} />
+              <Route path="/practice-squad" element={<PracticeSquad />} />
+              <Route path="/coaching-carousel" element={<CoachingCarousel />} />
+              <Route path="/meet-the-league" element={<MeetTheLeague />} />
+              <Route path="/lore" element={<Lore />} />
+              <Route path="/historic-analytics" element={<HistoricAnalytics />} />
+              <Route path="/pantheon" element={<Pantheon />} />
+              <Route path="/manifesto" element={<Manifesto />} />
+              <Route path="/season-2025" element={<Season2025 />} />
+              <Route path="/rivalry-week" element={<RivalryWeek />} />
+              <Route path="/rookie-draft" element={<RookieDraft />} />
 
-            {/* Dynamic pages route */}
-            <Route path="/pages/:slug" element={<DynamicPage />} />
+              {/* Dynamic pages route */}
+              <Route path="/pages/:slug" element={<DynamicPage />} />
 
-            {/* Admin routes */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="teams" element={<AdminTeams />} />
-              <Route path="seasons" element={<AdminSeasons />} />
-              <Route path="standings" element={<AdminStandings />} />
-              <Route path="playoffs" element={<AdminPlayoffs />} />
-              <Route path="salaries" element={<AdminPlayerSalaries />} />
-              <Route path="weekly-recaps" element={<AdminWeeklyRecaps />} />
-              <Route path="media" element={<AdminMedia />} />
-              <Route path="page-content" element={<AdminPageContent />} />
-              <Route path="pantheon" element={<AdminPantheon />} />
-              <Route path="coaches" element={<AdminCoaches />} />
-            </Route>
+              {/* Admin routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="teams" element={<AdminTeams />} />
+                <Route path="seasons" element={<AdminSeasons />} />
+                <Route path="standings" element={<AdminStandings />} />
+                <Route path="playoffs" element={<AdminPlayoffs />} />
+                <Route path="salaries" element={<AdminPlayerSalaries />} />
+                <Route path="weekly-recaps" element={<AdminWeeklyRecaps />} />
+                <Route path="media" element={<AdminMedia />} />
+                <Route path="page-content" element={<AdminPageContent />} />
+                <Route path="pantheon" element={<AdminPantheon />} />
+                <Route path="coaches" element={<AdminCoaches />} />
+              </Route>
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </PasswordGate>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
