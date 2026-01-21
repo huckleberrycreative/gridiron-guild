@@ -95,13 +95,15 @@ interface TeamCoachCardProps {
 const TeamCoachCard = ({ team }: TeamCoachCardProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const hasMultipleCoaches = team.coaches.length > 1;
+  const visibleCards = Math.min(team.coaches.length, 3);
+  const maxIndex = Math.max(0, team.coaches.length - visibleCards);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   };
 
   const goToNext = () => {
-    setCurrentIndex((prev) => Math.min(prev + 1, team.coaches.length - 1));
+    setCurrentIndex((prev) => Math.min(prev + 1, maxIndex));
   };
 
   return (
@@ -137,7 +139,7 @@ const TeamCoachCard = ({ team }: TeamCoachCardProps) => {
           <div className="flex-1 overflow-hidden">
             <div
               className="flex transition-transform duration-300 ease-in-out gap-4"
-              style={{ transform: `translateX(-${currentIndex * (100 / Math.min(team.coaches.length, 3))}%)` }}
+              style={{ transform: `translateX(calc(-${currentIndex} * (100% / ${visibleCards} + 1rem)))` }}
             >
               {team.coaches.map((coach, idx) => (
                 <div
@@ -149,7 +151,7 @@ const TeamCoachCard = ({ team }: TeamCoachCardProps) => {
                     'w-[calc(33.333%-0.667rem)]'
                   )}
                 >
-                  <CoachCard coach={coach} isHighlighted={idx === currentIndex} />
+                  <CoachCard coach={coach} isHighlighted={idx >= currentIndex && idx < currentIndex + visibleCards} />
                 </div>
               ))}
             </div>
@@ -159,10 +161,10 @@ const TeamCoachCard = ({ team }: TeamCoachCardProps) => {
           {hasMultipleCoaches && (
             <button
               onClick={goToNext}
-              disabled={currentIndex === team.coaches.length - 1}
+              disabled={currentIndex >= maxIndex}
               className={cn(
                 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all',
-                currentIndex === team.coaches.length - 1
+                currentIndex >= maxIndex
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-secondary hover:bg-accent hover:text-accent-foreground'
               )}
@@ -174,9 +176,9 @@ const TeamCoachCard = ({ team }: TeamCoachCardProps) => {
         </div>
 
         {/* Dots Indicator */}
-        {hasMultipleCoaches && (
+        {team.coaches.length > visibleCards && (
           <div className="mt-4 flex items-center justify-center gap-2">
-            {team.coaches.map((_, idx) => (
+            {Array.from({ length: maxIndex + 1 }).map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
@@ -186,7 +188,7 @@ const TeamCoachCard = ({ team }: TeamCoachCardProps) => {
                     ? 'bg-accent w-6'
                     : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
                 )}
-                aria-label={`Go to coach ${idx + 1}`}
+                aria-label={`Go to position ${idx + 1}`}
               />
             ))}
           </div>
