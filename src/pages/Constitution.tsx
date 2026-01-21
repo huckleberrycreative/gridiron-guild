@@ -317,11 +317,31 @@ const Constitution = () => {
                         </p>
 
                         {/* Signature area */}
-                        <div className="mt-12 grid grid-cols-2 md:grid-cols-5 gap-6">
-                          {['M. Johnson', 'S. Williams', 'A. Thompson', 'J. Chen', 'E. Davis'].map((name, i) => (
-                            <div key={i} className="text-center">
-                              <div className="w-20 h-px bg-neutral-400 mx-auto mb-2" />
-                              <p className="font-serif text-sm text-neutral-500 italic">{name}</p>
+                        <div className="mt-12 grid grid-cols-2 md:grid-cols-5 gap-8">
+                          {[
+                            { name: 'Ben Holcomb', style: 'italic tracking-wide', script: 'Ben Holcomb' },
+                            { name: 'Dino Nicandros', style: 'tracking-widest font-light', script: 'Dino Nicandros' },
+                            { name: 'Connor Miller', style: 'italic font-bold tracking-tight', script: 'Connor Miller' },
+                            { name: 'Pierce Reynolds', style: 'tracking-wide font-medium', script: 'Pierce Reynolds' },
+                            { name: 'Cameron Lee', style: 'italic font-light tracking-wider', script: 'Cameron Lee' },
+                            { name: 'Peter Fazio', style: 'font-bold tracking-normal', script: 'Peter Fazio' },
+                            { name: 'Dan Hare', style: 'italic tracking-widest font-medium', script: 'Dan Hare' },
+                            { name: 'Bryce Fisher', style: 'tracking-tight italic', script: 'Bryce Fisher' },
+                            { name: 'Colin Brophy', style: 'font-medium tracking-wide', script: 'Colin Brophy' },
+                            { name: 'Wynn Wygal', style: 'italic font-bold tracking-wider', script: 'Wynn Wygal' },
+                          ].map((governor, i) => (
+                            <div key={i} className="text-center group">
+                              <p 
+                                className={`font-serif text-lg md:text-xl text-neutral-700 mb-1 transform -rotate-2 ${governor.style}`}
+                                style={{ 
+                                  fontFamily: 'Georgia, serif',
+                                  textShadow: '0.5px 0.5px 0px rgba(0,0,0,0.1)'
+                                }}
+                              >
+                                {governor.script}
+                              </p>
+                              <div className="w-24 h-px bg-neutral-400 mx-auto mb-1" />
+                              <p className="font-serif text-xs text-neutral-500">{governor.name}</p>
                             </div>
                           ))}
                         </div>
