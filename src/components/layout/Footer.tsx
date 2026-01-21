@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Mail, ExternalLink } from 'lucide-react';
+import { Mail, ExternalLink } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 export function Footer() {
   return (
@@ -9,21 +10,20 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-accent-foreground" />
-              </div>
+              <img 
+                src={logo} 
+                alt="Men's League Logo" 
+                className="w-10 h-10 rounded-lg invert brightness-0 invert"
+              />
               <div>
                 <h3 className="font-display text-lg font-bold leading-none">
-                  GRIDIRON
+                  MEN'S LEAGUE
                 </h3>
-                <p className="text-xs text-primary-foreground/60 uppercase tracking-widest">
-                  Fantasy League
-                </p>
               </div>
             </div>
             <p className="text-primary-foreground/70 text-sm max-w-md">
-              The premier destination for fantasy football enthusiasts. Track your team, 
-              analyze stats, and dominate your league.
+              Every other fantasy league is living in the Dark Ages. Thankfully for us, 
+              we have the Commish, our most benevolent Dictator. LONG MAY HE REIGN!
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="mailto:commissioner@gridironleague.com"
+                  href="mailto:commissioner@mensleague.com"
                   className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-accent transition-colors duration-200"
                 >
                   <Mail size={14} />
@@ -80,7 +80,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-primary-foreground/10">
           <p className="text-center text-sm text-primary-foreground/50">
-            © {new Date().getFullYear()} Gridiron Fantasy League. All rights reserved.
+            © 2026 Men's League. Powered by The Commish.
           </p>
         </div>
       </div>
