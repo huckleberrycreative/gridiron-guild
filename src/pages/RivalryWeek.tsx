@@ -5,6 +5,7 @@ import { Swords, Trophy, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRivalries, Rivalry } from '@/hooks/useRivalries';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TeamLogo } from '@/components/TeamLogo';
 
 const RivalryWeek = () => {
   const { data: rivalries, isLoading, error } = useRivalries();
@@ -23,6 +24,10 @@ const RivalryWeek = () => {
     const team2Wins = rivalry.matchups.filter(m => m.winner === 'team2').length;
     return { team1Wins, team2Wins };
   };
+
+  // Helper to get display name (prefer team name, fall back to governor)
+  const getTeam1Display = (rivalry: Rivalry) => rivalry.team1_name || rivalry.team1_governor;
+  const getTeam2Display = (rivalry: Rivalry) => rivalry.team2_name || rivalry.team2_governor;
 
   if (isLoading) {
     return (
@@ -105,9 +110,17 @@ const RivalryWeek = () => {
                       )}
                     >
                       <span className="font-semibold block">{rivalry.game_name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {rivalry.team1_governor} vs {rivalry.team2_governor}
-                      </span>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        {rivalry.team1_name && (
+                          <TeamLogo teamName={rivalry.team1_name} size="sm" />
+                        )}
+                        <span className="truncate">{getTeam1Display(rivalry)}</span>
+                        <span>vs</span>
+                        {rivalry.team2_name && (
+                          <TeamLogo teamName={rivalry.team2_name} size="sm" />
+                        )}
+                        <span className="truncate">{getTeam2Display(rivalry)}</span>
+                      </div>
                     </button>
                   ))}
                 </nav>
@@ -156,11 +169,14 @@ const RivalryWeek = () => {
                     </div>
                   </div>
 
-                  {/* Matchup Header */}
+                  {/* Matchup Header with Teams & Logos */}
                   <div className="px-6 md:px-8 py-4 bg-muted/30 border-b border-border">
                     <div className="flex items-center justify-between">
-                      <div className="text-center flex-1">
-                        <p className="font-display font-bold text-lg">{currentRivalry.team1_governor}</p>
+                      <div className="text-center flex-1 flex flex-col items-center gap-2">
+                        {currentRivalry.team1_name && (
+                          <TeamLogo teamName={currentRivalry.team1_name} size="lg" />
+                        )}
+                        <p className="font-display font-bold text-lg">{getTeam1Display(currentRivalry)}</p>
                       </div>
                       <div className="px-6 text-center">
                         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">All-Time</p>
@@ -174,8 +190,11 @@ const RivalryWeek = () => {
                           </span>
                         </p>
                       </div>
-                      <div className="text-center flex-1">
-                        <p className="font-display font-bold text-lg">{currentRivalry.team2_governor}</p>
+                      <div className="text-center flex-1 flex flex-col items-center gap-2">
+                        {currentRivalry.team2_name && (
+                          <TeamLogo teamName={currentRivalry.team2_name} size="lg" />
+                        )}
+                        <p className="font-display font-bold text-lg">{getTeam2Display(currentRivalry)}</p>
                       </div>
                     </div>
                   </div>
@@ -201,17 +220,23 @@ const RivalryWeek = () => {
                     {/* Lifetime Record Banner */}
                     <div className="bg-muted/50 rounded-lg p-4 border border-border">
                       <div className="flex items-center justify-center gap-8">
-                        <div className="text-center">
+                        <div className="text-center flex flex-col items-center gap-2">
+                          {currentRivalry.team1_name && (
+                            <TeamLogo teamName={currentRivalry.team1_name} size="md" />
+                          )}
                           <p className="font-display font-bold text-2xl text-win">{record.team1Wins}</p>
-                          <p className="text-sm text-muted-foreground">{currentRivalry.team1_governor}</p>
+                          <p className="text-sm text-muted-foreground">{getTeam1Display(currentRivalry)}</p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">Lifetime Record</p>
                           <Swords className="mx-auto my-1 text-accent" size={24} />
                         </div>
-                        <div className="text-center">
+                        <div className="text-center flex flex-col items-center gap-2">
+                          {currentRivalry.team2_name && (
+                            <TeamLogo teamName={currentRivalry.team2_name} size="md" />
+                          )}
                           <p className="font-display font-bold text-2xl text-win">{record.team2Wins}</p>
-                          <p className="text-sm text-muted-foreground">{currentRivalry.team2_governor}</p>
+                          <p className="text-sm text-muted-foreground">{getTeam2Display(currentRivalry)}</p>
                         </div>
                       </div>
                     </div>
@@ -226,38 +251,64 @@ const RivalryWeek = () => {
                           <thead>
                             <tr className="border-b border-border bg-muted/30">
                               <th className="text-left py-3 px-4 font-semibold">Season</th>
-                              <th className="text-center py-3 px-4 font-semibold">{currentRivalry.team1_governor}</th>
-                              <th className="text-center py-3 px-4 font-semibold">{currentRivalry.team2_governor}</th>
+                              <th className="text-center py-3 px-4 font-semibold">
+                                <div className="flex items-center justify-center gap-2">
+                                  {currentRivalry.team1_name && (
+                                    <TeamLogo teamName={currentRivalry.team1_name} size="sm" />
+                                  )}
+                                  <span className="truncate">{getTeam1Display(currentRivalry)}</span>
+                                </div>
+                              </th>
+                              <th className="text-center py-3 px-4 font-semibold">
+                                <div className="flex items-center justify-center gap-2">
+                                  {currentRivalry.team2_name && (
+                                    <TeamLogo teamName={currentRivalry.team2_name} size="sm" />
+                                  )}
+                                  <span className="truncate">{getTeam2Display(currentRivalry)}</span>
+                                </div>
+                              </th>
                               <th className="text-right py-3 px-4 font-semibold">Winner</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {currentRivalry.matchups.map((matchup) => (
-                              <tr key={matchup.season} className="border-b border-border hover:bg-muted/20">
-                                <td className="py-3 px-4 font-mono font-bold">{matchup.season}</td>
-                                <td className={cn(
-                                  'py-3 px-4 text-center font-mono',
-                                  matchup.winner === 'team1' ? 'text-win font-bold' : ''
-                                )}>
-                                  {matchup.team1_score.toFixed(2)}
-                                </td>
-                                <td className={cn(
-                                  'py-3 px-4 text-center font-mono',
-                                  matchup.winner === 'team2' ? 'text-win font-bold' : ''
-                                )}>
-                                  {matchup.team2_score.toFixed(2)}
-                                </td>
-                                <td className="py-3 px-4 text-right">
-                                  <span className={cn(
-                                    'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold',
-                                    'bg-win/20 text-win'
+                            {currentRivalry.matchups.map((matchup) => {
+                              const winnerTeamName = matchup.winner === 'team1' 
+                                ? getTeam1Display(currentRivalry) 
+                                : getTeam2Display(currentRivalry);
+                              const winnerLogoName = matchup.winner === 'team1'
+                                ? currentRivalry.team1_name
+                                : currentRivalry.team2_name;
+                              
+                              return (
+                                <tr key={matchup.season} className="border-b border-border hover:bg-muted/20">
+                                  <td className="py-3 px-4 font-mono font-bold">{matchup.season}</td>
+                                  <td className={cn(
+                                    'py-3 px-4 text-center font-mono',
+                                    matchup.winner === 'team1' ? 'text-win font-bold' : ''
                                   )}>
-                                    <Trophy size={12} />
-                                    {matchup.winner === 'team1' ? currentRivalry.team1_governor : currentRivalry.team2_governor}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
+                                    {matchup.team1_score.toFixed(2)}
+                                  </td>
+                                  <td className={cn(
+                                    'py-3 px-4 text-center font-mono',
+                                    matchup.winner === 'team2' ? 'text-win font-bold' : ''
+                                  )}>
+                                    {matchup.team2_score.toFixed(2)}
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <span className={cn(
+                                      'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold',
+                                      'bg-win/20 text-win'
+                                    )}>
+                                      {winnerLogoName && (
+                                        <TeamLogo teamName={winnerLogoName} size="sm" className="w-4 h-4" />
+                                      )}
+                                      <Trophy size={12} />
+                                      {winnerTeamName}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -268,9 +319,17 @@ const RivalryWeek = () => {
                       <div className="bg-gold/10 rounded-lg p-4 border border-gold/30 text-center">
                         <Trophy className="mx-auto mb-2 text-gold" size={32} />
                         <p className="font-display font-bold text-lg">{currentRivalry.trophy_name}</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Current Holder: {record.team1Wins >= record.team2Wins ? currentRivalry.team1_governor : currentRivalry.team2_governor}
-                        </p>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          {(record.team1Wins >= record.team2Wins ? currentRivalry.team1_name : currentRivalry.team2_name) && (
+                            <TeamLogo 
+                              teamName={(record.team1Wins >= record.team2Wins ? currentRivalry.team1_name : currentRivalry.team2_name)!} 
+                              size="md" 
+                            />
+                          )}
+                          <p className="text-sm text-muted-foreground">
+                            Current Holder: {record.team1Wins >= record.team2Wins ? getTeam1Display(currentRivalry) : getTeam2Display(currentRivalry)}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
