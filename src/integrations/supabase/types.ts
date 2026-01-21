@@ -292,6 +292,7 @@ export type Database = {
           id: string
           number: number | null
           player_id: string
+          practice_squad: boolean
           rookie_draft_round: string | null
           salary_2025: string | null
           salary_2026: string | null
@@ -309,6 +310,7 @@ export type Database = {
           id?: string
           number?: number | null
           player_id: string
+          practice_squad?: boolean
           rookie_draft_round?: string | null
           salary_2025?: string | null
           salary_2026?: string | null
@@ -326,6 +328,7 @@ export type Database = {
           id?: string
           number?: number | null
           player_id?: string
+          practice_squad?: boolean
           rookie_draft_round?: string | null
           salary_2025?: string | null
           salary_2026?: string | null

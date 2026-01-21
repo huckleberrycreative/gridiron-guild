@@ -9,6 +9,7 @@ export interface PlayerSalaryWithDetails {
   fantasyTeam: string;
   teamId: string | null;
   franchiseTag: boolean;
+  practiceSquad: boolean;
   rookieDraftRound?: string;
   salary2026?: string;
   salary2027?: string;
@@ -41,6 +42,7 @@ export function usePlayerSalaries() {
         fantasyTeam: s.team?.name || 'Free Agent',
         teamId: s.team_id,
         franchiseTag: s.franchise_tag || false,
+        practiceSquad: s.practice_squad || false,
         rookieDraftRound: s.rookie_draft_round || undefined,
         // Remove $ prefix if present since we add it in the UI
         salary2026: s.salary_2026?.replace(/^\$/, '') || undefined,
