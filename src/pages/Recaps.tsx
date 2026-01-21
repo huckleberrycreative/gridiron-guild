@@ -140,7 +140,7 @@ const Recaps = () => {
                     {/* Content */}
                     <div className="p-6 md:p-8">
                       <div 
-                        className="prose prose-invert max-w-none [&>p:first-child]:text-lg [&>p:first-child]:leading-relaxed [&>p:first-child]:first-letter:text-4xl [&>p:first-child]:first-letter:font-display [&>p:first-child]:first-letter:font-bold [&>p:first-child]:first-letter:float-left [&>p:first-child]:first-letter:mr-2 [&>p:first-child]:first-letter:mt-1"
+                        className="blog-content prose prose-invert max-w-none"
                         dangerouslySetInnerHTML={{ __html: recap.content || '' }}
                       />
                     </div>
