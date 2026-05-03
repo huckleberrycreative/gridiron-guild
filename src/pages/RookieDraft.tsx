@@ -129,25 +129,23 @@ const RookieDraft = () => {
     return acc;
   }, {} as Record<number, DraftPick[]>) || {};
 
-  const handleDragStart = (player: RookiePlayer) => {
-    setDraggedPlayer(player);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedPlayer(null);
-  };
-
-
-  const handleDrop = (pick: DraftPick) => {
+  const handleDraftPlayer = (player: RookiePlayer) => {
     if (isLocked) return;
-    if (!draggedPlayer) return;
-    if (pick.selected_player_id) return;
-
+    if (!selectedPickId) {
+      toast.error('Select a draft pick first');
+      return;
+    }
+    const pick = draftPicks?.find(p => p.id === selectedPickId);
+    if (!pick) return;
+    if (pick.selected_player_id) {
+      toast.error('That pick already has a player');
+      return;
+    }
     updatePick.mutate({
-      pickId: pick.id,
-      selectedPlayerId: draggedPlayer.id,
+      pickId: selectedPickId,
+      selectedPlayerId: player.id,
     });
-    setDraggedPlayer(null);
+    setSelectedPickId(null);
   };
 
   const handleRemovePlayer = (pick: DraftPick) => {
