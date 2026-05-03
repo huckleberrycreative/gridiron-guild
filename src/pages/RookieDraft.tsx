@@ -60,12 +60,20 @@ const RookieDraft = () => {
     draftPicks?.filter(p => p.selected_player_id).map(p => p.selected_player_id) || []
   );
 
-  // Filter available players
-  const availablePlayers = rookiePool?.filter(player => {
-    if (draftedPlayerIds.has(player.id)) return false;
-    if (positionFilter !== 'all' && player.position !== positionFilter) return false;
-    return true;
-  }) || [];
+  // Parse rank from notes ("Rank 12") for sort/display
+  const parseRank = (notes: string | null): number => {
+    const m = notes?.match(/Rank\s+(\d+)/i);
+    return m ? parseInt(m[1], 10) : 9999;
+  };
+
+  // Filter available players, sorted by rank
+  const availablePlayers = (rookiePool || [])
+    .filter((player) => {
+      if (draftedPlayerIds.has(player.id)) return false;
+      if (positionFilter !== 'all' && player.position !== positionFilter) return false;
+      return true;
+    })
+    .sort((a, b) => parseRank(a.notes) - parseRank(b.notes));
 
   // Get unique positions for filter
   const positions = [...new Set(rookiePool?.map(p => p.position) || [])].sort();
