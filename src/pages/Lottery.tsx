@@ -258,7 +258,7 @@ const Lottery = () => {
               </h2>
               <AnimatePresence>
                 {[4, 3, 2, 1].map((pickNum) => {
-                  const visible = revealedCount >= pickNum;
+                  const visible = revealedFrom <= pickNum;
                   if (!visible) return null;
                   const team = result[pickNum - 1];
                   const isFirst = pickNum === 1;
@@ -309,7 +309,7 @@ const Lottery = () => {
                 })}
               </AnimatePresence>
 
-              {revealedCount >= 4 && (
+              {revealedFrom <= 1 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
