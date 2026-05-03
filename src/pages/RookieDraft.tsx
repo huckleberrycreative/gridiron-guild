@@ -164,7 +164,20 @@ const RookieDraft = () => {
     });
   };
 
-  const handleTeamChange = (pickId: string, teamId: string) => {
+  const handleClearDraft = async () => {
+    if (!isAdmin || isLocked) return;
+    if (!confirm('Clear ALL drafted players for this year? Team assignments stay.')) return;
+    const { error } = await supabase
+      .from('draft_picks')
+      .update({ selected_player_id: null })
+      .eq('draft_year', draftYear);
+    if (error) {
+      toast.error('Failed to clear draft');
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['draft-picks'] });
+    toast.success('Draft cleared');
+  };
     if (isLocked || !isAdmin) return;
     updatePick.mutate({
       pickId,
