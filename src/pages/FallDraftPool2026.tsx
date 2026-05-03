@@ -216,8 +216,8 @@ const FallDraftPool2026 = () => {
           )}
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Expected cost: top 10% of each position starts at the position max
-            (QB $180, RB $250, WR $203, TE $157), then halves each subsequent 10% tier.
+            Expected cost: Top 5 at each position start at the base (QB $200, RB $250, WR $200, TE $100).
+            QB/WR drop 25% every 5 players; RB/TE drop 50% every 5 players.
           </p>
         </div>
       </section>
