@@ -178,6 +178,8 @@ const RookieDraft = () => {
     queryClient.invalidateQueries({ queryKey: ['draft-picks'] });
     toast.success('Draft cleared');
   };
+
+  const handleTeamChange = (pickId: string, teamId: string) => {
     if (isLocked || !isAdmin) return;
     updatePick.mutate({
       pickId,
