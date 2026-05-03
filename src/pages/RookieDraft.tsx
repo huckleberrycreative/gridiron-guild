@@ -238,18 +238,21 @@ const RookieDraft = () => {
                           </div>
                           {/* Pick Rows */}
                           <div className="space-y-2">
-                            {(picksByRound[round] || []).map(pick => (
+                            {(picksByRound[round] || []).map(pick => {
+                              const isSelected = selectedPickId === pick.id;
+                              const canSelect = !isLocked && !pick.selected_player_id;
+                              return (
                               <div
                                 key={pick.id}
+                                onClick={() => {
+                                  if (canSelect) setSelectedPickId(isSelected ? null : pick.id);
+                                }}
                                 className={cn(
                                   "grid grid-cols-[80px_1fr_1fr] gap-4 items-center p-3 rounded-lg border transition-all",
-                                  draggedPlayer && !pick.selected_player_id && "border-dashed border-accent bg-accent/5",
+                                  canSelect && "cursor-pointer hover:border-accent",
+                                  isSelected && "border-accent border-2 bg-accent/10 ring-2 ring-accent/30",
                                   pick.selected_player_id && "bg-secondary/50"
                                 )}
-                                onDragOver={(e) => {
-                                  if (!pick.selected_player_id) e.preventDefault();
-                                }}
-                                onDrop={() => handleDrop(pick)}
                               >
                                 {/* Pick Number */}
                                 <div className="font-bold text-foreground">
