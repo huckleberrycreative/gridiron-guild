@@ -20,7 +20,8 @@ const positionColors: Record<string, string> = {
   TE: 'bg-amber-100 text-amber-700 border-amber-200',
 };
 
-const POSITION_BASE: Record<string, number> = { QB: 180, RB: 250, WR: 203, TE: 157 };
+const POSITION_BASE: Record<string, number> = { QB: 200, RB: 250, WR: 200, TE: 100 };
+const POSITION_DROP: Record<string, number> = { QB: 0.75, RB: 0.5, WR: 0.75, TE: 0.5 };
 const FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE'] as const;
 
 // normalize names for matching against the rostered list
