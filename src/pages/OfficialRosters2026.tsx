@@ -194,7 +194,7 @@ const OfficialRosters2026 = () => {
                       );
                     })}
                     <tr className="bg-muted/40 font-semibold">
-                      <td className="px-4 py-3" colSpan={5}>
+                      <td className="px-4 py-3" colSpan={4}>
                         <span className="font-display uppercase tracking-wider text-xs">2026 Total Committed</span>
                       </td>
                       <td className="text-right px-3 py-3 font-mono">${totalSpent}</td>
