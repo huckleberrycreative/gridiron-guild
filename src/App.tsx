@@ -25,6 +25,7 @@ import Season2025 from "./pages/Season2025";
 import RivalryWeek from "./pages/RivalryWeek";
 import RookieDraft from "./pages/RookieDraft";
 import OfficialRosters2026 from "./pages/OfficialRosters2026";
+import FallDraftPool2026 from "./pages/FallDraftPool2026";
 import NotFound from "./pages/NotFound";
 
 // Admin pages
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/rivalry-week" element={<RivalryWeek />} />
               <Route path="/rookie-draft" element={<RookieDraft />} />
               <Route path="/official-rosters-2026" element={<OfficialRosters2026 />} />
+              <Route path="/fall-draft-pool-2026" element={<FallDraftPool2026 />} />
 
               {/* Dynamic pages route */}
               <Route path="/pages/:slug" element={<DynamicPage />} />

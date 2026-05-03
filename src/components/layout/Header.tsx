@@ -29,6 +29,7 @@ const navLinks: NavItem[] = [
     children: [
       { href: '/rookie-draft', label: 'Rookie Draft', description: 'Annual rookie selection board' },
       { href: '/official-rosters-2026', label: 'Official 2026 Rosters', description: 'Locked-in rosters and fall draft capital' },
+      { href: '/fall-draft-pool-2026', label: '2026 Fall Draft Pool', description: 'Available players with expected draft cost' },
       { href: '/salaries', label: 'Player Salaries', description: 'Contract values and salary progression' },
       { href: '/team-captains', label: 'Team Captains', description: 'Weekly captain selections' },
       { href: '/practice-squad', label: 'Practice Squad', description: 'Roster management' },
