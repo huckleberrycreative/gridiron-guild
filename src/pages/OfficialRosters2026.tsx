@@ -149,7 +149,7 @@ const OfficialRosters2026 = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 border-b border-border">
                     <tr>
-                      <th className="text-left px-4 py-3 font-display uppercase tracking-wider text-xs">Slot</th>
+                      
                       <th className="text-left px-4 py-3 font-display uppercase tracking-wider text-xs">Player</th>
                       <th className="text-center px-3 py-3 font-display uppercase tracking-wider text-xs">Pos</th>
                       <th className="text-center px-3 py-3 font-display uppercase tracking-wider text-xs">FT</th>
