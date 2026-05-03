@@ -310,12 +310,15 @@ const RookieDraft = () => {
                                   ) : (
                                     <div className="flex items-center gap-2 text-muted-foreground/50">
                                       <Users className="w-4 h-4" />
-                                      <span className="text-sm italic">Drop player here</span>
+                                      <span className="text-sm italic">
+                                        {selectedPickId === pick.id ? 'Selected — pick a player →' : 'Click to select'}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </CardContent>
                       </Card>
