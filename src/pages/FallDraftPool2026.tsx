@@ -49,10 +49,10 @@ const parseCsv = (text: string): Row[] => {
     }
     cells.push(cur);
     const rank = parseInt(cells[0], 10);
-    const name = cells[2]?.trim();
-    const team = cells[3]?.trim();
-    const posRaw = cells[4]?.trim() || '';
-    const age = cells[5]?.trim() || '';
+    const name = cells[1]?.trim();
+    const team = cells[2]?.trim();
+    const posRaw = cells[3]?.trim() || '';
+    const age = cells[4]?.trim() || '';
     const pos = posRaw.replace(/\d+$/, '') as Row['position'];
     if (!['QB', 'RB', 'WR', 'TE'].includes(pos)) continue;
     if (!name || isNaN(rank)) continue;
