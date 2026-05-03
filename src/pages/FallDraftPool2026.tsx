@@ -20,7 +20,8 @@ const positionColors: Record<string, string> = {
   TE: 'bg-amber-100 text-amber-700 border-amber-200',
 };
 
-const POSITION_BASE: Record<string, number> = { QB: 180, RB: 250, WR: 203, TE: 157 };
+const POSITION_BASE: Record<string, number> = { QB: 200, RB: 250, WR: 200, TE: 100 };
+const POSITION_DROP: Record<string, number> = { QB: 0.75, RB: 0.5, WR: 0.75, TE: 0.5 };
 const FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE'] as const;
 
 // normalize names for matching against the rostered list
@@ -92,20 +93,18 @@ const FallDraftPool2026 = () => {
     [rows, rosteredSet]
   );
 
-  // Compute expected cost: rank players within their position by avg rank,
-  // assign deciles, cost = base * 0.5^decile.
+  // Cost: top 5 of position = base, then multiply by drop factor every 5 players.
   const withCost = useMemo(() => {
     const byPos: Record<string, Row[]> = { QB: [], RB: [], WR: [], TE: [] };
     available.forEach((r) => byPos[r.position].push(r));
     Object.values(byPos).forEach((list) => list.sort((a, b) => a.rank - b.rank));
     const costs = new Map<string, number>();
     (Object.keys(byPos) as Array<keyof typeof byPos>).forEach((pos) => {
-      const list = byPos[pos];
-      const n = list.length;
       const base = POSITION_BASE[pos];
-      list.forEach((row, idx) => {
-        const decile = Math.min(9, Math.floor((idx / Math.max(n, 1)) * 10));
-        const raw = base * Math.pow(0.5, decile);
+      const drop = POSITION_DROP[pos];
+      byPos[pos].forEach((row, idx) => {
+        const tier = Math.floor(idx / 5);
+        const raw = base * Math.pow(drop, tier);
         const cost = Math.max(1, Math.round(raw));
         costs.set(`${row.position}-${row.rank}-${row.name}`, cost);
       });
@@ -217,8 +216,8 @@ const FallDraftPool2026 = () => {
           )}
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Expected cost: top 10% of each position starts at the position max
-            (QB $180, RB $250, WR $203, TE $157), then halves each subsequent 10% tier.
+            Expected cost: Top 5 at each position start at the base (QB $200, RB $250, WR $200, TE $100).
+            QB/WR drop 25% every 5 players; RB/TE drop 50% every 5 players.
           </p>
         </div>
       </section>
