@@ -39,7 +39,7 @@ const OfficialRosters2026 = () => {
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const [teamId, setTeamId] = useState<string | null>(null);
 
-  const roster: RosterRow[] = useMemo(() => {
+  const allRows: RosterRow[] = useMemo(() => {
     if (!teamId) return [];
     return salaries
       .filter((s) => s.teamId === teamId)
@@ -53,13 +53,19 @@ const OfficialRosters2026 = () => {
         s2027: toNum(s.salary2027),
         s2028: toNum(s.salary2028),
         s2029: toNum(s.salary2029),
-      }))
-      .sort((a, b) => {
-        const p = (POS_ORDER[a.position] || 99) - (POS_ORDER[b.position] || 99);
-        if (p !== 0) return p;
-        return (b.s2026 ?? 0) - (a.s2026 ?? 0);
-      });
+      }));
   }, [teamId, salaries]);
+
+  const roster = allRows
+    .filter((r) => !r.ps)
+    .sort((a, b) => {
+      const p = (POS_ORDER[a.position] || 99) - (POS_ORDER[b.position] || 99);
+      if (p !== 0) return p;
+      return (b.s2026 ?? 0) - (a.s2026 ?? 0);
+    });
+
+  const practiceSquad = allRows.filter((r) => r.ps);
+  const psSlots: (RosterRow | null)[] = [0, 1, 2].map((i) => practiceSquad[i] ?? null);
 
   const totalSpent = roster.reduce((sum, r) => sum + (r.s2026 ?? 0), 0);
   const fallDraftCapital = 1000 - totalSpent;
@@ -200,6 +206,55 @@ const OfficialRosters2026 = () => {
                       <td className="text-right px-3 py-3 font-mono">${totalSpent}</td>
                       <td colSpan={3}></td>
                     </tr>
+                  </tbody>
+                </table>
+              </motion.div>
+
+              <motion.div
+                key={teamId + '-ps'}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="mt-6 overflow-x-auto rounded-lg border border-border bg-card shadow-md"
+              >
+                <div className="bg-muted/50 border-b border-border px-4 py-3">
+                  <h3 className="font-display uppercase tracking-wider text-sm font-bold">
+                    Rookie Practice Squad
+                  </h3>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/30 border-b border-border">
+                    <tr>
+                      <th className="text-left px-4 py-2 font-display uppercase tracking-wider text-xs w-16">Slot</th>
+                      <th className="text-left px-4 py-2 font-display uppercase tracking-wider text-xs">Player</th>
+                      <th className="text-center px-3 py-2 font-display uppercase tracking-wider text-xs">Pos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {psSlots.map((p, i) => (
+                      <tr key={i} className="border-b border-border/50 last:border-0">
+                        <td className="px-4 py-3 font-mono text-muted-foreground">#{i + 1}</td>
+                        <td className="px-4 py-3">
+                          {p ? (
+                            <span className="font-medium">{p.firstName} {p.lastName}</span>
+                          ) : (
+                            <span className="text-muted-foreground italic">Empty</span>
+                          )}
+                        </td>
+                        <td className="text-center px-3 py-3">
+                          {p ? (
+                            <span className={cn(
+                              'inline-flex items-center justify-center w-8 h-7 rounded text-[10px] font-display font-bold border',
+                              positionColors[p.position] || 'bg-gray-100 text-gray-700 border-gray-200'
+                            )}>
+                              {p.position}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </motion.div>
