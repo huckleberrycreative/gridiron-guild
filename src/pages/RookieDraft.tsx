@@ -155,8 +155,28 @@ const RookieDraft = () => {
     });
   };
 
+  const handleDrop = (pick: DraftPick) => {
+    if (isLocked) return;
+    if (!draggedPlayer) return;
+    if (pick.selected_player_id) return;
+
+    updatePick.mutate({
+      pickId: pick.id,
+      selectedPlayerId: draggedPlayer.id,
+    });
+    setDraggedPlayer(null);
+  };
+
+  const handleRemovePlayer = (pick: DraftPick) => {
+    if (isLocked) return;
+    updatePick.mutate({
+      pickId: pick.id,
+      selectedPlayerId: null,
+    });
+  };
+
   const handleTeamChange = (pickId: string, teamId: string) => {
-    if (!isAdmin) return;
+    if (isLocked) return;
     updatePick.mutate({
       pickId,
       teamId: teamId === 'none' ? null : teamId,
