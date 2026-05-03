@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, GripVertical, X, Lock } from 'lucide-react';
+import { Users, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ const positionColors: Record<string, string> = {
 const RookieDraft = () => {
   const [draftYear, setDraftYear] = useState(CURRENT_YEAR);
   const [positionFilter, setPositionFilter] = useState<string>('all');
-  const [draggedPlayer, setDraggedPlayer] = useState<RookiePlayer | null>(null);
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null);
 
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -129,25 +129,23 @@ const RookieDraft = () => {
     return acc;
   }, {} as Record<number, DraftPick[]>) || {};
 
-  const handleDragStart = (player: RookiePlayer) => {
-    setDraggedPlayer(player);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedPlayer(null);
-  };
-
-
-  const handleDrop = (pick: DraftPick) => {
+  const handleDraftPlayer = (player: RookiePlayer) => {
     if (isLocked) return;
-    if (!draggedPlayer) return;
-    if (pick.selected_player_id) return;
-
+    if (!selectedPickId) {
+      toast.error('Select a draft pick first');
+      return;
+    }
+    const pick = draftPicks?.find(p => p.id === selectedPickId);
+    if (!pick) return;
+    if (pick.selected_player_id) {
+      toast.error('That pick already has a player');
+      return;
+    }
     updatePick.mutate({
-      pickId: pick.id,
-      selectedPlayerId: draggedPlayer.id,
+      pickId: selectedPickId,
+      selectedPlayerId: player.id,
     });
-    setDraggedPlayer(null);
+    setSelectedPickId(null);
   };
 
   const handleRemovePlayer = (pick: DraftPick) => {
@@ -240,18 +238,21 @@ const RookieDraft = () => {
                           </div>
                           {/* Pick Rows */}
                           <div className="space-y-2">
-                            {(picksByRound[round] || []).map(pick => (
+                            {(picksByRound[round] || []).map(pick => {
+                              const isSelected = selectedPickId === pick.id;
+                              const canSelect = !isLocked && !pick.selected_player_id;
+                              return (
                               <div
                                 key={pick.id}
+                                onClick={() => {
+                                  if (canSelect) setSelectedPickId(isSelected ? null : pick.id);
+                                }}
                                 className={cn(
                                   "grid grid-cols-[80px_1fr_1fr] gap-4 items-center p-3 rounded-lg border transition-all",
-                                  draggedPlayer && !pick.selected_player_id && "border-dashed border-accent bg-accent/5",
+                                  canSelect && "cursor-pointer hover:border-accent",
+                                  isSelected && "border-accent border-2 bg-accent/10 ring-2 ring-accent/30",
                                   pick.selected_player_id && "bg-secondary/50"
                                 )}
-                                onDragOver={(e) => {
-                                  if (!pick.selected_player_id) e.preventDefault();
-                                }}
-                                onDrop={() => handleDrop(pick)}
                               >
                                 {/* Pick Number */}
                                 <div className="font-bold text-foreground">
@@ -309,12 +310,15 @@ const RookieDraft = () => {
                                   ) : (
                                     <div className="flex items-center gap-2 text-muted-foreground/50">
                                       <Users className="w-4 h-4" />
-                                      <span className="text-sm italic">Drop player here</span>
+                                      <span className="text-sm italic">
+                                        {selectedPickId === pick.id ? 'Selected — pick a player →' : 'Click to select'}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </CardContent>
                       </Card>
@@ -397,16 +401,15 @@ const RookieDraft = () => {
                             return (
                               <div
                                 key={player.id}
-                                draggable
-                                onDragStart={() => handleDragStart(player)}
-                                onDragEnd={handleDragEnd}
+                                onClick={() => handleDraftPlayer(player)}
                                 className={cn(
-                                  "p-3 rounded-lg border bg-card transition-all cursor-grab hover:shadow-md hover:border-accent active:cursor-grabbing",
-                                  draggedPlayer?.id === player.id && "opacity-50"
+                                  "p-3 rounded-lg border bg-card transition-all",
+                                  selectedPickId && !isLocked
+                                    ? "cursor-pointer hover:shadow-md hover:border-accent hover:bg-accent/5"
+                                    : "cursor-default opacity-90"
                                 )}
                               >
                                 <div className="flex items-start gap-2">
-                                  <GripVertical className="w-4 h-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       {rank < 9999 && (
