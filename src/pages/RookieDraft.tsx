@@ -164,6 +164,21 @@ const RookieDraft = () => {
     });
   };
 
+  const handleClearDraft = async () => {
+    if (!isAdmin || isLocked) return;
+    if (!confirm('Clear ALL drafted players for this year? Team assignments stay.')) return;
+    const { error } = await supabase
+      .from('draft_picks')
+      .update({ selected_player_id: null })
+      .eq('draft_year', draftYear);
+    if (error) {
+      toast.error('Failed to clear draft');
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['draft-picks'] });
+    toast.success('Draft cleared');
+  };
+
   const handleTeamChange = (pickId: string, teamId: string) => {
     if (isLocked || !isAdmin) return;
     updatePick.mutate({
@@ -190,7 +205,7 @@ const RookieDraft = () => {
             </p>
             
             {/* Year Selector */}
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex justify-center items-center gap-3">
               <Select value={draftYear.toString()} onValueChange={(v) => setDraftYear(parseInt(v))}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -201,6 +216,11 @@ const RookieDraft = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {isAdmin && !isLocked && (
+                <Button variant="destructive" size="sm" onClick={handleClearDraft}>
+                  Clear Draft
+                </Button>
+              )}
             </div>
           </motion.div>
 
