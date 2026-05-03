@@ -46,11 +46,51 @@ const RookieDraft = () => {
   const [draggedPlayer, setDraggedPlayer] = useState<RookiePlayer | null>(null);
 
   const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const { data: rookiePool, isLoading: poolLoading } = useRookiePool(draftYear);
   const { data: draftPicks, isLoading: picksLoading } = useDraftPicks(draftYear);
   const { data: teams } = useTeams();
   const updatePick = useUpdateDraftPick();
   const initializePicks = useInitializeDraftPicks();
+
+  // Lock state stored in page_content
+  const lockKey = `locked_${draftYear}`;
+  const { data: lockRow } = useQuery({
+    queryKey: ['rookie-draft-lock', draftYear],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('page_content')
+        .select('id, content')
+        .eq('page_slug', 'rookie_draft')
+        .eq('section_key', lockKey)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const isLocked = lockRow?.content === 'true';
+
+  const handleFinalize = async () => {
+    if (!confirm('Finalize the draft? This will lock the page and prevent further changes.')) return;
+    if (lockRow?.id) {
+      await supabase.from('page_content').update({ content: 'true' }).eq('id', lockRow.id);
+    } else {
+      await supabase.from('page_content').insert({
+        page_slug: 'rookie_draft',
+        section_key: lockKey,
+        content_type: 'flag',
+        content: 'true',
+      });
+    }
+    queryClient.invalidateQueries({ queryKey: ['rookie-draft-lock', draftYear] });
+    toast.success('Draft finalized and locked.');
+  };
+
+  const handleUnlock = async () => {
+    if (!lockRow?.id) return;
+    await supabase.from('page_content').update({ content: 'false' }).eq('id', lockRow.id);
+    queryClient.invalidateQueries({ queryKey: ['rookie-draft-lock', draftYear] });
+    toast.success('Draft unlocked.');
+  };
 
   // Initialize draft picks for the year if they don't exist
   useEffect(() => {
