@@ -131,6 +131,10 @@ const RookieDraft = () => {
 
   const handleDraftPlayer = (player: RookiePlayer) => {
     if (isLocked) return;
+    if (!isAdmin) {
+      toast.error('Only admins can draft players');
+      return;
+    }
     if (!selectedPickId) {
       toast.error('Select a draft pick first');
       return;
@@ -153,7 +157,7 @@ const RookieDraft = () => {
   };
 
   const handleRemovePlayer = (pick: DraftPick) => {
-    if (isLocked) return;
+    if (isLocked || !isAdmin) return;
     updatePick.mutate({
       pickId: pick.id,
       selectedPlayerId: null,
@@ -161,7 +165,7 @@ const RookieDraft = () => {
   };
 
   const handleTeamChange = (pickId: string, teamId: string) => {
-    if (isLocked) return;
+    if (isLocked || !isAdmin) return;
     updatePick.mutate({
       pickId,
       teamId: teamId === 'none' ? null : teamId,
