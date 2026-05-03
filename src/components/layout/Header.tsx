@@ -34,6 +34,7 @@ const navLinks: NavItem[] = [
       { href: '/team-captains', label: 'Team Captains', description: 'Weekly captain selections' },
       { href: '/practice-squad', label: 'Practice Squad', description: 'Roster management' },
       { href: '/coaching-carousel', label: 'Coaching Carousel', description: 'Head coach histories' },
+      { href: '/lottery', label: 'Lottery', description: 'Ping pong ball draft lottery simulator' },
     ],
   },
   {
