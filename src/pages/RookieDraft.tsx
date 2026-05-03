@@ -86,7 +86,7 @@ const RookieDraft = () => {
   };
 
   const handleDrop = (pick: DraftPick) => {
-    if (!draggedPlayer || !isAdmin) return;
+    if (!draggedPlayer) return;
     if (pick.selected_player_id) return; // Already has a player
 
     updatePick.mutate({
@@ -97,7 +97,6 @@ const RookieDraft = () => {
   };
 
   const handleRemovePlayer = (pick: DraftPick) => {
-    if (!isAdmin) return;
     updatePick.mutate({
       pickId: pick.id,
       selectedPlayerId: null,
