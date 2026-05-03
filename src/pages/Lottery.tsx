@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { useTeams } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
-import { Sparkles, Trophy } from 'lucide-react';
+import { Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
 
 type Slot = { seed: number; teamId: string | null; odds: number };
 
@@ -28,16 +28,20 @@ const BALL_COLORS = [
 ];
 
 function weightedShuffle(slots: Slot[]): Slot[] {
-  // Returns slots ordered as the new draft order (index 0 = #1 pick).
+  // NBA-style weighted-without-replacement lottery.
+  // For each pick, pick a team with probability proportional to its odds
+  // among teams not yet selected. This guarantees the #1 pick matches the
+  // exact stated odds (52/31/10/7).
   const remaining = slots.filter((s) => s.teamId);
   const order: Slot[] = [];
   while (remaining.length) {
     const total = remaining.reduce((sum, s) => sum + s.odds, 0);
-    let r = Math.random() * total;
-    let idx = 0;
+    const r = Math.random() * total;
+    let acc = 0;
+    let idx = remaining.length - 1;
     for (let i = 0; i < remaining.length; i++) {
-      r -= remaining[i].odds;
-      if (r <= 0) {
+      acc += remaining[i].odds;
+      if (r < acc) {
         idx = i;
         break;
       }
