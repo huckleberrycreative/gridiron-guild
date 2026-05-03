@@ -205,7 +205,7 @@ const RookieDraft = () => {
             </p>
             
             {/* Year Selector */}
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex justify-center items-center gap-3">
               <Select value={draftYear.toString()} onValueChange={(v) => setDraftYear(parseInt(v))}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -216,6 +216,11 @@ const RookieDraft = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {isAdmin && !isLocked && (
+                <Button variant="destructive" size="sm" onClick={handleClearDraft}>
+                  Clear Draft
+                </Button>
+              )}
             </div>
           </motion.div>
 
