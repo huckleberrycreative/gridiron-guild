@@ -321,6 +321,32 @@ const RookieDraft = () => {
                     ))}
                   </div>
                 )}
+
+                {/* Finalize / Lock controls */}
+                <div className="mt-6 flex justify-center">
+                  {isLocked ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary bg-primary/10 text-primary font-semibold">
+                        <Lock className="w-4 h-4" />
+                        Draft Finalized — Locked for Posterity
+                      </div>
+                      {isAdmin && (
+                        <Button variant="outline" size="sm" onClick={handleUnlock}>
+                          Admin: Unlock
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      size="lg"
+                      onClick={handleFinalize}
+                      className="font-display text-lg px-10"
+                    >
+                      <Lock className="w-4 h-4 mr-2" />
+                      FINALIZE
+                    </Button>
+                  )}
+                </div>
               </motion.div>
             </div>
 
