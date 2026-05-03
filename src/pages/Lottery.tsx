@@ -143,7 +143,8 @@ const Lottery = () => {
           </motion.div>
 
           {/* Big spin button */}
-          <div className="mb-10 flex justify-center">
+          <div className="mb-10 flex flex-col items-center gap-3">
+            <audio ref={audioRef} src="/audio/oh-fortuna.mp3" preload="auto" />
             <Button
               size="lg"
               disabled={!allFilled || phase !== 'setup'}
@@ -156,6 +157,17 @@ const Lottery = () => {
               <Sparkles className="mr-2 h-5 w-5" />
               May the Lottery Gods Shine Down On You
             </Button>
+            {phase !== 'setup' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMuted((m) => !m)}
+                className="text-muted-foreground"
+              >
+                {muted ? <VolumeX className="h-4 w-4 mr-1" /> : <Volume2 className="h-4 w-4 mr-1" />}
+                {muted ? 'Unmute' : 'Mute'}
+              </Button>
+            )}
           </div>
 
           {/* Slot selection */}
