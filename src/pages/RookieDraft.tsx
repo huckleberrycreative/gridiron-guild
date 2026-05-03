@@ -43,7 +43,7 @@ const positionColors: Record<string, string> = {
 const RookieDraft = () => {
   const [draftYear, setDraftYear] = useState(CURRENT_YEAR);
   const [positionFilter, setPositionFilter] = useState<string>('all');
-  const [draggedPlayer, setDraggedPlayer] = useState<RookiePlayer | null>(null);
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null);
 
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
