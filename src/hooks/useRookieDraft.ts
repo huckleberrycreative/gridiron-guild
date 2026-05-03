@@ -91,7 +91,7 @@ export const useUpdateDraftPick = () => {
       teamId?: string | null;
       selectedPlayerId?: string | null;
     }) => {
-      const updates: Record<string, unknown> = {};
+      const updates: { team_id?: string | null; selected_player_id?: string | null } = {};
       if (teamId !== undefined) updates.team_id = teamId;
       if (selectedPlayerId !== undefined) updates.selected_player_id = selectedPlayerId;
 

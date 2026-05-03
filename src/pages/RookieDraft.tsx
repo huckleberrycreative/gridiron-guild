@@ -21,9 +21,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, GripVertical, X } from 'lucide-react';
+import { Users, GripVertical, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -42,11 +46,51 @@ const RookieDraft = () => {
   const [draggedPlayer, setDraggedPlayer] = useState<RookiePlayer | null>(null);
 
   const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const { data: rookiePool, isLoading: poolLoading } = useRookiePool(draftYear);
   const { data: draftPicks, isLoading: picksLoading } = useDraftPicks(draftYear);
   const { data: teams } = useTeams();
   const updatePick = useUpdateDraftPick();
   const initializePicks = useInitializeDraftPicks();
+
+  // Lock state stored in page_content
+  const lockKey = `locked_${draftYear}`;
+  const { data: lockRow } = useQuery({
+    queryKey: ['rookie-draft-lock', draftYear],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('page_content')
+        .select('id, content')
+        .eq('page_slug', 'rookie_draft')
+        .eq('section_key', lockKey)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const isLocked = lockRow?.content === 'true';
+
+  const handleFinalize = async () => {
+    if (!confirm('Finalize the draft? This will lock the page and prevent further changes.')) return;
+    if (lockRow?.id) {
+      await supabase.from('page_content').update({ content: 'true' }).eq('id', lockRow.id);
+    } else {
+      await supabase.from('page_content').insert({
+        page_slug: 'rookie_draft',
+        section_key: lockKey,
+        content_type: 'flag',
+        content: 'true',
+      });
+    }
+    queryClient.invalidateQueries({ queryKey: ['rookie-draft-lock', draftYear] });
+    toast.success('Draft finalized and locked.');
+  };
+
+  const handleUnlock = async () => {
+    if (!lockRow?.id) return;
+    await supabase.from('page_content').update({ content: 'false' }).eq('id', lockRow.id);
+    queryClient.invalidateQueries({ queryKey: ['rookie-draft-lock', draftYear] });
+    toast.success('Draft unlocked.');
+  };
 
   // Initialize draft picks for the year if they don't exist
   useEffect(() => {
@@ -93,9 +137,11 @@ const RookieDraft = () => {
     setDraggedPlayer(null);
   };
 
+
   const handleDrop = (pick: DraftPick) => {
+    if (isLocked) return;
     if (!draggedPlayer) return;
-    if (pick.selected_player_id) return; // Already has a player
+    if (pick.selected_player_id) return;
 
     updatePick.mutate({
       pickId: pick.id,
@@ -105,6 +151,7 @@ const RookieDraft = () => {
   };
 
   const handleRemovePlayer = (pick: DraftPick) => {
+    if (isLocked) return;
     updatePick.mutate({
       pickId: pick.id,
       selectedPlayerId: null,
@@ -112,7 +159,7 @@ const RookieDraft = () => {
   };
 
   const handleTeamChange = (pickId: string, teamId: string) => {
-    if (!isAdmin) return;
+    if (isLocked) return;
     updatePick.mutate({
       pickId,
       teamId: teamId === 'none' ? null : teamId,
@@ -213,7 +260,11 @@ const RookieDraft = () => {
 
                                 {/* Team */}
                                 <div>
-                                  {isAdmin ? (
+                                  {isLocked ? (
+                                    <div className="text-sm font-medium text-foreground">
+                                      {pick.team?.name || 'TBD'}
+                                    </div>
+                                  ) : (
                                     <Select
                                       value={pick.team_id || 'none'}
                                       onValueChange={(v) => handleTeamChange(pick.id, v)}
@@ -230,10 +281,6 @@ const RookieDraft = () => {
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                  ) : (
-                                    <div className="text-sm font-medium text-foreground">
-                                      {pick.team?.name || 'TBD'}
-                                    </div>
                                   )}
                                 </div>
 
@@ -274,6 +321,32 @@ const RookieDraft = () => {
                     ))}
                   </div>
                 )}
+
+                {/* Finalize / Lock controls */}
+                <div className="mt-6 flex justify-center">
+                  {isLocked ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary bg-primary/10 text-primary font-semibold">
+                        <Lock className="w-4 h-4" />
+                        Draft Finalized — Locked for Posterity
+                      </div>
+                      {isAdmin && (
+                        <Button variant="outline" size="sm" onClick={handleUnlock}>
+                          Admin: Unlock
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      size="lg"
+                      onClick={handleFinalize}
+                      className="font-display text-lg px-10"
+                    >
+                      <Lock className="w-4 h-4 mr-2" />
+                      FINALIZE
+                    </Button>
+                  )}
+                </div>
               </motion.div>
             </div>
 
