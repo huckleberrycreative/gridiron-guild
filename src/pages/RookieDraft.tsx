@@ -70,7 +70,74 @@ const RookieDraft = () => {
   const isLocked = lockRow?.content === 'true';
 
   const handleFinalize = async () => {
-    if (!confirm('Finalize the draft? This will lock the page and prevent further changes.')) return;
+    if (!confirm('Finalize the draft? This will assign all drafted rookies to their teams with rookie contracts and lock the page.')) return;
+
+    // Build rookie salary inserts from completed picks
+    const completedPicks = (draftPicks || []).filter(
+      p => p.selected_player_id && p.team_id && p.selected_player
+    );
+
+    const ROUND_SALARY: Record<number, number> = { 1: 50, 2: 25, 3: 1 };
+
+    try {
+      for (const pick of completedPicks) {
+        const player = pick.selected_player!;
+        // Split rookie name into first/last
+        const parts = player.player_name.trim().split(/\s+/);
+        const firstName = parts[0] || player.player_name;
+        const lastName = parts.slice(1).join(' ') || '';
+
+        // Find or create player record
+        let playerId: string | null = null;
+        const { data: existing } = await supabase
+          .from('players')
+          .select('id')
+          .eq('full_name', player.player_name)
+          .eq('position', player.position)
+          .maybeSingle();
+
+        if (existing) {
+          playerId = existing.id;
+        } else {
+          const { data: inserted, error: insErr } = await supabase
+            .from('players')
+            .insert({
+              first_name: firstName,
+              last_name: lastName,
+              full_name: player.player_name,
+              position: player.position,
+            })
+            .select('id')
+            .single();
+          if (insErr) throw insErr;
+          playerId = inserted.id;
+        }
+
+        const salary = ROUND_SALARY[pick.round] ?? 1;
+
+        // Upsert salary row by player_id (delete any existing then insert fresh)
+        await supabase.from('player_salaries').delete().eq('player_id', playerId);
+        const { error: salErr } = await supabase.from('player_salaries').insert({
+          player_id: playerId,
+          team_id: pick.team_id,
+          rookie_draft_round: `${pick.round}.${pick.pick_number}`,
+          contract_year: '1',
+          salary_2026: String(salary),
+          salary_2027: String(salary),
+          salary_2028: String(salary),
+          salary_2029: '125',
+          practice_squad: false,
+          franchise_tag: false,
+          acquired_via_waivers: false,
+        });
+        if (salErr) throw salErr;
+      }
+    } catch (e: any) {
+      toast.error(`Failed to assign rookies: ${e.message || e}`);
+      return;
+    }
+
+    // Set lock flag
     if (lockRow?.id) {
       await supabase.from('page_content').update({ content: 'true' }).eq('id', lockRow.id);
     } else {
@@ -82,7 +149,8 @@ const RookieDraft = () => {
       });
     }
     queryClient.invalidateQueries({ queryKey: ['rookie-draft-lock', draftYear] });
-    toast.success('Draft finalized and locked.');
+    queryClient.invalidateQueries({ queryKey: ['player-salaries'] });
+    toast.success(`Draft finalized — ${completedPicks.length} rookies signed.`);
   };
 
   const handleUnlock = async () => {
