@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { useTeams } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
-import { Sparkles, Trophy } from 'lucide-react';
+import { Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
 
 type Slot = { seed: number; teamId: string | null; odds: number };
 
@@ -28,16 +28,20 @@ const BALL_COLORS = [
 ];
 
 function weightedShuffle(slots: Slot[]): Slot[] {
-  // Returns slots ordered as the new draft order (index 0 = #1 pick).
+  // NBA-style weighted-without-replacement lottery.
+  // For each pick, pick a team with probability proportional to its odds
+  // among teams not yet selected. This guarantees the #1 pick matches the
+  // exact stated odds (52/31/10/7).
   const remaining = slots.filter((s) => s.teamId);
   const order: Slot[] = [];
   while (remaining.length) {
     const total = remaining.reduce((sum, s) => sum + s.odds, 0);
-    let r = Math.random() * total;
-    let idx = 0;
+    const r = Math.random() * total;
+    let acc = 0;
+    let idx = remaining.length - 1;
     for (let i = 0; i < remaining.length; i++) {
-      r -= remaining[i].odds;
-      if (r <= 0) {
+      acc += remaining[i].odds;
+      if (r < acc) {
         idx = i;
         break;
       }
@@ -55,7 +59,10 @@ const Lottery = () => {
   );
   const [phase, setPhase] = useState<'setup' | 'tumbling' | 'reveal'>('setup');
   const [result, setResult] = useState<Slot[]>([]);
-  const [revealedCount, setRevealedCount] = useState(0);
+  // Lowest pick number revealed so far. 5 = none, 4 = #4 shown, 1 = all shown.
+  const [revealedFrom, setRevealedFrom] = useState(5);
+  const [muted, setMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const allFilled = slots.every((s) => s.teamId);
   const usedTeamIds = useMemo(
@@ -73,24 +80,45 @@ const Lottery = () => {
     if (!allFilled) return;
     const order = weightedShuffle(slots);
     setResult(order);
-    setRevealedCount(0);
+    setRevealedFrom(5);
     setPhase('tumbling');
 
-    // Tumble for 4 seconds, then reveal one pick at a time from #4 -> #1
+    // Start music
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 0.7;
+      audioRef.current.muted = muted;
+      audioRef.current.play().catch(() => {});
+    }
+
+    // Tumble for 5 seconds, then reveal #4 -> #3 -> #2 -> #1
     setTimeout(() => {
       setPhase('reveal');
-      // Reveal 4, 3, 2, 1 with dramatic delays
-      [1, 2, 3, 4].forEach((n, i) => {
-        setTimeout(() => setRevealedCount(n), i * 1800);
+      [4, 3, 2, 1].forEach((n, i) => {
+        setTimeout(() => setRevealedFrom(n), i * 2200);
       });
-    }, 4000);
+    }, 5000);
   };
 
   const reset = () => {
     setPhase('setup');
     setResult([]);
-    setRevealedCount(0);
+    setRevealedFrom(5);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
   };
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
 
   const teamName = (id: string | null) =>
     teams.find((t) => t.id === id)?.name ?? '—';
@@ -115,7 +143,8 @@ const Lottery = () => {
           </motion.div>
 
           {/* Big spin button */}
-          <div className="mb-10 flex justify-center">
+          <div className="mb-10 flex flex-col items-center gap-3">
+            <audio ref={audioRef} src="/audio/oh-fortuna.mp3" preload="auto" />
             <Button
               size="lg"
               disabled={!allFilled || phase !== 'setup'}
@@ -128,6 +157,17 @@ const Lottery = () => {
               <Sparkles className="mr-2 h-5 w-5" />
               May the Lottery Gods Shine Down On You
             </Button>
+            {phase !== 'setup' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMuted((m) => !m)}
+                className="text-muted-foreground"
+              >
+                {muted ? <VolumeX className="h-4 w-4 mr-1" /> : <Volume2 className="h-4 w-4 mr-1" />}
+                {muted ? 'Unmute' : 'Mute'}
+              </Button>
+            )}
           </div>
 
           {/* Slot selection */}
@@ -230,7 +270,7 @@ const Lottery = () => {
               </h2>
               <AnimatePresence>
                 {[4, 3, 2, 1].map((pickNum) => {
-                  const visible = revealedCount >= pickNum;
+                  const visible = revealedFrom <= pickNum;
                   if (!visible) return null;
                   const team = result[pickNum - 1];
                   const isFirst = pickNum === 1;
@@ -281,7 +321,7 @@ const Lottery = () => {
                 })}
               </AnimatePresence>
 
-              {revealedCount >= 4 && (
+              {revealedFrom <= 1 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
