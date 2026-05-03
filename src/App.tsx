@@ -71,6 +71,7 @@ const App = () => (
               <Route path="/season-2025" element={<Season2025 />} />
               <Route path="/rivalry-week" element={<RivalryWeek />} />
               <Route path="/rookie-draft" element={<RookieDraft />} />
+              <Route path="/official-rosters-2026" element={<OfficialRosters2026 />} />
 
               {/* Dynamic pages route */}
               <Route path="/pages/:slug" element={<DynamicPage />} />
