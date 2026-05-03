@@ -244,20 +244,26 @@ const RookieDraft = () => {
                               return (
                               <div
                                 key={pick.id}
-                                onClick={() => {
-                                  if (canSelect) setSelectedPickId(isSelected ? null : pick.id);
-                                }}
                                 className={cn(
                                   "grid grid-cols-[80px_1fr_1fr] gap-4 items-center p-3 rounded-lg border transition-all",
-                                  canSelect && "cursor-pointer hover:border-accent",
                                   isSelected && "border-accent border-2 bg-accent/10 ring-2 ring-accent/30",
                                   pick.selected_player_id && "bg-secondary/50"
                                 )}
                               >
-                                {/* Pick Number */}
-                                <div className="font-bold text-foreground">
+                                {/* Pick Number — click to select */}
+                                <button
+                                  type="button"
+                                  disabled={!canSelect}
+                                  onClick={() => setSelectedPickId(isSelected ? null : pick.id)}
+                                  className={cn(
+                                    "font-bold text-foreground px-2 py-1 rounded border text-left",
+                                    canSelect && "hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                    isSelected && "bg-accent text-accent-foreground border-accent",
+                                    !canSelect && "opacity-60 cursor-not-allowed"
+                                  )}
+                                >
                                   {round}.{pick.pick_number}
-                                </div>
+                                </button>
 
                                 {/* Team */}
                                 <div>
