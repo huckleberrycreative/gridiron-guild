@@ -59,7 +59,10 @@ const Lottery = () => {
   );
   const [phase, setPhase] = useState<'setup' | 'tumbling' | 'reveal'>('setup');
   const [result, setResult] = useState<Slot[]>([]);
-  const [revealedCount, setRevealedCount] = useState(0);
+  // Lowest pick number revealed so far. 5 = none, 4 = #4 shown, 1 = all shown.
+  const [revealedFrom, setRevealedFrom] = useState(5);
+  const [muted, setMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const allFilled = slots.every((s) => s.teamId);
   const usedTeamIds = useMemo(
@@ -77,24 +80,45 @@ const Lottery = () => {
     if (!allFilled) return;
     const order = weightedShuffle(slots);
     setResult(order);
-    setRevealedCount(0);
+    setRevealedFrom(5);
     setPhase('tumbling');
 
-    // Tumble for 4 seconds, then reveal one pick at a time from #4 -> #1
+    // Start music
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 0.7;
+      audioRef.current.muted = muted;
+      audioRef.current.play().catch(() => {});
+    }
+
+    // Tumble for 5 seconds, then reveal #4 -> #3 -> #2 -> #1
     setTimeout(() => {
       setPhase('reveal');
-      // Reveal 4, 3, 2, 1 with dramatic delays
-      [1, 2, 3, 4].forEach((n, i) => {
-        setTimeout(() => setRevealedCount(n), i * 1800);
+      [4, 3, 2, 1].forEach((n, i) => {
+        setTimeout(() => setRevealedFrom(n), i * 2200);
       });
-    }, 4000);
+    }, 5000);
   };
 
   const reset = () => {
     setPhase('setup');
     setResult([]);
-    setRevealedCount(0);
+    setRevealedFrom(5);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
   };
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
 
   const teamName = (id: string | null) =>
     teams.find((t) => t.id === id)?.name ?? '—';
