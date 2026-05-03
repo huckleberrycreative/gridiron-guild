@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
-import { useTeams } from '@/hooks/usePlayerSalaries';
+import { useTeams, usePlayerSalaries } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
 import { Star, Check, ChevronDown, Loader2 } from 'lucide-react';
 import {
@@ -13,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 
 type RosterRow = {
-  slot: string;
   firstName: string;
   lastName: string;
   position: string;
@@ -25,47 +24,6 @@ type RosterRow = {
   s2029: number | null;
 };
 
-const STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX', 'FLEX', 'OP'];
-const BENCH_COUNT = 7;
-
-// Dummy roster — placeholder until official CSV is loaded
-const buildDummyRoster = (seed: number): RosterRow[] => {
-  const positions = ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'RB', 'TE', 'QB'];
-  const benchPos = ['TE', 'RB', 'WR', 'RB', 'QB', 'WR', 'WR'];
-  const rows: RosterRow[] = [];
-  STARTER_SLOTS.forEach((slot, i) => {
-    const salary = 50 + ((seed * 7 + i * 13) % 90);
-    rows.push({
-      slot,
-      firstName: 'Player',
-      lastName: `${i + 1}`,
-      position: positions[i],
-      ft: i === 2,
-      ps: false,
-      s2026: salary,
-      s2027: salary + 10,
-      s2028: salary + 25,
-      s2029: salary + 40,
-    });
-  });
-  for (let i = 0; i < BENCH_COUNT; i++) {
-    const salary = 20 + ((seed * 5 + i * 11) % 40);
-    rows.push({
-      slot: 'Bench',
-      firstName: 'Bench',
-      lastName: `${i + 1}`,
-      position: benchPos[i],
-      ft: false,
-      ps: i >= BENCH_COUNT - 2,
-      s2026: salary,
-      s2027: salary + 5,
-      s2028: salary + 10,
-      s2029: salary + 15,
-    });
-  }
-  return rows;
-};
-
 const positionColors: Record<string, string> = {
   QB: 'bg-red-100 text-red-700 border-red-200',
   RB: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -73,19 +31,40 @@ const positionColors: Record<string, string> = {
   TE: 'bg-amber-100 text-amber-700 border-amber-200',
 };
 
+const POS_ORDER: Record<string, number> = { QB: 1, RB: 2, WR: 3, TE: 4 };
+const toNum = (v?: string) => (v && !isNaN(parseInt(v)) ? parseInt(v) : null);
+
 const OfficialRosters2026 = () => {
-  const { data: teams = [], isLoading } = useTeams();
+  const { data: teams = [], isLoading: teamsLoading } = useTeams();
+  const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const [teamId, setTeamId] = useState<string | null>(null);
 
-  const seed = useMemo(() => {
-    if (!teamId) return 1;
-    return teams.findIndex((t) => t.id === teamId) + 1;
-  }, [teamId, teams]);
+  const roster: RosterRow[] = useMemo(() => {
+    if (!teamId) return [];
+    return salaries
+      .filter((s) => s.teamId === teamId)
+      .map((s) => ({
+        firstName: s.firstName,
+        lastName: s.lastName,
+        position: s.position,
+        ft: s.franchiseTag,
+        ps: s.practiceSquad,
+        s2026: toNum(s.salary2026),
+        s2027: toNum(s.salary2027),
+        s2028: toNum(s.salary2028),
+        s2029: toNum(s.salary2029),
+      }))
+      .sort((a, b) => {
+        const p = (POS_ORDER[a.position] || 99) - (POS_ORDER[b.position] || 99);
+        if (p !== 0) return p;
+        return (b.s2026 ?? 0) - (a.s2026 ?? 0);
+      });
+  }, [teamId, salaries]);
 
-  const roster = useMemo(() => (teamId ? buildDummyRoster(seed) : []), [teamId, seed]);
   const totalSpent = roster.reduce((sum, r) => sum + (r.s2026 ?? 0), 0);
   const fallDraftCapital = 1000 - totalSpent;
   const selectedTeam = teams.find((t) => t.id === teamId);
+  const isLoading = teamsLoading || salariesLoading;
 
   if (isLoading) {
     return (
