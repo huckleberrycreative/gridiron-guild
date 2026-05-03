@@ -260,7 +260,11 @@ const RookieDraft = () => {
 
                                 {/* Team */}
                                 <div>
-                                  {isAdmin ? (
+                                  {isLocked ? (
+                                    <div className="text-sm font-medium text-foreground">
+                                      {pick.team?.name || 'TBD'}
+                                    </div>
+                                  ) : (
                                     <Select
                                       value={pick.team_id || 'none'}
                                       onValueChange={(v) => handleTeamChange(pick.id, v)}
@@ -277,10 +281,6 @@ const RookieDraft = () => {
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                  ) : (
-                                    <div className="text-sm font-medium text-foreground">
-                                      {pick.team?.name || 'TBD'}
-                                    </div>
                                   )}
                                 </div>
 
