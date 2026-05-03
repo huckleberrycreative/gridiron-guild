@@ -401,16 +401,15 @@ const RookieDraft = () => {
                             return (
                               <div
                                 key={player.id}
-                                draggable
-                                onDragStart={() => handleDragStart(player)}
-                                onDragEnd={handleDragEnd}
+                                onClick={() => handleDraftPlayer(player)}
                                 className={cn(
-                                  "p-3 rounded-lg border bg-card transition-all cursor-grab hover:shadow-md hover:border-accent active:cursor-grabbing",
-                                  draggedPlayer?.id === player.id && "opacity-50"
+                                  "p-3 rounded-lg border bg-card transition-all",
+                                  selectedPickId && !isLocked
+                                    ? "cursor-pointer hover:shadow-md hover:border-accent hover:bg-accent/5"
+                                    : "cursor-default opacity-90"
                                 )}
                               >
                                 <div className="flex items-start gap-2">
-                                  <GripVertical className="w-4 h-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       {rank < 9999 && (
