@@ -60,12 +60,20 @@ const RookieDraft = () => {
     draftPicks?.filter(p => p.selected_player_id).map(p => p.selected_player_id) || []
   );
 
-  // Filter available players
-  const availablePlayers = rookiePool?.filter(player => {
-    if (draftedPlayerIds.has(player.id)) return false;
-    if (positionFilter !== 'all' && player.position !== positionFilter) return false;
-    return true;
-  }) || [];
+  // Parse rank from notes ("Rank 12") for sort/display
+  const parseRank = (notes: string | null): number => {
+    const m = notes?.match(/Rank\s+(\d+)/i);
+    return m ? parseInt(m[1], 10) : 9999;
+  };
+
+  // Filter available players, sorted by rank
+  const availablePlayers = (rookiePool || [])
+    .filter((player) => {
+      if (draftedPlayerIds.has(player.id)) return false;
+      if (positionFilter !== 'all' && player.position !== positionFilter) return false;
+      return true;
+    })
+    .sort((a, b) => parseRank(a.notes) - parseRank(b.notes));
 
   // Get unique positions for filter
   const positions = [...new Set(rookiePool?.map(p => p.position) || [])].sort();
@@ -86,7 +94,7 @@ const RookieDraft = () => {
   };
 
   const handleDrop = (pick: DraftPick) => {
-    if (!draggedPlayer || !isAdmin) return;
+    if (!draggedPlayer) return;
     if (pick.selected_player_id) return; // Already has a player
 
     updatePick.mutate({
@@ -97,7 +105,6 @@ const RookieDraft = () => {
   };
 
   const handleRemovePlayer = (pick: DraftPick) => {
-    if (!isAdmin) return;
     updatePick.mutate({
       pickId: pick.id,
       selectedPlayerId: null,
@@ -312,43 +319,50 @@ const RookieDraft = () => {
                         </div>
                       ) : (
                         <div className="p-2 space-y-1">
-                          {availablePlayers.map(player => (
-                            <div
-                              key={player.id}
-                              draggable={isAdmin}
-                              onDragStart={() => handleDragStart(player)}
-                              onDragEnd={handleDragEnd}
-                              className={cn(
-                                "p-3 rounded-lg border bg-card transition-all",
-                                isAdmin && "cursor-grab hover:shadow-md hover:border-accent active:cursor-grabbing",
-                                draggedPlayer?.id === player.id && "opacity-50"
-                              )}
-                            >
-                              <div className="flex items-start gap-2">
-                                {isAdmin && (
-                                  <GripVertical className="w-4 h-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
+                          {availablePlayers.map(player => {
+                            const rank = parseRank(player.notes);
+                            return (
+                              <div
+                                key={player.id}
+                                draggable
+                                onDragStart={() => handleDragStart(player)}
+                                onDragEnd={handleDragEnd}
+                                className={cn(
+                                  "p-3 rounded-lg border bg-card transition-all cursor-grab hover:shadow-md hover:border-accent active:cursor-grabbing",
+                                  draggedPlayer?.id === player.id && "opacity-50"
                                 )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm truncate">
-                                    {player.player_name}
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Badge 
-                                      variant="outline" 
-                                      className={cn("text-xs", positionColors[player.position])}
-                                    >
-                                      {player.position}
-                                    </Badge>
-                                    {player.college && (
-                                      <span className="text-xs text-muted-foreground truncate">
-                                        {player.college}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <GripVertical className="w-4 h-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      {rank < 9999 && (
+                                        <span className="text-xs font-mono text-muted-foreground w-6 flex-shrink-0">
+                                          #{rank}
+                                        </span>
+                                      )}
+                                      <span className="font-medium text-sm truncate">
+                                        {player.player_name}
                                       </span>
-                                    )}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge
+                                        variant="outline"
+                                        className={cn("text-xs", positionColors[player.position])}
+                                      >
+                                        {player.position}
+                                      </Badge>
+                                      {player.college && (
+                                        <span className="text-xs text-muted-foreground truncate font-semibold">
+                                          {player.college}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </ScrollArea>
