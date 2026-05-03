@@ -39,7 +39,7 @@ const OfficialRosters2026 = () => {
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const [teamId, setTeamId] = useState<string | null>(null);
 
-  const roster: RosterRow[] = useMemo(() => {
+  const allRows: RosterRow[] = useMemo(() => {
     if (!teamId) return [];
     return salaries
       .filter((s) => s.teamId === teamId)
@@ -53,13 +53,19 @@ const OfficialRosters2026 = () => {
         s2027: toNum(s.salary2027),
         s2028: toNum(s.salary2028),
         s2029: toNum(s.salary2029),
-      }))
-      .sort((a, b) => {
-        const p = (POS_ORDER[a.position] || 99) - (POS_ORDER[b.position] || 99);
-        if (p !== 0) return p;
-        return (b.s2026 ?? 0) - (a.s2026 ?? 0);
-      });
+      }));
   }, [teamId, salaries]);
+
+  const roster = allRows
+    .filter((r) => !r.ps)
+    .sort((a, b) => {
+      const p = (POS_ORDER[a.position] || 99) - (POS_ORDER[b.position] || 99);
+      if (p !== 0) return p;
+      return (b.s2026 ?? 0) - (a.s2026 ?? 0);
+    });
+
+  const practiceSquad = allRows.filter((r) => r.ps);
+  const psSlots: (RosterRow | null)[] = [0, 1, 2].map((i) => practiceSquad[i] ?? null);
 
   const totalSpent = roster.reduce((sum, r) => sum + (r.s2026 ?? 0), 0);
   const fallDraftCapital = 1000 - totalSpent;
