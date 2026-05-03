@@ -137,23 +137,6 @@ const RookieDraft = () => {
     setDraggedPlayer(null);
   };
 
-  const handleDrop = (pick: DraftPick) => {
-    if (!draggedPlayer) return;
-    if (pick.selected_player_id) return; // Already has a player
-
-    updatePick.mutate({
-      pickId: pick.id,
-      selectedPlayerId: draggedPlayer.id,
-    });
-    setDraggedPlayer(null);
-  };
-
-  const handleRemovePlayer = (pick: DraftPick) => {
-    updatePick.mutate({
-      pickId: pick.id,
-      selectedPlayerId: null,
-    });
-  };
 
   const handleDrop = (pick: DraftPick) => {
     if (isLocked) return;
