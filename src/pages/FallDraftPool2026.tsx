@@ -93,20 +93,18 @@ const FallDraftPool2026 = () => {
     [rows, rosteredSet]
   );
 
-  // Compute expected cost: rank players within their position by avg rank,
-  // assign deciles, cost = base * 0.5^decile.
+  // Cost: top 5 of position = base, then multiply by drop factor every 5 players.
   const withCost = useMemo(() => {
     const byPos: Record<string, Row[]> = { QB: [], RB: [], WR: [], TE: [] };
     available.forEach((r) => byPos[r.position].push(r));
     Object.values(byPos).forEach((list) => list.sort((a, b) => a.rank - b.rank));
     const costs = new Map<string, number>();
     (Object.keys(byPos) as Array<keyof typeof byPos>).forEach((pos) => {
-      const list = byPos[pos];
-      const n = list.length;
       const base = POSITION_BASE[pos];
-      list.forEach((row, idx) => {
-        const decile = Math.min(9, Math.floor((idx / Math.max(n, 1)) * 10));
-        const raw = base * Math.pow(0.5, decile);
+      const drop = POSITION_DROP[pos];
+      byPos[pos].forEach((row, idx) => {
+        const tier = Math.floor(idx / 5);
+        const raw = base * Math.pow(drop, tier);
         const cost = Math.max(1, Math.round(raw));
         costs.set(`${row.position}-${row.rank}-${row.name}`, cost);
       });
