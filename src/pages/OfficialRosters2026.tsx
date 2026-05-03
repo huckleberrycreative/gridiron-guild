@@ -162,18 +162,11 @@ const OfficialRosters2026 = () => {
                   </thead>
                   <tbody>
                     {roster.map((r, idx) => {
-                      const isBench = r.slot === 'Bench';
                       return (
                         <tr
                           key={idx}
-                          className={cn(
-                            'border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors',
-                            isBench && 'bg-muted/10'
-                          )}
+                          className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors"
                         >
-                          <td className={cn('px-4 py-3 font-display font-semibold uppercase text-xs', isBench && 'text-muted-foreground')}>
-                            {r.slot}
-                          </td>
                           <td className="px-4 py-3">
                             <span className="font-medium">{r.firstName} {r.lastName}</span>
                           </td>
