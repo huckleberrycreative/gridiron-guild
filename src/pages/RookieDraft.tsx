@@ -146,6 +146,10 @@ const RookieDraft = () => {
       selectedPlayerId: player.id,
     });
     setSelectedPickId(null);
+    try {
+      const audio = new Audio('/sounds/draft-chime.mp3');
+      audio.play().catch(() => {});
+    } catch {}
   };
 
   const handleRemovePlayer = (pick: DraftPick) => {
