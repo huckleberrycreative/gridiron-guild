@@ -69,12 +69,17 @@ const FallDraftPool2026 = () => {
 
   useEffect(() => {
     (async () => {
-      const [csvRes, dbRes] = await Promise.all([
+      const [csvRes, dbRes, rookieRes] = await Promise.all([
         fetch('/data/fantasypros-2026-dynasty.csv'),
         supabase
           .from('player_salaries')
           .select('players(full_name)')
           .not('team_id', 'is', null),
+        supabase
+          .from('draft_picks')
+          .select('rookie_pool(player_name)')
+          .eq('draft_year', 2026)
+          .not('selected_player_id', 'is', null),
       ]);
       const text = await csvRes.text();
       setRows(parseCsv(text));
@@ -82,6 +87,10 @@ const FallDraftPool2026 = () => {
       (dbRes.data ?? []).forEach((r: any) => {
         const fn = r?.players?.full_name;
         if (fn) rostered.add(normalize(fn));
+      });
+      (rookieRes.data ?? []).forEach((r: any) => {
+        const pn = r?.rookie_pool?.player_name;
+        if (pn) rostered.add(normalize(pn));
       });
       setRosteredSet(rostered);
       setLoading(false);
