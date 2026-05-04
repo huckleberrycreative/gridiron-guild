@@ -308,46 +308,6 @@ const Lottery = () => {
               lockedBalls={lockedBalls}
             />
           )}
-          {false && (
-            <div className="hidden">
-              {Array.from({ length: 100 }, (_, i) => i + 1).map((num) => {
-                const seed = ballSeed(num);
-                const c = SEED_COLOR[seed];
-                const isLocked = lockedBalls.has(num);
-                const isCurrentDraw = currentDrawBall === num && drawIndex >= 0 && lockedCount <= drawIndex;
-                const isWinning = ballToPick.has(num);
-                const showInReveal = phase === 'reveal' && isWinning;
-                const fadeAway = phase === 'reveal' && !isWinning;
-                return (
-                  <motion.div
-                    key={num}
-                    animate={{
-                      opacity: fadeAway ? 0 : 1,
-                      scale: isCurrentDraw ? 1.4 : showInReveal ? 1.15 : 1,
-                    }}
-                    transition={{ duration: fadeAway ? 0.8 : 0.4 }}
-                    className={cn(
-                      'aspect-square rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-md select-none relative',
-                      c.bg,
-                      c.text,
-                      phase === 'drawing' && lockedCount <= drawIndex && !isLocked && 'animate-pulse',
-                      isCurrentDraw && 'ring-4 ring-gold z-10 shadow-2xl shadow-gold/50',
-                        // Locked balls keep a subtle gold ring
-                        (isLocked || showInReveal) && 'ring-2 ring-gold',
-                      )}
-                    >
-                      {num}
-                      {showInReveal && (
-                        <span className="absolute -top-2 -right-2 bg-gold text-primary text-[10px] font-display font-extrabold rounded-full w-5 h-5 flex items-center justify-center shadow">
-                          {ballToPick.get(num)}
-                        </span>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Reveal */}
           {phase === 'reveal' && (
