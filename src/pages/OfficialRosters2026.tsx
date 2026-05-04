@@ -80,8 +80,9 @@ const OfficialRosters2026 = () => {
   const totalSpent = roster.reduce((sum, r) => sum + (r.s2026 ?? 0), 0);
   const veteranSpent = roster.reduce((sum, r) => sum + (r.isRookie ? 0 : (r.s2026 ?? 0)), 0);
   const BUDGET_ADJUSTMENTS: Record<string, number> = {
-    '11111111-0001-0001-0001-000000000001': 275,  // Sylvan Park Forresters
+    '11111111-0001-0001-0001-000000000001': 515,  // Sylvan Park Forresters (+275 +240)
     '11111111-0001-0001-0001-000000000003': -275, // Nashville Kats
+    '11111111-0001-0001-0001-000000000005': -240, // Queen City Harambes
   };
   const budgetAdjustment = teamId ? (BUDGET_ADJUSTMENTS[teamId] ?? 0) : 0;
   const fallDraftCapital = 1000 + budgetAdjustment - veteranSpent;
