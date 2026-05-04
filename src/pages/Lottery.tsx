@@ -296,38 +296,42 @@ const Lottery = () => {
             </motion.div>
           )}
 
-          {/* 100-ball grid: visible in drawing & reveal */}
+          {/* Ball arena: 10x10 grid -> swirl -> emerge */}
           {phase !== 'setup' && (
-            <div className="rounded-xl border-2 border-primary/30 bg-card p-4 md:p-6 shadow-xl mb-8">
-              <div
-                className="grid gap-2"
-                style={{ gridTemplateColumns: 'repeat(10, minmax(0, 1fr))' }}
-              >
-                {Array.from({ length: 100 }, (_, i) => i + 1).map((num) => {
-                  const seed = ballSeed(num);
-                  const c = SEED_COLOR[seed];
-                  const isLocked = lockedBalls.has(num);
-                  const isCurrentDraw = currentDrawBall === num && drawIndex >= 0 && lockedCount <= drawIndex;
-                  const isWinning = ballToPick.has(num);
-                  const showInReveal = phase === 'reveal' && isWinning;
-                  const fadeAway = phase === 'reveal' && !isWinning;
-
-                  return (
-                    <motion.div
-                      key={num}
-                      animate={{
-                        opacity: fadeAway ? 0 : 1,
-                        scale: isCurrentDraw ? 1.4 : showInReveal ? 1.15 : 1,
-                      }}
-                      transition={{ duration: fadeAway ? 0.8 : 0.4 }}
-                      className={cn(
-                        'aspect-square rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-md select-none relative',
-                        c.bg,
-                        c.text,
-                        // Flashing during the active draw window
-                        phase === 'drawing' && lockedCount <= drawIndex && !isLocked && 'animate-pulse',
-                        // Currently spotlight ball
-                        isCurrentDraw && 'ring-4 ring-gold z-10 shadow-2xl shadow-gold/50',
+            <BallArena
+              phase={phase}
+              drawIndex={drawIndex}
+              lockedCount={lockedCount}
+              currentDrawBall={currentDrawBall}
+              winningBalls={winningBalls}
+              ballToPick={ballToPick}
+              lockedBalls={lockedBalls}
+            />
+          )}
+          {false && (
+            <div className="hidden">
+              {Array.from({ length: 100 }, (_, i) => i + 1).map((num) => {
+                const seed = ballSeed(num);
+                const c = SEED_COLOR[seed];
+                const isLocked = lockedBalls.has(num);
+                const isCurrentDraw = currentDrawBall === num && drawIndex >= 0 && lockedCount <= drawIndex;
+                const isWinning = ballToPick.has(num);
+                const showInReveal = phase === 'reveal' && isWinning;
+                const fadeAway = phase === 'reveal' && !isWinning;
+                return (
+                  <motion.div
+                    key={num}
+                    animate={{
+                      opacity: fadeAway ? 0 : 1,
+                      scale: isCurrentDraw ? 1.4 : showInReveal ? 1.15 : 1,
+                    }}
+                    transition={{ duration: fadeAway ? 0.8 : 0.4 }}
+                    className={cn(
+                      'aspect-square rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-md select-none relative',
+                      c.bg,
+                      c.text,
+                      phase === 'drawing' && lockedCount <= drawIndex && !isLocked && 'animate-pulse',
+                      isCurrentDraw && 'ring-4 ring-gold z-10 shadow-2xl shadow-gold/50',
                         // Locked balls keep a subtle gold ring
                         (isLocked || showInReveal) && 'ring-2 ring-gold',
                       )}
