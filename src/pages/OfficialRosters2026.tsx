@@ -42,7 +42,7 @@ const OfficialRosters2026 = () => {
 
   const allRows: RosterRow[] = useMemo(() => {
     if (!teamId) return [];
-    return salaries
+    const rows = salaries
       .filter((s) => s.teamId === teamId)
       .map((s) => ({
         firstName: s.firstName,
@@ -50,11 +50,20 @@ const OfficialRosters2026 = () => {
         position: s.position,
         ft: s.franchiseTag,
         ps: s.practiceSquad,
+        isRookie: !!s.rookieDraftRound,
         s2026: toNum(s.salary2026),
         s2027: toNum(s.salary2027),
         s2028: toNum(s.salary2028),
         s2029: toNum(s.salary2029),
       }));
+    // De-dupe by name+position
+    const seen = new Set<string>();
+    return rows.filter((r) => {
+      const key = `${r.firstName}|${r.lastName}|${r.position}`.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [teamId, salaries]);
 
   const roster = allRows
@@ -69,7 +78,9 @@ const OfficialRosters2026 = () => {
   const psSlots: (RosterRow | null)[] = [0, 1, 2].map((i) => practiceSquad[i] ?? null);
 
   const totalSpent = roster.reduce((sum, r) => sum + (r.s2026 ?? 0), 0);
-  const fallDraftCapital = 1000 - totalSpent;
+  const veteranSpent = roster.reduce((sum, r) => sum + (r.isRookie ? 0 : (r.s2026 ?? 0)), 0);
+  const fallDraftCapital = 1000 - veteranSpent;
+
   const selectedTeam = teams.find((t) => t.id === teamId);
   const isLoading = teamsLoading || salariesLoading;
 
