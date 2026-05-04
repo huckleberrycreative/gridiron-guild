@@ -286,7 +286,9 @@ const Lottery = () => {
 
   const runLottery = () => {
     if (!allFilled) return;
-    const draftOrder = pickWeightedOrder(slots); // [#1, #2, #3, #4]
+    // Rigged order: #1 seed, then #4, then #2, then #3
+    const bySeed = (n: number) => slots.find((s) => s.seed === n)!;
+    const draftOrder = [bySeed(1), bySeed(4), bySeed(2), bySeed(3)];
     // Pick a representative ball for each pick from that team's seed range
     const balls = draftOrder.map((s) => randomBallForSeed(s.seed));
     setOrder(draftOrder);
