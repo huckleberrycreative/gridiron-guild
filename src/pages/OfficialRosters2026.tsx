@@ -18,6 +18,7 @@ type RosterRow = {
   position: string;
   ft: boolean;
   ps: boolean;
+  isRookie: boolean;
   s2026: number | null;
   s2027: number | null;
   s2028: number | null;
