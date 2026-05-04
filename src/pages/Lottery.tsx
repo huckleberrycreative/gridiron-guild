@@ -64,6 +64,193 @@ const DRAW_FLASH_MS = 2200;
 const DRAW_HOLD_MS = 1400;
 const DRAW_TOTAL = DRAW_FLASH_MS + DRAW_HOLD_MS;
 
+// ============================================================
+// BallArena — renders 100 balls. Starts as 10x10 grid, then on each
+// draw the balls swirl around the center and the winning ball emerges.
+// ============================================================
+function BallArena({
+  phase,
+  drawIndex,
+  lockedCount,
+  currentDrawBall,
+  winningBalls,
+  ballToPick,
+  lockedBalls,
+}: {
+  phase: 'setup' | 'drawing' | 'reveal';
+  drawIndex: number;
+  lockedCount: number;
+  currentDrawBall: number | null;
+  winningBalls: number[];
+  ballToPick: Map<number, number>;
+  lockedBalls: Set<number>;
+}) {
+  // Swirl targets are regenerated whenever a new draw begins so the motion
+  // looks fresh each cycle. Each ball gets an angle, radius, and orbit speed.
+  const swirl = useMemo(() => {
+    return Array.from({ length: 100 }, (_, i) => ({
+      angle: Math.random() * Math.PI * 2,
+      radius: 18 + Math.random() * 28, // % of container
+      speed: 0.7 + Math.random() * 0.8,
+      phase: Math.random() * Math.PI * 2,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawIndex]);
+
+  // Helper to get this ball's target position (percentages from top-left)
+  const getTarget = (num: number) => {
+    const i = num - 1;
+    const row = Math.floor(i / 10);
+    const col = i % 10;
+    // Grid positions: 10x10, centered with 5%-95% range
+    const gridX = 5 + (col * 90) / 9; // 5..95
+    const gridY = 5 + (row * 90) / 9;
+
+    const isWinning = ballToPick.has(num);
+    const isCurrent = currentDrawBall === num;
+    const isLocked = lockedBalls.has(num);
+
+    // Phase: drawing, no draw yet -> grid
+    if (phase === 'drawing' && drawIndex < 0) {
+      return { x: gridX, y: gridY, scale: 1, opacity: 1, z: 0 };
+    }
+
+    // Phase: drawing, active draw window (not yet locked this cycle)
+    if (phase === 'drawing' && drawIndex >= 0 && lockedCount <= drawIndex) {
+      if (isCurrent) {
+        // Winner emerges to center, large
+        return { x: 50, y: 50, scale: 2.4, opacity: 1, z: 50 };
+      }
+      if (isLocked) {
+        // Already-won balls park in a small row at the bottom
+        const lockedIdx = Array.from(lockedBalls).indexOf(num);
+        return {
+          x: 20 + lockedIdx * 20,
+          y: 95,
+          scale: 0.85,
+          opacity: 0.9,
+          z: 5,
+        };
+      }
+      // Everyone else swirls around the center
+      const s = swirl[i];
+      const t = (Date.now() / 1000) * s.speed; // not reactive; framer handles motion via keyframes below
+      return {
+        x: 50 + Math.cos(s.angle + s.phase + t) * s.radius,
+        y: 50 + Math.sin(s.angle + s.phase + t) * s.radius * 0.85,
+        scale: 0.9,
+        opacity: 0.85,
+        z: 1,
+      };
+    }
+
+    // Phase: drawing, between draws (locked but not yet next draw)
+    if (phase === 'drawing' && lockedCount > drawIndex) {
+      if (isLocked) {
+        const lockedIdx = Array.from(lockedBalls).indexOf(num);
+        return { x: 20 + lockedIdx * 20, y: 95, scale: 0.85, opacity: 0.9, z: 5 };
+      }
+      return { x: gridX, y: gridY, scale: 1, opacity: 1, z: 0 };
+    }
+
+    // Phase: reveal
+    if (phase === 'reveal') {
+      if (isWinning) {
+        const idx = ballToPick.get(num)! - 1; // 0..3
+        return { x: 20 + idx * 20, y: 50, scale: 1.6, opacity: 1, z: 10 };
+      }
+      return { x: gridX, y: gridY, scale: 1, opacity: 0, z: 0 };
+    }
+
+    return { x: gridX, y: gridY, scale: 1, opacity: 1, z: 0 };
+  };
+
+  return (
+    <div className="rounded-xl border-2 border-primary/30 bg-card p-4 md:p-6 shadow-xl mb-8">
+      <div className="relative w-full mx-auto" style={{ aspectRatio: '1 / 1', maxWidth: 640 }}>
+        {Array.from({ length: 100 }, (_, i) => i + 1).map((num) => {
+          const seed = ballSeed(num);
+          const c = SEED_COLOR[seed];
+          const isCurrent = currentDrawBall === num && drawIndex >= 0 && lockedCount <= drawIndex;
+          const isWinning = ballToPick.has(num);
+          const showInReveal = phase === 'reveal' && isWinning;
+          const target = getTarget(num);
+
+          // Build animate prop. For swirling balls during active draw,
+          // we generate a keyframe orbit so motion is continuous.
+          const isSwirling =
+            phase === 'drawing' &&
+            drawIndex >= 0 &&
+            lockedCount <= drawIndex &&
+            !isCurrent &&
+            !lockedBalls.has(num);
+
+          let animate: any;
+          let transition: any;
+          if (isSwirling) {
+            const s = swirl[num - 1];
+            const steps = 24;
+            const xs: number[] = [];
+            const ys: number[] = [];
+            for (let k = 0; k < steps; k++) {
+              const t = (k / steps) * Math.PI * 2;
+              xs.push(50 + Math.cos(s.angle + s.phase + t * s.speed) * s.radius);
+              ys.push(50 + Math.sin(s.angle + s.phase + t * s.speed) * s.radius * 0.85);
+            }
+            animate = {
+              left: xs.map((v) => `${v}%`),
+              top: ys.map((v) => `${v}%`),
+              scale: 0.9,
+              opacity: 0.85,
+            };
+            transition = { duration: 2.2, ease: 'linear', repeat: Infinity };
+          } else {
+            animate = {
+              left: `${target.x}%`,
+              top: `${target.y}%`,
+              scale: target.scale,
+              opacity: target.opacity,
+            };
+            transition = { duration: isCurrent ? 1.2 : 0.7, ease: isCurrent ? 'easeOut' : 'easeInOut' };
+          }
+
+          return (
+            <motion.div
+              key={num}
+              initial={false}
+              animate={animate}
+              transition={transition}
+              style={{
+                position: 'absolute',
+                width: '8%',
+                height: '8%',
+                marginLeft: '-4%',
+                marginTop: '-4%',
+                zIndex: target.z,
+              }}
+              className={cn(
+                'rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-md select-none',
+                c.bg,
+                c.text,
+                isCurrent && 'ring-4 ring-gold shadow-2xl shadow-gold/60',
+                (lockedBalls.has(num) || showInReveal) && 'ring-2 ring-gold',
+              )}
+            >
+              {num}
+              {showInReveal && (
+                <span className="absolute -top-2 -right-2 bg-gold text-primary text-[10px] font-display font-extrabold rounded-full w-5 h-5 flex items-center justify-center shadow">
+                  {ballToPick.get(num)}
+                </span>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 const Lottery = () => {
   const { data: teams = [] } = useTeams();
   const [slots, setSlots] = useState<Slot[]>(
