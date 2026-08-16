@@ -22,7 +22,7 @@ interface NavItem {
 
 const navLinks: NavItem[] = [
   { href: '/', label: 'Home' },
-  { href: '/season-2025', label: '2025 Season' },
+  { href: '/season-2026', label: '2026 Season' },
   { href: '/constitution', label: 'Constitution' },
   {
     label: 'Dynasty Information',
@@ -40,6 +40,7 @@ const navLinks: NavItem[] = [
   {
     label: 'About',
     children: [
+      { href: '/season-2025', label: '2025 Season', description: 'Last season recap, standings, and playoffs' },
       { href: '/meet-the-league', label: 'Meet the League', description: 'Governor profiles and stats' },
       { href: '/rivalry-week', label: 'Rivalry Week', description: 'Historic matchup rivalries' },
       { href: '/lore', label: 'Lore', description: 'Season-by-season history' },
