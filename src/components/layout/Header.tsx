@@ -22,7 +22,7 @@ interface NavItem {
 
 const navLinks: NavItem[] = [
   { href: '/', label: 'Home' },
-  { href: '/season-2025', label: '2025 Season' },
+  { href: '/season-2026', label: '2026 Season' },
   { href: '/constitution', label: 'Constitution' },
   {
     label: 'Dynasty Information',
