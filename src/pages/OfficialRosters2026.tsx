@@ -207,11 +207,10 @@ const OfficialRosters2026 = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 border-b border-border">
                     <tr>
-                      
+                      <th className="text-left px-4 py-3 font-display uppercase tracking-wider text-xs w-20">Slot</th>
                       <th className="text-left px-4 py-3 font-display uppercase tracking-wider text-xs">Player</th>
                       <th className="text-center px-3 py-3 font-display uppercase tracking-wider text-xs">Pos</th>
                       <th className="text-center px-3 py-3 font-display uppercase tracking-wider text-xs">FT</th>
-                      <th className="text-center px-3 py-3 font-display uppercase tracking-wider text-xs">PS</th>
                       <th className="text-right px-3 py-3 font-display uppercase tracking-wider text-xs">2026</th>
                       <th className="text-right px-3 py-3 font-display uppercase tracking-wider text-xs">2027</th>
                       <th className="text-right px-3 py-3 font-display uppercase tracking-wider text-xs">2028</th>
@@ -219,35 +218,58 @@ const OfficialRosters2026 = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {roster.map((r, idx) => {
+                    <tr className="bg-primary/10">
+                      <td colSpan={8} className="px-4 py-2 font-display uppercase tracking-wider text-xs font-bold">
+                        Starting Lineup
+                      </td>
+                    </tr>
+                    {[...lineup.slots, null, ...lineup.bench].map((slot, idx) => {
+                      if (slot === null) {
+                        return (
+                          <tr key="bench-header" className="bg-primary/10">
+                            <td colSpan={8} className="px-4 py-2 font-display uppercase tracking-wider text-xs font-bold">
+                              Bench
+                            </td>
+                          </tr>
+                        );
+                      }
+                      const r = slot.player;
                       return (
                         <tr
                           key={idx}
                           className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors"
                         >
+                          <td className="px-4 py-3 font-display text-xs uppercase tracking-wider text-muted-foreground">
+                            {slot.label}
+                          </td>
                           <td className="px-4 py-3">
-                            <span className="font-medium">{r.firstName} {r.lastName}</span>
+                            {r ? (
+                              <span className="font-medium">{r.firstName} {r.lastName}</span>
+                            ) : (
+                              <span className="text-muted-foreground italic font-display uppercase tracking-wider text-xs">Open</span>
+                            )}
                           </td>
                           <td className="text-center px-3 py-3">
-                            <span className={cn(
-                              'inline-flex items-center justify-center w-8 h-7 rounded text-[10px] font-display font-bold border',
-                              positionColors[r.position] || 'bg-gray-100 text-gray-700 border-gray-200'
-                            )}>
-                              {r.position}
-                            </span>
+                            {r ? (
+                              <span className={cn(
+                                'inline-flex items-center justify-center w-8 h-7 rounded text-[10px] font-display font-bold border',
+                                positionColors[r.position] || 'bg-gray-100 text-gray-700 border-gray-200'
+                              )}>
+                                {r.position}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </td>
                           <td className="text-center px-3 py-3">
-                            {r.ft ? <Star size={16} className="inline text-gold fill-gold" /> : <span className="text-muted-foreground">-</span>}
+                            {r?.ft ? <Star size={16} className="inline text-gold fill-gold" /> : <span className="text-muted-foreground">-</span>}
                           </td>
-                          <td className="text-center px-3 py-3">
-                            {r.ps ? <Check size={16} className="inline text-emerald-500" /> : <span className="text-muted-foreground">-</span>}
+                          <td className={cn('text-right px-3 py-3 font-mono', r?.ft && 'text-gold font-semibold')}>
+                            {r?.s2026 != null ? `$${r.s2026}` : '-'}
                           </td>
-                          <td className={cn('text-right px-3 py-3 font-mono', r.ft && 'text-gold font-semibold')}>
-                            {r.s2026 != null ? `$${r.s2026}` : '-'}
-                          </td>
-                          <td className="text-right px-3 py-3 font-mono">{r.s2027 != null ? `$${r.s2027}` : '-'}</td>
-                          <td className="text-right px-3 py-3 font-mono">{r.s2028 != null ? `$${r.s2028}` : '-'}</td>
-                          <td className="text-right px-3 py-3 font-mono">{r.s2029 != null ? `$${r.s2029}` : '-'}</td>
+                          <td className="text-right px-3 py-3 font-mono">{r?.s2027 != null ? `$${r.s2027}` : '-'}</td>
+                          <td className="text-right px-3 py-3 font-mono">{r?.s2028 != null ? `$${r.s2028}` : '-'}</td>
+                          <td className="text-right px-3 py-3 font-mono">{r?.s2029 != null ? `$${r.s2029}` : '-'}</td>
                         </tr>
                       );
                     })}
@@ -258,6 +280,7 @@ const OfficialRosters2026 = () => {
                       <td className="text-right px-3 py-3 font-mono">${totalSpent}</td>
                       <td colSpan={3}></td>
                     </tr>
+
                   </tbody>
                 </table>
               </motion.div>
