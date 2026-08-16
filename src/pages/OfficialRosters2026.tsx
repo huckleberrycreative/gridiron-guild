@@ -117,6 +117,7 @@ const OfficialRosters2026 = () => {
     '11111111-0001-0001-0001-000000000005': -240, // Queen City Harambes
     '11111111-0001-0001-0001-000000000002': -97,  // Franklin Fanatics (target $105)
     '11111111-0001-0001-0001-000000000004': 97,  // Abbottabad Geronimos (target $771)
+    '11111111-0001-0001-0001-000000000010': -2,  // Nepo Beach Guppies (target $1)
   };
   const budgetAdjustment = teamId ? (BUDGET_ADJUSTMENTS[teamId] ?? 0) : 0;
   const fallDraftCapital = 1000 + budgetAdjustment - veteranSpent;
