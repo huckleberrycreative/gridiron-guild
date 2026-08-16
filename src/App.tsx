@@ -22,6 +22,7 @@ import HistoricAnalytics from "./pages/HistoricAnalytics";
 import Pantheon from "./pages/Pantheon";
 import Manifesto from "./pages/Manifesto";
 import Season2025 from "./pages/Season2025";
+import Season2026 from "./pages/Season2026";
 import RivalryWeek from "./pages/RivalryWeek";
 import RookieDraft from "./pages/RookieDraft";
 import OfficialRosters2026 from "./pages/OfficialRosters2026";
