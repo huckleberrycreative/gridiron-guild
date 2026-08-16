@@ -114,7 +114,7 @@ const OfficialRosters2026 = () => {
   const BUDGET_ADJUSTMENTS: Record<string, number> = {
     '11111111-0001-0001-0001-000000000001': 515,  // Sylvan Park Forresters (+275 +240)
     '11111111-0001-0001-0001-000000000003': -275, // Nashville Kats
-    '11111111-0001-0001-0001-000000000005': -240, // Queen City Harambes
+    '11111111-0001-0001-0001-000000000005': -40,  // Queen City Harambes (target $35)
     '11111111-0001-0001-0001-000000000002': -97,  // Franklin Fanatics (target $105)
     '11111111-0001-0001-0001-000000000004': 97,  // Abbottabad Geronimos (target $771)
     '11111111-0001-0001-0001-000000000010': -2,  // Nepo Beach Guppies (target $1)
