@@ -75,9 +75,41 @@ const OfficialRosters2026 = () => {
     });
 
   const practiceSquad = allRows.filter((r) => r.ps);
-  const psSlots: (RosterRow | null)[] = [0, 1, 2].map((i) => practiceSquad[i] ?? null);
+  const psCount = Math.max(6, practiceSquad.length);
+  const psSlots: (RosterRow | null)[] = Array.from({ length: psCount }, (_, i) => practiceSquad[i] ?? null);
+
+  // Build likeliest starting lineup + bench
+  const lineup = useMemo(() => {
+    const pool = [...roster].sort((a, b) => (b.s2026 ?? 0) - (a.s2026 ?? 0));
+    const used = new Set<RosterRow>();
+    const take = (allowed: string[]) => {
+      const pick = pool.find((p) => !used.has(p) && allowed.includes(p.position));
+      if (pick) used.add(pick);
+      return pick ?? null;
+    };
+    const FLEX = ['RB', 'WR', 'TE'];
+    const ANY = ['QB', 'RB', 'WR', 'TE'];
+    const slots: { label: string; player: RosterRow | null }[] = [
+      { label: 'QB', player: take(['QB']) },
+      { label: 'RB', player: take(['RB']) },
+      { label: 'RB', player: take(['RB']) },
+      { label: 'WR', player: take(['WR']) },
+      { label: 'WR', player: take(['WR']) },
+      { label: 'FLEX', player: take(FLEX) },
+      { label: 'FLEX', player: take(FLEX) },
+      { label: 'FLEX', player: take(FLEX) },
+      { label: 'OP', player: take(ANY) },
+    ];
+    const benchPlayers = pool.filter((p) => !used.has(p));
+    const bench = Array.from({ length: Math.max(6, benchPlayers.length) }, (_, i) => ({
+      label: `BN${i + 1}`,
+      player: benchPlayers[i] ?? null,
+    }));
+    return { slots, bench };
+  }, [roster]);
 
   const totalSpent = roster.reduce((sum, r) => sum + (r.s2026 ?? 0), 0);
+
   const veteranSpent = roster.reduce((sum, r) => sum + (r.isRookie ? 0 : (r.s2026 ?? 0)), 0);
   const BUDGET_ADJUSTMENTS: Record<string, number> = {
     '11111111-0001-0001-0001-000000000001': 515,  // Sylvan Park Forresters (+275 +240)
