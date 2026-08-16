@@ -179,32 +179,25 @@ const Season2026 = () => {
                   key={team.id}
                   className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
                 >
-                  <div className="flex items-start justify-between gap-3 border-b border-border bg-muted/50 px-4 py-3">
-                    <h3 className="font-display font-bold uppercase tracking-wide text-sm">
+                  <div className="flex flex-col border-b border-border bg-muted/50 px-4 py-4">
+                    <h3 className="font-display font-bold uppercase tracking-wide text-sm text-center mb-4">
                       {team.name}
                     </h3>
-                    <div className="text-right">
-                      <div className="font-display uppercase tracking-wider text-[10px] text-muted-foreground">
-                        Fall Draft Budget
-                      </div>
-                      <div
-                        className={cn(
-                          'font-mono font-extrabold text-lg',
-                          budget < 0 ? 'text-destructive' : 'text-primary'
-                        )}
-                      >
-                        ${budget}
-                      </div>
-                      <div className="mt-1 font-display uppercase tracking-wider text-[10px] text-muted-foreground">
-                        Open Roster Spots
-                      </div>
-                      <div className="font-mono font-bold text-sm">{openSpots}</div>
-                      <div className="mt-1 font-display uppercase tracking-wider text-[10px] text-muted-foreground">
-                        Budget Per Spot
-                      </div>
-                      <div className="font-mono font-bold text-sm">
-                        {budgetPerSpot != null ? `$${budgetPerSpot}` : '-'}
-                      </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: 'Fall Draft Budget', value: `$${budget}`, valueClass: budget < 0 ? 'text-destructive' : 'text-primary' },
+                        { label: 'Open Roster Spots', value: openSpots.toString(), valueClass: 'text-foreground' },
+                        { label: 'Budget Per Spot', value: budgetPerSpot != null ? `$${budgetPerSpot}` : '-', valueClass: 'text-foreground' },
+                      ].map((metric) => (
+                        <div key={metric.label} className="text-center rounded-md bg-background/60 border border-border/60 px-2 py-2">
+                          <div className="font-display uppercase tracking-wider text-[10px] text-muted-foreground mb-1">
+                            {metric.label}
+                          </div>
+                          <div className={cn('font-mono font-extrabold text-lg', metric.valueClass)}>
+                            {metric.value}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                   {([
