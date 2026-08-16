@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
-import { Star, Check, ChevronDown, Loader2 } from 'lucide-react';
+import { Star, ChevronDown, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -335,7 +335,7 @@ const OfficialRosters2026 = () => {
               </motion.div>
 
               <p className="mt-4 text-xs text-muted-foreground">
-                Roster names are placeholders. Official rosters will be loaded from the league CSV.
+                Starting lineups are auto-arranged by 2026 salary as a proxy for player value.
               </p>
             </>
           )}
