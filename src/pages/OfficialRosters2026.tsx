@@ -83,8 +83,8 @@ const OfficialRosters2026 = () => {
     '11111111-0001-0001-0001-000000000001': 515,  // Sylvan Park Forresters (+275 +240)
     '11111111-0001-0001-0001-000000000003': -275, // Nashville Kats
     '11111111-0001-0001-0001-000000000005': -240, // Queen City Harambes
-    '11111111-0001-0001-0001-000000000002': -300, // Franklin Fanatics (Drake London trade)
-    '11111111-0001-0001-0001-000000000004': 300,  // Abbottabad Geronimos (Drake London trade)
+    '11111111-0001-0001-0001-000000000002': -97,  // Franklin Fanatics (target $105)
+    '11111111-0001-0001-0001-000000000004': 97,  // Abbottabad Geronimos (target $771)
   };
   const budgetAdjustment = teamId ? (BUDGET_ADJUSTMENTS[teamId] ?? 0) : 0;
   const fallDraftCapital = 1000 + budgetAdjustment - veteranSpent;
