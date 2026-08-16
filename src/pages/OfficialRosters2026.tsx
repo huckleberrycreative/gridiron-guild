@@ -112,12 +112,16 @@ const OfficialRosters2026 = () => {
 
   const veteranSpent = roster.reduce((sum, r) => sum + (r.isRookie ? 0 : (r.s2026 ?? 0)), 0);
   const BUDGET_ADJUSTMENTS: Record<string, number> = {
-    '11111111-0001-0001-0001-000000000001': 515,  // Sylvan Park Forresters (+275 +240)
-    '11111111-0001-0001-0001-000000000003': -275, // Nashville Kats
-    '11111111-0001-0001-0001-000000000005': -220,  // Queen City Harambes (target $35)
-    '11111111-0001-0001-0001-000000000002': -97,  // Franklin Fanatics (target $105)
-    '11111111-0001-0001-0001-000000000004': 97,  // Abbottabad Geronimos (target $771)
-    '11111111-0001-0001-0001-000000000010': -2,  // Nepo Beach Guppies (target $1)
+    '11111111-0001-0001-0001-000000000001': 556,  // Sylvan Park Forresters (target $1,000)
+    '11111111-0001-0001-0001-000000000002': -107, // Franklin Fanatics (target $95)
+    '11111111-0001-0001-0001-000000000003': -306, // Nashville Kats (target $290)
+    '11111111-0001-0001-0001-000000000004': -114, // Abbottabad Geronimos (target $560)
+    '11111111-0001-0001-0001-000000000005': -223, // Queen City Harambes (target $32)
+    '11111111-0001-0001-0001-000000000006': -41,  // West NY Fire Ants (target $378)
+    '11111111-0001-0001-0001-000000000007': -23,  // Ken Francis Experience (target $217)
+    '11111111-0001-0001-0001-000000000008': -44,  // Germantown Gamblers (target $406)
+    '11111111-0001-0001-0001-000000000009': -43,  // Chicago Dawgs (target $398)
+    '11111111-0001-0001-0001-000000000010': -1,   // Nepo Beach Guppies (target $2)
   };
   const budgetAdjustment = teamId ? (BUDGET_ADJUSTMENTS[teamId] ?? 0) : 0;
   const fallDraftCapital = 1000 + budgetAdjustment - veteranSpent;
