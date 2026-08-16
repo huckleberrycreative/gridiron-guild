@@ -77,11 +77,42 @@ const Season2026 = () => {
           return (b.s2026 ?? 0) - (a.s2026 ?? 0);
         });
 
+      // Build likeliest starting lineup + bench
+      type Row = (typeof active)[number];
+      const pool = [...active].sort((a, b) => (b.s2026 ?? 0) - (a.s2026 ?? 0));
+      const used = new Set<Row>();
+      const take = (allowed: string[]) => {
+        const pick = pool.find((p) => !used.has(p) && allowed.includes(p.position));
+        if (pick) used.add(pick);
+        return pick ?? null;
+      };
+      const FLEX = ['RB', 'WR', 'TE'];
+      const ANY = ['QB', 'RB', 'WR', 'TE'];
+      const starters: { label: string; player: Row | null }[] = [
+        { label: 'QB', player: take(['QB']) },
+        { label: 'RB', player: take(['RB']) },
+        { label: 'RB', player: take(['RB']) },
+        { label: 'WR', player: take(['WR']) },
+        { label: 'WR', player: take(['WR']) },
+        { label: 'FLEX', player: take(FLEX) },
+        { label: 'FLEX', player: take(FLEX) },
+        { label: 'FLEX', player: take(FLEX) },
+        { label: 'OP', player: take(ANY) },
+      ];
+      const benchPlayers = pool.filter((p) => !used.has(p));
+      const bench = Array.from({ length: Math.max(6, benchPlayers.length) }, (_, i) => ({
+        label: `BN${i + 1}`,
+        player: benchPlayers[i] ?? null,
+      }));
+
       const veteranSpent = active.reduce((sum, r) => sum + (r.isRookie ? 0 : r.s2026 ?? 0), 0);
       const budget = 1000 + (BUDGET_ADJUSTMENTS[team.id] ?? 0) - veteranSpent;
-      return { team, active, budget };
+      const openSpots = Math.max(0, starters.length + bench.length - active.length);
+      const budgetPerSpot = openSpots > 0 ? Math.floor(budget / openSpots) : null;
+      return { team, starters, bench, budget, openSpots, budgetPerSpot };
     });
   }, [teams, salaries]);
+
 
   const isLoading = teamsLoading || salariesLoading;
 
@@ -143,12 +174,12 @@ const Season2026 = () => {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {teamData.map(({ team, active, budget }) => (
+              {teamData.map(({ team, starters, bench, budget, openSpots, budgetPerSpot }) => (
                 <div
                   key={team.id}
                   className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
                 >
-                  <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/50 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3 border-b border-border bg-muted/50 px-4 py-3">
                     <h3 className="font-display font-bold uppercase tracking-wide text-sm">
                       {team.name}
                     </h3>
@@ -164,34 +195,64 @@ const Season2026 = () => {
                       >
                         ${budget}
                       </div>
+                      <div className="mt-1 font-display uppercase tracking-wider text-[10px] text-muted-foreground">
+                        Open Roster Spots
+                      </div>
+                      <div className="font-mono font-bold text-sm">{openSpots}</div>
+                      <div className="mt-1 font-display uppercase tracking-wider text-[10px] text-muted-foreground">
+                        Budget Per Spot
+                      </div>
+                      <div className="font-mono font-bold text-sm">
+                        {budgetPerSpot != null ? `$${budgetPerSpot}` : '-'}
+                      </div>
                     </div>
                   </div>
-                  <ul className="divide-y divide-border/50">
-                    {active.length === 0 && (
-                      <li className="px-4 py-3 text-sm text-muted-foreground italic">
-                        No active players.
-                      </li>
-                    )}
-                    {active.map((p, i) => (
-                      <li key={i} className="flex items-center gap-3 px-4 py-2 text-sm">
-                        <span
-                          className={cn(
-                            'inline-flex items-center justify-center w-8 h-6 rounded text-[10px] font-display font-bold border shrink-0',
-                            positionColors[p.position] || 'bg-gray-100 text-gray-700 border-gray-200'
-                          )}
-                        >
-                          {p.position}
-                        </span>
-                        <span className="font-medium flex-1 truncate">{p.name}</span>
-                        {p.ft && <Star size={14} className="text-gold fill-gold shrink-0" />}
-                        <span className="font-mono text-muted-foreground">
-                          {p.s2026 != null ? `$${p.s2026}` : '-'}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  {([
+                    { title: 'Starting Lineup', slots: starters },
+                    { title: 'Bench', slots: bench },
+                  ] as const).map((group) => (
+                    <div key={group.title}>
+                      <div className="bg-primary/10 px-4 py-1.5 font-display uppercase tracking-wider text-[10px] font-bold">
+                        {group.title}
+                      </div>
+                      <ul className="divide-y divide-border/50">
+                        {group.slots.map((slot, i) => (
+                          <li key={i} className="flex items-center gap-3 px-4 py-2 text-sm">
+                            <span className="font-display uppercase tracking-wider text-[10px] text-muted-foreground w-10 shrink-0">
+                              {slot.label}
+                            </span>
+                            {slot.player ? (
+                              <>
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center justify-center w-8 h-6 rounded text-[10px] font-display font-bold border shrink-0',
+                                    positionColors[slot.player.position] ||
+                                      'bg-gray-100 text-gray-700 border-gray-200'
+                                  )}
+                                >
+                                  {slot.player.position}
+                                </span>
+                                <span className="font-medium flex-1 truncate">{slot.player.name}</span>
+                                {slot.player.ft && (
+                                  <Star size={14} className="text-gold fill-gold shrink-0" />
+                                )}
+                                <span className="font-mono text-muted-foreground">
+                                  {slot.player.s2026 != null ? `$${slot.player.s2026}` : '-'}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="flex-1 font-display uppercase tracking-wider text-[10px] italic text-muted-foreground">
+                                Open
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
               ))}
+
             </div>
           )}
         </div>
