@@ -40,6 +40,7 @@ const navLinks: NavItem[] = [
   {
     label: 'About',
     children: [
+      { href: '/season-2025', label: '2025 Season', description: 'Last season recap, standings, and playoffs' },
       { href: '/meet-the-league', label: 'Meet the League', description: 'Governor profiles and stats' },
       { href: '/rivalry-week', label: 'Rivalry Week', description: 'Historic matchup rivalries' },
       { href: '/lore', label: 'Lore', description: 'Season-by-season history' },
