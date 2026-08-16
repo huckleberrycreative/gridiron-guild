@@ -77,11 +77,42 @@ const Season2026 = () => {
           return (b.s2026 ?? 0) - (a.s2026 ?? 0);
         });
 
+      // Build likeliest starting lineup + bench
+      type Row = (typeof active)[number];
+      const pool = [...active].sort((a, b) => (b.s2026 ?? 0) - (a.s2026 ?? 0));
+      const used = new Set<Row>();
+      const take = (allowed: string[]) => {
+        const pick = pool.find((p) => !used.has(p) && allowed.includes(p.position));
+        if (pick) used.add(pick);
+        return pick ?? null;
+      };
+      const FLEX = ['RB', 'WR', 'TE'];
+      const ANY = ['QB', 'RB', 'WR', 'TE'];
+      const starters: { label: string; player: Row | null }[] = [
+        { label: 'QB', player: take(['QB']) },
+        { label: 'RB', player: take(['RB']) },
+        { label: 'RB', player: take(['RB']) },
+        { label: 'WR', player: take(['WR']) },
+        { label: 'WR', player: take(['WR']) },
+        { label: 'FLEX', player: take(FLEX) },
+        { label: 'FLEX', player: take(FLEX) },
+        { label: 'FLEX', player: take(FLEX) },
+        { label: 'OP', player: take(ANY) },
+      ];
+      const benchPlayers = pool.filter((p) => !used.has(p));
+      const bench = Array.from({ length: Math.max(6, benchPlayers.length) }, (_, i) => ({
+        label: `BN${i + 1}`,
+        player: benchPlayers[i] ?? null,
+      }));
+
       const veteranSpent = active.reduce((sum, r) => sum + (r.isRookie ? 0 : r.s2026 ?? 0), 0);
       const budget = 1000 + (BUDGET_ADJUSTMENTS[team.id] ?? 0) - veteranSpent;
-      return { team, active, budget };
+      const openSpots = Math.max(0, starters.length + bench.length - active.length);
+      const budgetPerSpot = openSpots > 0 ? Math.floor(budget / openSpots) : null;
+      return { team, starters, bench, budget, openSpots, budgetPerSpot };
     });
   }, [teams, salaries]);
+
 
   const isLoading = teamsLoading || salariesLoading;
 
