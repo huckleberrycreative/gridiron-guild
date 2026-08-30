@@ -27,7 +27,7 @@ const TEAM_BUDGETS: Record<string, number> = {
   '11111111-0001-0001-0001-000000000005': 35, // Queen City Harambes
   '11111111-0001-0001-0001-000000000006': 378, // West NY Mary Washington Fire Ants
   '11111111-0001-0001-0001-000000000007': 217, // Austin Area Brock Party
-  '11111111-0001-0001-0001-000000000008': 606, // Germantown Gamblers
+  '11111111-0001-0001-0001-000000000008': 406, // Germantown Gamblers
   '11111111-0001-0001-0001-000000000009': 398, // Chicago Dawgs
   '11111111-0001-0001-0001-000000000010': 0, // Nepo Beach Guppies
 };
