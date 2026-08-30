@@ -18,18 +18,20 @@ const toNum = (v?: string) => (v && !isNaN(parseInt(v)) ? parseInt(v) : null);
 // Aug 31, 2026 8:00 PM CST (CDT in effect: UTC-5) => 01:00 UTC Sep 1, 2026
 const DRAFT_DATE = new Date('2026-09-01T01:00:00Z');
 
-const BUDGET_ADJUSTMENTS: Record<string, number> = {
-  '11111111-0001-0001-0001-000000000001': 556,
-  '11111111-0001-0001-0001-000000000002': -107,
-  '11111111-0001-0001-0001-000000000003': -306,
-  '11111111-0001-0001-0001-000000000004': -114,
-  '11111111-0001-0001-0001-000000000005': -223,
-  '11111111-0001-0001-0001-000000000006': -41,
-  '11111111-0001-0001-0001-000000000007': -23,
-  '11111111-0001-0001-0001-000000000008': -44,
-  '11111111-0001-0001-0001-000000000009': -43,
-  '11111111-0001-0001-0001-000000000010': -1,
+// Official fall draft budgets (remaining salary cap) per team
+const TEAM_BUDGETS: Record<string, number> = {
+  '11111111-0001-0001-0001-000000000001': 1000, // Sylvan Park Forresters
+  '11111111-0001-0001-0001-000000000002': 105, // Franklin Fanatics
+  '11111111-0001-0001-0001-000000000003': 290, // Nashville Kats
+  '11111111-0001-0001-0001-000000000004': 560, // Abbottabad Geronimos
+  '11111111-0001-0001-0001-000000000005': 35, // Queen City Harambes
+  '11111111-0001-0001-0001-000000000006': 378, // West NY Mary Washington Fire Ants
+  '11111111-0001-0001-0001-000000000007': 217, // Austin Area Brock Party
+  '11111111-0001-0001-0001-000000000008': 606, // Germantown Gamblers
+  '11111111-0001-0001-0001-000000000009': 398, // Chicago Dawgs
+  '11111111-0001-0001-0001-000000000010': 0, // Nepo Beach Guppies
 };
+
 
 function useCountdown(target: Date) {
   const [now, setNow] = useState(() => Date.now());
@@ -110,7 +112,9 @@ const Season2026 = () => {
       }));
 
       const veteranSpent = active.reduce((sum, r) => sum + (r.isRookie ? 0 : r.s2026 ?? 0), 0);
-      const budget = 1000 + (BUDGET_ADJUSTMENTS[team.id] ?? 0) - veteranSpent;
+      void veteranSpent;
+      const budget = TEAM_BUDGETS[team.id] ?? 0;
+
       const openSpots = Math.max(0, starters.length + bench.length - active.length);
       const budgetPerSpot = openSpots > 0 ? Math.floor(budget / openSpots) : null;
       return { team, starters, bench, budget, openSpots, budgetPerSpot };
