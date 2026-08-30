@@ -13,7 +13,8 @@ import {
   BarChart3,
   Calendar,
   Medal,
-  FileEdit
+  FileEdit,
+  ClipboardList
 } from 'lucide-react';
 import logoImage from '@/assets/logo.png';
 
@@ -34,6 +35,7 @@ export default function AdminLayout() {
     { icon: Calendar, label: 'Seasons', path: '/admin/seasons' },
     { icon: BarChart3, label: 'Standings', path: '/admin/standings' },
     { icon: Trophy, label: 'Playoffs', path: '/admin/playoffs' },
+    { icon: ClipboardList, label: 'Rosters', path: '/admin/rosters' },
     { icon: DollarSign, label: 'Salaries', path: '/admin/salaries' },
     { icon: FileText, label: 'Weekly Recaps', path: '/admin/weekly-recaps' },
     { icon: FileEdit, label: 'Page Content', path: '/admin/page-content' },

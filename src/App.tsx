@@ -43,6 +43,7 @@ import AdminMedia from "./pages/admin/Media";
 import AdminPageContent from "./pages/admin/PageContent";
 import AdminPantheon from "./pages/admin/PantheonAdmin";
 import AdminCoaches from "./pages/admin/Coaches";
+import AdminRosters from "./pages/admin/Rosters";
 import DynamicPage from "./pages/DynamicPage";
 
 const queryClient = new QueryClient();
@@ -103,6 +104,7 @@ const App = () => (
                 <Route path="page-content" element={<AdminPageContent />} />
                 <Route path="pantheon" element={<AdminPantheon />} />
                 <Route path="coaches" element={<AdminCoaches />} />
+                <Route path="rosters" element={<AdminRosters />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
