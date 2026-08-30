@@ -112,7 +112,9 @@ const Season2026 = () => {
       }));
 
       const veteranSpent = active.reduce((sum, r) => sum + (r.isRookie ? 0 : r.s2026 ?? 0), 0);
-      const budget = 1000 + (BUDGET_ADJUSTMENTS[team.id] ?? 0) - veteranSpent;
+      void veteranSpent;
+      const budget = TEAM_BUDGETS[team.id] ?? 0;
+
       const openSpots = Math.max(0, starters.length + bench.length - active.length);
       const budgetPerSpot = openSpots > 0 ? Math.floor(budget / openSpots) : null;
       return { team, starters, bench, budget, openSpots, budgetPerSpot };
