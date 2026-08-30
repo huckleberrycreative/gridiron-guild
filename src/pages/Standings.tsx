@@ -150,9 +150,9 @@ const Standings = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="mb-8 p-4 bg-card rounded-lg border border-border"
           >
-            <h3 className="font-display font-bold text-sm uppercase tracking-wider mb-3 text-muted-foreground">
+            <h2 className="font-display font-bold text-sm uppercase tracking-wider mb-3 text-muted-foreground">
               Weekly Points System
-            </h3>
+            </h2>
             <div className="flex flex-wrap gap-3">
               {Object.entries(RANKING_POINTS).map(([rank, points]) => {
                 const tier = getPlayoffTier(Number(rank));
