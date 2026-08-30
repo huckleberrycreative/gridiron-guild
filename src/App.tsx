@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { PasswordGate } from "./components/auth/PasswordGate";
+import { RouteSeo } from "./components/seo/RouteSeo";
+
 import AdminLayout from "./components/layout/AdminLayout";
 import Index from "./pages/Index";
 import Standings from "./pages/Standings";
@@ -56,7 +58,9 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <RouteSeo />
             <Routes>
+
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/standings" element={<Standings />} />

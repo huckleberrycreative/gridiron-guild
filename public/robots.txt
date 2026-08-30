@@ -12,3 +12,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Disallow: /admin
+
+Sitemap: https://mensleague.com/sitemap.xml

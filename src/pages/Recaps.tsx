@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
@@ -53,6 +55,29 @@ const Recaps = () => {
 
   return (
     <Layout>
+      {filteredRecaps && filteredRecaps.length > 0 && (
+        <Helmet>
+          <script type="application/ld+json">
+            {JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'ItemList',
+              itemListElement: filteredRecaps.slice(0, 25).map((recap, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                item: {
+                  '@type': 'BlogPosting',
+                  headline: recap.title,
+                  ...(recap.recap_date ? { datePublished: recap.recap_date } : {}),
+                  articleBody: (recap.content || '').replace(/<[^>]*>/g, '').slice(0, 500),
+                  mainEntityOfPage: 'https://mensleague.com/recaps',
+                  author: { '@type': 'Organization', name: "Men's League" },
+                },
+              })),
+            })}
+          </script>
+        </Helmet>
+      )}
+
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4">
           <motion.div

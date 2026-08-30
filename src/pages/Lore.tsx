@@ -411,9 +411,9 @@ const Lore = () => {
                     <div className="space-y-6 pt-4">
                       {/* Season Summary */}
                       <div>
-                        <h3 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-2">
+                        <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-2">
                           Season Summary
-                        </h3>
+                        </h2>
                         <p className="text-foreground leading-relaxed">{season.summary}</p>
                       </div>
 
@@ -421,9 +421,9 @@ const Lore = () => {
                       <div className="bg-gradient-to-br from-gold/20 to-gold/5 rounded-lg p-5 border border-gold/30">
                         <div className="flex items-center gap-2 mb-4">
                           <Trophy className="text-gold" size={20} />
-                          <h3 className="font-display font-bold text-sm uppercase tracking-wider">
+                          <h2 className="font-display font-bold text-sm uppercase tracking-wider">
                             Playoff Bracket
-                          </h3>
+                          </h2>
                         </div>
 
                         {/* Seeding */}
@@ -566,9 +566,9 @@ const Lore = () => {
                       <div className="bg-accent/10 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-3">
                           <Award className="text-accent" size={20} />
-                          <h3 className="font-display font-bold text-sm uppercase tracking-wider">
+                          <h2 className="font-display font-bold text-sm uppercase tracking-wider">
                             League MVP
-                          </h3>
+                          </h2>
                         </div>
                         <p className="font-semibold text-lg mb-1">{season.mvp}</p>
                         <p className="text-sm text-muted-foreground">{season.mvpStats}</p>
@@ -578,9 +578,9 @@ const Lore = () => {
                       <div className="bg-muted/50 rounded-lg p-4 border-l-4 border-accent">
                         <div className="flex items-center gap-2 mb-2">
                           <Flame className="text-orange-500" size={18} />
-                          <h3 className="font-display font-bold text-sm uppercase tracking-wider">
+                          <h2 className="font-display font-bold text-sm uppercase tracking-wider">
                             The Biggest Story
-                          </h3>
+                          </h2>
                         </div>
                         <p className="text-foreground">{season.biggestStory}</p>
                       </div>
@@ -589,9 +589,9 @@ const Lore = () => {
                       <div>
                         <div className="flex items-center gap-2 mb-3">
                           <ArrowRightLeft className="text-accent" size={18} />
-                          <h3 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground">
+                          <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground">
                             Most Consequential Trades
-                          </h3>
+                          </h2>
                         </div>
                         <div className="space-y-3">
                           {season.consequentialTrades.map((trade, i) => (
@@ -637,9 +637,9 @@ const Lore = () => {
                       <div>
                         <div className="flex items-center gap-2 mb-3">
                           <Target className="text-primary" size={18} />
-                          <h3 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground">
+                          <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground">
                             Notable Events
-                          </h3>
+                          </h2>
                         </div>
                         <ul className="space-y-2">
                           {season.notableEvents.map((event, i) => (
