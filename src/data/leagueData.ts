@@ -128,16 +128,17 @@ export const calculateSalaryForYear = (
 // ========================================
 // TEAMS DATA - 2025 SEASON CURRENT ROSTERS
 // ========================================
+// Ordered by 2025 final finish; all stats zeroed for the 2026 season reset.
 export const teams: Team[] = [
-  { id: '1', name: 'The Sylvan Park Forresters', owner: 'Ben Holcomb', totalPoints: 172, pointsFor: 1853, wins: 11, losses: 2 },
-  { id: '2', name: 'The Franklin Fanatics', owner: 'Carlos Evans', totalPoints: 152, pointsFor: 1776, wins: 8, losses: 3 },
-  { id: '3', name: 'The Nashville Kats', owner: 'Jackson Ferrell', totalPoints: 127, pointsFor: 1655, wins: 8, losses: 5 },
-  { id: '4', name: 'The Abbattabad Geronimos', owner: 'Johnny Holcomb', totalPoints: 115, pointsFor: 1554, wins: 6, losses: 5 },
-  { id: '5', name: 'The Queen City Harambes', owner: 'William Holcomb', totalPoints: 112, pointsFor: 1660, wins: 6, losses: 6 },
-  { id: '6', name: 'The West NY Mary Washington Fire Ants', owner: 'Dino Nicandros', totalPoints: 104, pointsFor: 1622, wins: 5, losses: 6 },
-  { id: '7', name: 'The Florida Area Ken Francis Experience', owner: 'James Holcomb', totalPoints: 81, pointsFor: 1486, wins: 3, losses: 9 },
-  { id: '8', name: 'The Germantown Gamblers', owner: 'John Aicklen', totalPoints: 79, pointsFor: 1484, wins: 3, losses: 9 },
-  { id: '9', name: 'The Chicago Dawgs', owner: 'Will Hobart', totalPoints: 76, pointsFor: 1451, wins: 3, losses: 7 },
+  { id: '1', name: 'The Nashville Kats', owner: 'Jackson Ferrell', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '2', name: 'The Sylvan Park Forresters', owner: 'Ben Holcomb', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '3', name: 'The Franklin Fanatics', owner: 'Carlos Evans', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '4', name: 'The Abbattabad Geronimos', owner: 'Johnny Holcomb', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '5', name: 'The Queen City Harambes', owner: 'William Holcomb', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '6', name: 'The West NY Mary Washington Fire Ants', owner: 'Dino Nicandros', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '7', name: 'The Florida Area Ken Francis Experience', owner: 'James Holcomb', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '8', name: 'The Germantown Gamblers', owner: 'John Aicklen', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
+  { id: '9', name: 'The Chicago Dawgs', owner: 'Will Hobart', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
   { id: '10', name: 'The Nepo Beach Guppies', owner: 'Blake Blacklidge', totalPoints: 0, pointsFor: 0, wins: 0, losses: 0 },
 ];
 
