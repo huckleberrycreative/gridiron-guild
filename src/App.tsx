@@ -34,6 +34,7 @@ import NotFound from "./pages/NotFound";
 
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
+import AdminResetPassword from "./pages/admin/ResetPassword";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTeams from "./pages/admin/Teams";
 import AdminSeasons from "./pages/admin/Seasons";
@@ -88,7 +89,8 @@ const App = () => (
               <Route path="/pages/:slug" element={<DynamicPage />} />
 
               {/* Admin routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
+<Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/reset-password" element={<AdminResetPassword />} />
               <Route
                 path="/admin"
                 element={
