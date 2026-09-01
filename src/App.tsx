@@ -29,7 +29,6 @@ import RivalryWeek from "./pages/RivalryWeek";
 import RookieDraft from "./pages/RookieDraft";
 import OfficialRosters2026 from "./pages/OfficialRosters2026";
 import FallDraftPool2026 from "./pages/FallDraftPool2026";
-import InflationCalculator from "./pages/InflationCalculator";
 import TradeAnalyzer from "./pages/TradeAnalyzer";
 import NotFound from "./pages/NotFound";
 
@@ -84,7 +83,6 @@ const App = () => (
               <Route path="/rookie-draft" element={<RookieDraft />} />
               <Route path="/official-rosters-2026" element={<OfficialRosters2026 />} />
               <Route path="/fall-draft-pool-2026" element={<FallDraftPool2026 />} />
-              <Route path="/inflation-calculator" element={<InflationCalculator />} />
               <Route path="/trade-analyzer" element={<TradeAnalyzer />} />
 
               {/* Dynamic pages route */}

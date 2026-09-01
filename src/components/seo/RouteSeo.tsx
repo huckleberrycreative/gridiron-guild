@@ -92,10 +92,6 @@ const routeMeta: Record<string, RouteMeta> = {
     title: "2026 Fall Draft Pool — Men's League Fantasy Football",
     description: "Every available player in the 2026 Men's League fall draft with expected draft cost by position.",
   },
-  '/inflation-calculator': {
-    title: "Inflation Calculator — Men's League Fantasy Football",
-    description: "Convert pre-Tuten dynasty trade values into post-Tuten market values for Men's League trades.",
-  },
   '/lottery': {
     title: "Draft Lottery — Men's League Fantasy Football",
     description: "The Men's League ping pong ball draft lottery simulator with weighted odds.",
