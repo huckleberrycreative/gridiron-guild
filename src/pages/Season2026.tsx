@@ -5,6 +5,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries } from '@/hooks/usePlayerSalaries';
 import { usePowerRankRows } from '@/hooks/usePowerRanks';
 import { PowerRanksTable } from '@/pages/PowerRanks';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loader2, Star } from 'lucide-react';
 
