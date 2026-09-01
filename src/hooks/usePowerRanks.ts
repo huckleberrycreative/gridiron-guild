@@ -37,7 +37,7 @@ export const toNum = (v?: string | null) => {
   return isNaN(n) ? 0 : n;
 };
 
-const salaryImpliedPpg = (position: string, salary: number) => {
+export const salaryImpliedPpg = (position: string, salary: number) => {
   const hi = POS_CEILING_PPG[position] ?? 15;
   const lo = POS_FLOOR_PPG[position] ?? 3;
   const pct = Math.min(1, Math.max(0, salary / SALARY_CEILING));

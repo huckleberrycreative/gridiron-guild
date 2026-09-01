@@ -12,6 +12,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import {
+  bestLineup,
+  normalize,
+  toNum,
+  salaryImpliedPpg,
+  NFL_WEEKS,
+  type Asset as PRAsset,
+} from '@/hooks/usePowerRanks';
 
 const positionColors: Record<string, string> = {
   QB: 'bg-red-100 text-red-700 border-red-200',
@@ -20,114 +28,47 @@ const positionColors: Record<string, string> = {
   TE: 'bg-amber-100 text-amber-700 border-amber-200',
 };
 
-type Meta = { rank: number; posRank: number; age: number | null };
-
-const normalize = (n: string) =>
-  n
-    .toLowerCase()
-    .replace(/[.''`]/g, '')
-    .replace(/\s+(jr|sr|ii|iii|iv|v)$/i, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-// Expected weekly fantasy output by positional rank (decaying curve)
-const WEEKLY_CURVE: Record<string, { base: number; drop: number; floor: number }> = {
-  QB: { base: 22, drop: 0.55, floor: 8 },
-  RB: { base: 19, drop: 0.5, floor: 4 },
-  WR: { base: 18, drop: 0.4, floor: 4 },
-  TE: { base: 14, drop: 0.55, floor: 3 },
-};
-
-// Salary is the league's own market signal — used when a player isn't in the
-// public rankings file (i.e. he's rostered, not in the fall draft pool).
-const SALARY_CEILING = 203;
-
-const weeklyOutput = (position: string, posRank: number | null, salary2026: number) => {
-  const c = WEEKLY_CURVE[position] ?? WEEKLY_CURVE.WR;
-  if (posRank != null) return Math.max(c.floor, c.base - c.drop * (posRank - 1));
-  const pct = Math.min(1, salary2026 / SALARY_CEILING);
-  // salary-implied output, mildly convex so top contracts separate from mid-tier
-  return c.floor + (c.base - c.floor) * Math.pow(pct, 0.75);
-};
-
-// Dynasty age curve — multiplier on long-term value
-const ageMultiplier = (position: string, age: number | null) => {
-  if (age == null) return 1;
-  const peak = position === 'RB' ? 24 : position === 'QB' ? 27 : 25;
-  if (age <= peak) return 1.08;
-  const decline = position === 'RB' ? 0.055 : position === 'QB' ? 0.025 : 0.035;
-  return Math.max(0.55, 1.08 - decline * (age - peak));
-};
-
-const toNum = (v?: string) => {
-  if (!v) return 0;
-  const n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10);
-  return isNaN(n) ? 0 : n;
-};
-
 type Asset = {
   id: string;
   name: string;
   position: string;
-  age: number | null;
-  weekly: number;
+  ppg: number;
+  projected: boolean;
   franchiseTag: boolean;
   practiceSquad: boolean;
   salary2026: number;
+  effectiveSalary: number;
   futureSalary: number;
-  dynastyValue: number;
 };
 
-const STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX', 'FLEX', 'OP'];
-const eligible = (slot: string, pos: string) =>
-  slot === 'OP' ? true : slot === 'FLEX' ? ['RB', 'WR', 'TE'].includes(pos) : slot === pos;
+const lineupTotal = (roster: PRAsset[], excluded?: Set<string>) =>
+  bestLineup(roster, excluded).reduce((s, p) => s + p.ppg, 0);
 
-// Best-lineup weekly output using greedy fill from most restrictive slots
-const startingOutput = (roster: Asset[]) => {
-  const pool = [...roster].sort((a, b) => b.weekly - a.weekly);
-  const used = new Set<string>();
-  let total = 0;
-  for (const slot of STARTER_SLOTS) {
-    const pick = pool.find((p) => !used.has(p.id) && eligible(slot, p.position));
-    if (pick) {
-      used.add(pick.id);
-      total += pick.weekly;
-    }
-  }
-  return total;
+// Average lineup output across "any one starter is out this week" scenarios —
+// this is what real depth buys you.
+const injuryAdjustedOutput = (roster: Asset[]) => {
+  const starters = bestLineup(roster);
+  if (!starters.length) return 0;
+  let sum = 0;
+  for (const s of starters) sum += lineupTotal(roster, new Set([s.id]));
+  return sum / starters.length;
 };
 
-// Depth adequacy: rewards having usable backups at each position, penalizes holes
-const IDEAL_DEPTH: Record<string, number> = { QB: 2, RB: 4, WR: 5, TE: 2 };
-const depthScore = (roster: Asset[]) => {
-  let score = 0;
-  for (const pos of Object.keys(IDEAL_DEPTH)) {
-    const group = roster
-      .filter((p) => p.position === pos)
-      .sort((a, b) => b.weekly - a.weekly);
-    const ideal = IDEAL_DEPTH[pos];
-    for (let i = 0; i < ideal; i++) {
-      const p = group[i];
-      // later depth slots matter less; missing bodies score zero
-      score += (p ? p.weekly : 0) * Math.pow(0.6, i);
-    }
-  }
-  return score;
+const capEfficiency = (roster: Asset[]) => {
+  const spend = roster.reduce(
+    (s, p) => s + p.effectiveSalary + p.futureSalary * 0.25,
+    0
+  );
+  const production = lineupTotal(roster) + injuryAdjustedOutput(roster) * 0.5;
+  return production / Math.max(50, spend / 100);
 };
 
-const capScore = (roster: Asset[]) => {
-  const spend = roster.reduce((s, p) => s + p.salary2026 + p.futureSalary * 0.5, 0);
-  const production = roster.reduce((s, p) => s + p.dynastyValue, 0);
-  // points of dynasty value per $100 of committed salary
-  return production / Math.max(1, spend / 100);
-};
-
-const WEIGHTS = { starters: 0.45, depth: 0.2, dynasty: 0.2, cap: 0.15 };
+const WEIGHTS = { starters: 0.55, depth: 0.25, cap: 0.2 };
 
 const TradeAnalyzer = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
-  const [meta, setMeta] = useState<Record<string, Meta>>({});
+  const [proj, setProj] = useState<Record<string, number>>({});
   const [teamA, setTeamA] = useState<string>('');
   const [teamB, setTeamB] = useState<string>('');
   const [selA, setSelA] = useState<Set<string>>(new Set());
@@ -136,48 +77,49 @@ const TradeAnalyzer = () => {
   useEffect(() => {
     (async () => {
       try {
-        const text = await (await fetch('/data/fantasypros-2026-dynasty.csv')).text();
-        const lines = text.split(/\r?\n/).filter(Boolean);
-        const map: Record<string, Meta> = {};
-        for (let i = 1; i < lines.length; i++) {
-          const cells = lines[i].split(',');
-          const rank = parseInt(cells[0], 10);
-          const name = cells[1]?.trim();
-          const posRaw = cells[3]?.trim() || '';
-          const age = parseInt(cells[4]?.trim() || '', 10);
-          if (!name || isNaN(rank)) continue;
-          const posRank = parseInt(posRaw.replace(/\D/g, ''), 10);
-          map[normalize(name)] = {
-            rank,
-            posRank: isNaN(posRank) ? 99 : posRank,
-            age: isNaN(age) ? null : age,
-          };
-        }
-        setMeta(map);
+        const text = await (await fetch('/data/projections-2026.csv')).text();
+        const map: Record<string, number> = {};
+        text
+          .split(/\r?\n/)
+          .slice(1)
+          .filter(Boolean)
+          .forEach((line) => {
+            const cells = line.split(',');
+            if (cells.length < 3) return;
+            const name = normalize(cells[0].replace(/"/g, ''));
+            const fpts = parseFloat(cells[2]);
+            if (!name || isNaN(fpts)) return;
+            map[name] = fpts / NFL_WEEKS;
+          });
+        setProj(map);
       } catch {
-        setMeta({});
+        setProj({});
       }
     })();
   }, []);
 
   const toAsset = (s: PlayerSalaryWithDetails): Asset => {
     const name = `${s.firstName} ${s.lastName}`.trim();
-    const m = meta[normalize(name)];
+    const projected = proj[normalize(name)];
     const salary2026 = toNum(s.salary2026);
+    const effectiveSalary = Math.max(
+      salary2026,
+      toNum(s.salary2027),
+      s.franchiseTag ? 100 : 0
+    );
     const futureSalary =
       toNum(s.salary2027) + toNum(s.salary2028) + toNum(s.salary2029);
-    const weekly = weeklyOutput(s.position, m?.posRank ?? null, salary2026);
     return {
       id: s.id,
       name,
       position: s.position,
-      age: m?.age ?? null,
-      weekly,
+      ppg: projected ?? salaryImpliedPpg(s.position, effectiveSalary),
+      projected: projected != null,
       franchiseTag: s.franchiseTag,
       practiceSquad: s.practiceSquad,
       salary2026,
+      effectiveSalary,
       futureSalary,
-      dynastyValue: weekly * ageMultiplier(s.position, m?.age ?? null),
     };
   };
 
@@ -186,17 +128,19 @@ const TradeAnalyzer = () => {
       salaries
         .filter((s) => s.teamId === teamId)
         .map(toAsset)
-        .sort((a, b) => b.weekly - a.weekly);
+        .sort((a, b) => b.ppg - a.ppg);
     return { A: teamA ? build(teamA) : [], B: teamB ? build(teamB) : [] };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [salaries, teamA, teamB, meta]);
+  }, [salaries, teamA, teamB, proj]);
 
-  const evaluate = (roster: Asset[]) => ({
-    starters: startingOutput(roster),
-    depth: depthScore(roster),
-    dynasty: roster.reduce((s, p) => s + p.dynastyValue, 0),
-    cap: capScore(roster),
-  });
+  const evaluate = (roster: Asset[]) => {
+    const active = roster.filter((p) => !p.practiceSquad);
+    return {
+      starters: lineupTotal(active),
+      depth: injuryAdjustedOutput(active),
+      cap: capEfficiency(active),
+    };
+  };
 
   const analysis = useMemo(() => {
     if (!teamA || !teamB || (selA.size === 0 && selB.size === 0)) return null;
@@ -214,17 +158,15 @@ const TradeAnalyzer = () => {
       const parts = {
         starters: pct(a.starters, b.starters),
         depth: pct(a.depth, b.depth),
-        dynasty: pct(a.dynasty, b.dynasty),
         cap: pct(a.cap, b.cap),
       };
       const overall =
         parts.starters * WEIGHTS.starters +
         parts.depth * WEIGHTS.depth +
-        parts.dynasty * WEIGHTS.dynasty +
         parts.cap * WEIGHTS.cap;
       const salaryDelta =
-        gained.reduce((s, p) => s + p.salary2026, 0) -
-        lost.reduce((s, p) => s + p.salary2026, 0);
+        gained.reduce((s, p) => s + p.effectiveSalary, 0) -
+        lost.reduce((s, p) => s + p.effectiveSalary, 0);
       const futureDelta =
         gained.reduce((s, p) => s + p.futureSalary, 0) -
         lost.reduce((s, p) => s + p.futureSalary, 0);
@@ -235,7 +177,9 @@ const TradeAnalyzer = () => {
           after: after.filter((p) => p.position === pos).length,
         };
       }
-      return { parts, overall, salaryDelta, futureDelta, counts, gained, lost };
+      const ppgDelta =
+        gained.reduce((s, p) => s + p.ppg, 0) - lost.reduce((s, p) => s + p.ppg, 0);
+      return { parts, overall, salaryDelta, futureDelta, counts, gained, lost, ppgDelta };
     };
 
     return {
@@ -322,14 +266,11 @@ const TradeAnalyzer = () => {
                       )}
                     </span>
                     {p.franchiseTag && <Star size={14} className="text-gold fill-gold shrink-0" />}
-                    <span className="font-mono text-[11px] text-muted-foreground w-10 text-right">
-                      {p.age ? `${p.age}y` : '-'}
-                    </span>
-                    <span className="font-mono text-[11px] text-muted-foreground w-12 text-right">
-                      {p.weekly.toFixed(1)}
+                    <span className="font-mono text-[11px] text-muted-foreground w-14 text-right">
+                      {p.ppg.toFixed(1)} ppg
                     </span>
                     <span className="font-mono text-muted-foreground w-12 text-right">
-                      ${p.salary2026}
+                      ${p.effectiveSalary}
                     </span>
                   </button>
                 </li>
@@ -362,8 +303,7 @@ const TradeAnalyzer = () => {
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
             { label: 'Starting Output', value: r.parts.starters },
-            { label: 'Depth', value: r.parts.depth },
-            { label: 'Dynasty (Age-Adj.)', value: r.parts.dynasty },
+            { label: 'Injury-Tested Depth', value: r.parts.depth },
             { label: 'Cap Efficiency', value: r.parts.cap },
           ].map((m) => (
             <div key={m.label} className="rounded-md bg-muted/50 border border-border/60 px-2 py-2 text-center">
@@ -384,7 +324,12 @@ const TradeAnalyzer = () => {
         </div>
         <div className="space-y-1 text-xs text-muted-foreground">
           <p>
-            <span className="font-semibold text-foreground">2026 salary change:</span>{' '}
+            <span className="font-semibold text-foreground">Talent in/out:</span>{' '}
+            {r.ppgDelta >= 0 ? '+' : ''}
+            {r.ppgDelta.toFixed(1)} projected ppg
+          </p>
+          <p>
+            <span className="font-semibold text-foreground">Salary change:</span>{' '}
             {r.salaryDelta >= 0 ? '+' : '-'}${Math.abs(r.salaryDelta)} &middot; future years{' '}
             {r.futureDelta >= 0 ? '+' : '-'}${Math.abs(r.futureDelta)}
           </p>
@@ -461,13 +406,13 @@ const TradeAnalyzer = () => {
                   How the grade is calculated
                 </h2>
                 <p>
-                  Overall change = 45% starting lineup output (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP
-                  lineup), 20% positional depth (diminishing credit for each backup, holes score zero),
-                  20% age-adjusted dynasty value (RBs decline fastest, QBs slowest), and 15% cap
-                  efficiency (value produced per dollar committed in 2026 plus half of 2027-2029).
-                  Weekly output is projected from each player's dynasty positional rank where
-                  available, and from his 2026 contract value (the league's own market signal)
-                  otherwise.
+                  Every player is valued at his 2026 projected points per game (season FPTS &divide;
+                  17) — the same engine that drives the Power Ranks. Players with no projection fall
+                  back to their league contract value. Overall change = 55% starting lineup output
+                  (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP nine), 25% injury-tested depth (average
+                  lineup output when any one starter misses a week), and 20% cap efficiency (output
+                  per dollar committed, counting the higher of 2026/2027 salary plus a quarter of
+                  remaining future years). Practice squad players are excluded from lineup math.
                 </p>
               </div>
             </>
