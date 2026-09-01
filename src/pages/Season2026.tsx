@@ -122,39 +122,25 @@ const Season2026 = () => {
             </p>
           </motion.div>
 
-          {/* Countdown */}
-          <div className="mb-10 rounded-lg border-2 border-primary/30 bg-card p-6 md:p-8 text-center shadow-md">
-            <div className="flex items-center justify-center gap-2 mb-2 text-primary">
-              <CalendarClock className="h-5 w-5" />
-              <h2 className="font-display uppercase tracking-widest text-sm font-bold">
-                Fall Draft
-              </h2>
-            </div>
-            <p className="font-display text-xl md:text-2xl font-extrabold mb-6">
-              August 31, 2026 &middot; 8:00 PM CST
-            </p>
-            {c.expired ? (
-              <p className="font-display text-2xl font-extrabold text-primary uppercase">
-                The Fall Draft is here
-              </p>
-            ) : (
-              <div className="grid grid-cols-4 gap-3 max-w-xl mx-auto">
-                {[
-                  { label: 'Days', value: c.days },
-                  { label: 'Hours', value: c.hours },
-                  { label: 'Minutes', value: c.minutes },
-                  { label: 'Seconds', value: c.seconds },
-                ].map((u) => (
-                  <div key={u.label} className="rounded-md bg-muted/50 border border-border py-4">
-                    <div className="font-mono text-2xl md:text-4xl font-extrabold text-primary tabular-nums">
-                      {String(u.value).padStart(2, '0')}
-                    </div>
-                    <div className="font-display uppercase tracking-wider text-[10px] md:text-xs text-muted-foreground mt-1">
-                      {u.label}
-                    </div>
-                  </div>
-                ))}
+          {/* Truncated Power Ranks */}
+          <div className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="font-display text-xl font-bold">Power Ranks</h2>
+                <p className="text-sm text-muted-foreground">
+                  Live grades, projected lineup output, and championship odds.
+                </p>
               </div>
+              <Button asChild variant="accent" size="sm">
+                <Link to="/power-ranks">View Full Power Ranks</Link>
+              </Button>
+            </div>
+            {powerRanksLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <PowerRanksTable rows={powerRankRows} compact />
             )}
           </div>
 
