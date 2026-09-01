@@ -406,13 +406,13 @@ const TradeAnalyzer = () => {
                   How the grade is calculated
                 </h2>
                 <p>
-                  Overall change = 45% starting lineup output (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP
-                  lineup), 20% positional depth (diminishing credit for each backup, holes score zero),
-                  20% age-adjusted dynasty value (RBs decline fastest, QBs slowest), and 15% cap
-                  efficiency (value produced per dollar committed in 2026 plus half of 2027-2029).
-                  Weekly output is projected from each player's dynasty positional rank where
-                  available, and from his 2026 contract value (the league's own market signal)
-                  otherwise.
+                  Every player is valued at his 2026 projected points per game (season FPTS &divide;
+                  17) — the same engine that drives the Power Ranks. Players with no projection fall
+                  back to their league contract value. Overall change = 55% starting lineup output
+                  (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP nine), 25% injury-tested depth (average
+                  lineup output when any one starter misses a week), and 20% cap efficiency (output
+                  per dollar committed, counting the higher of 2026/2027 salary plus a quarter of
+                  remaining future years). Practice squad players are excluded from lineup math.
                 </p>
               </div>
             </>
