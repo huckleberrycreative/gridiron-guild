@@ -300,6 +300,7 @@ export function usePowerRankRows() {
           name: team.name,
           owner: team.owner,
           totalPoints: team.totalPoints,
+          avgPPW: team.avgPPW,
         },
         roster,
         starters,
