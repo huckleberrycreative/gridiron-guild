@@ -20,6 +20,11 @@ const routeMeta: Record<string, RouteMeta> = {
     description:
       "Current Men's League standings with weekly points, playoff positioning, and each governor's season-long ranking.",
   },
+  '/power-ranks': {
+    title: "Power Ranks — Men's League Fantasy Football",
+    description:
+      "Every Men's League franchise graded 0-100 on standings, projected starting lineup output, and depth, with playoff seed and championship odds.",
+  },
   '/stats': {
     title: "League Stats — Men's League Fantasy Football",
     description: "Scoring trends, points for, and team-by-team statistics across the Men's League season.",
