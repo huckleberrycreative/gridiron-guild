@@ -169,25 +169,6 @@ const OfficialRosters2026 = () => {
 
           {teamId && (
             <>
-              <motion.div
-                key={teamId + '-cap'}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="mb-6 p-6 rounded-lg border-2 border-primary/30 bg-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-              >
-                <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight uppercase">
-                  Fall Draft Capital
-                </h2>
-                <span
-                  className={cn(
-                    'font-mono text-3xl md:text-4xl font-extrabold',
-                    fallDraftCapital < 0 ? 'text-destructive' : 'text-primary'
-                  )}
-                >
-                  ${fallDraftCapital}
-                </span>
-              </motion.div>
 
               <motion.div
                 key={teamId + '-table'}
