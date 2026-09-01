@@ -14,7 +14,7 @@ export const SALARY_CEILING = 257;
 const POS_CEILING_PPG: Record<string, number> = { QB: 20, RB: 17, WR: 16, TE: 12 };
 const POS_FLOOR_PPG: Record<string, number> = { QB: 6, RB: 3, WR: 3, TE: 2 };
 
-const STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX', 'FLEX', 'OP'];
+export const STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX', 'FLEX', 'OP'];
 
 const WEEKLY_POINTS = [20, 18, 16, 14, 12, 5, 4, 3, 2, 1];
 const WEEKLY_SD = 24;
