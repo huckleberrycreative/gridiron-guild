@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries } from '@/hooks/usePlayerSalaries';
+import { usePowerRankRows } from '@/hooks/usePowerRanks';
+import { PowerRanksTable } from '@/pages/PowerRanks';
 import { cn } from '@/lib/utils';
-import { Loader2, Star, CalendarClock } from 'lucide-react';
+import { Loader2, Star } from 'lucide-react';
 
 const positionColors: Record<string, string> = {
   QB: 'bg-red-100 text-red-700 border-red-200',
