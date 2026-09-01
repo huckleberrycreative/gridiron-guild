@@ -324,7 +324,12 @@ const TradeAnalyzer = () => {
         </div>
         <div className="space-y-1 text-xs text-muted-foreground">
           <p>
-            <span className="font-semibold text-foreground">2026 salary change:</span>{' '}
+            <span className="font-semibold text-foreground">Talent in/out:</span>{' '}
+            {r.ppgDelta >= 0 ? '+' : ''}
+            {r.ppgDelta.toFixed(1)} projected ppg
+          </p>
+          <p>
+            <span className="font-semibold text-foreground">Salary change:</span>{' '}
             {r.salaryDelta >= 0 ? '+' : '-'}${Math.abs(r.salaryDelta)} &middot; future years{' '}
             {r.futureDelta >= 0 ? '+' : '-'}${Math.abs(r.futureDelta)}
           </p>
