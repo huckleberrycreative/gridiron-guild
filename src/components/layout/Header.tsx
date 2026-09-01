@@ -35,6 +35,7 @@ const navLinks: NavItem[] = [
       { href: '/coaching-carousel', label: 'Coaching Carousel', description: 'Head coach histories' },
       { href: '/lottery', label: 'Lottery', description: 'Ping pong ball draft lottery simulator' },
       { href: '/trade-analyzer', label: 'Trade Analyzer', description: 'Grade any trade for both sides' },
+      { href: '/power-ranks', label: 'Power Ranks', description: 'Every team graded 0-100 with playoff odds' },
     ],
   },
   {
