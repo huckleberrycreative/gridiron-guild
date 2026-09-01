@@ -343,7 +343,7 @@ export function usePowerRankRows() {
 
     const projMean = scored.reduce((s, b) => s + b.starterPpw, 0) / scored.length;
     const simTeams: SimTeam[] = scored.map((b) => {
-      const actual = b.team.totalPoints / Math.max(1, weeksPlayed);
+      const actual = b.team.avgPPW;
       const blend =
         weeksPlayed > 0
           ? (b.starterPpw * (REG_SEASON_WEEKS - Math.min(weeksPlayed, REG_SEASON_WEEKS)) +
