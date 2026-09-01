@@ -18,9 +18,6 @@ const positionColors: Record<string, string> = {
 const POS_ORDER: Record<string, number> = { QB: 1, RB: 2, WR: 3, TE: 4 };
 const toNum = (v?: string) => (v && !isNaN(parseInt(v)) ? parseInt(v) : null);
 
-// Aug 31, 2026 8:00 PM CST (CDT in effect: UTC-5) => 01:00 UTC Sep 1, 2026
-const DRAFT_DATE = new Date('2026-09-01T01:00:00Z');
-
 // Official fall draft budgets (remaining salary cap) per team
 const TEAM_BUDGETS: Record<string, number> = {
   '11111111-0001-0001-0001-000000000001': 1000, // Sylvan Park Forresters
@@ -35,28 +32,10 @@ const TEAM_BUDGETS: Record<string, number> = {
   '11111111-0001-0001-0001-000000000010': 0, // Nepo Beach Guppies
 };
 
-
-function useCountdown(target: Date) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const diff = Math.max(0, target.getTime() - now);
-  const s = Math.floor(diff / 1000);
-  return {
-    expired: diff === 0,
-    days: Math.floor(s / 86400),
-    hours: Math.floor((s % 86400) / 3600),
-    minutes: Math.floor((s % 3600) / 60),
-    seconds: s % 60,
-  };
-}
-
 const Season2026 = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
-  const c = useCountdown(DRAFT_DATE);
+  const { rows: powerRankRows, loading: powerRanksLoading } = usePowerRankRows();
 
   const teamData = useMemo(() => {
     return teams.map((team) => {
