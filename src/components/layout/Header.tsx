@@ -36,6 +36,7 @@ const navLinks: NavItem[] = [
       { href: '/coaching-carousel', label: 'Coaching Carousel', description: 'Head coach histories' },
       { href: '/lottery', label: 'Lottery', description: 'Ping pong ball draft lottery simulator' },
       { href: '/inflation-calculator', label: 'Inflation Calculator', description: 'Post-Tuten trade value converter' },
+      { href: '/trade-analyzer', label: 'Trade Analyzer', description: 'Grade any trade for both sides' },
     ],
   },
   {
