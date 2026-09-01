@@ -465,7 +465,9 @@ const TradeAnalyzer = () => {
                   lineup), 20% positional depth (diminishing credit for each backup, holes score zero),
                   20% age-adjusted dynasty value (RBs decline fastest, QBs slowest), and 15% cap
                   efficiency (value produced per dollar committed in 2026 plus half of 2027-2029).
-                  Weekly output is projected from each player's dynasty positional rank.
+                  Weekly output is projected from each player's dynasty positional rank where
+                  available, and from his 2026 contract value (the league's own market signal)
+                  otherwise.
                 </p>
               </div>
             </>
