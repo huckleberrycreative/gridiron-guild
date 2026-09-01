@@ -266,14 +266,11 @@ const TradeAnalyzer = () => {
                       )}
                     </span>
                     {p.franchiseTag && <Star size={14} className="text-gold fill-gold shrink-0" />}
-                    <span className="font-mono text-[11px] text-muted-foreground w-10 text-right">
-                      {p.age ? `${p.age}y` : '-'}
-                    </span>
-                    <span className="font-mono text-[11px] text-muted-foreground w-12 text-right">
-                      {p.weekly.toFixed(1)}
+                    <span className="font-mono text-[11px] text-muted-foreground w-14 text-right">
+                      {p.ppg.toFixed(1)} ppg
                     </span>
                     <span className="font-mono text-muted-foreground w-12 text-right">
-                      ${p.salary2026}
+                      ${p.effectiveSalary}
                     </span>
                   </button>
                 </li>
