@@ -163,10 +163,10 @@ const TradeAnalyzer = () => {
   const toAsset = (s: PlayerSalaryWithDetails): Asset => {
     const name = `${s.firstName} ${s.lastName}`.trim();
     const m = meta[normalize(name)];
-    const weekly = weeklyOutput(s.position, m?.posRank ?? null);
     const salary2026 = toNum(s.salary2026);
     const futureSalary =
       toNum(s.salary2027) + toNum(s.salary2028) + toNum(s.salary2029);
+    const weekly = weeklyOutput(s.position, m?.posRank ?? null, salary2026);
     return {
       id: s.id,
       name,
