@@ -110,21 +110,8 @@ const OfficialRosters2026 = () => {
 
   const totalSpent = roster.reduce((sum, r) => sum + (r.s2026 ?? 0), 0);
 
-  // Fall draft capital is locked at a fixed date, so it may drift from current roster salaries.
-  // These locked values match the Season 2026 page.
-  const TEAM_BUDGETS: Record<string, number> = {
-    '11111111-0001-0001-0001-000000000001': 1000, // Sylvan Park Forresters
-    '11111111-0001-0001-0001-000000000002': 105,  // Franklin Fanatics
-    '11111111-0001-0001-0001-000000000003': 290,  // Nashville Kats
-    '11111111-0001-0001-0001-000000000004': 560,  // Abbottabad Geronimos
-    '11111111-0001-0001-0001-000000000005': 35,   // Queen City Harambes
-    '11111111-0001-0001-0001-000000000006': 378,  // West NY Fire Ants
-    '11111111-0001-0001-0001-000000000007': 217,  // Ken Francis Experience
-    '11111111-0001-0001-0001-000000000008': 406,  // Germantown Gamblers
-    '11111111-0001-0001-0001-000000000009': 398,  // Chicago Dawgs
-    '11111111-0001-0001-0001-000000000010': 0,    // Nepo Beach Guppies
-  };
-  const fallDraftCapital = teamId ? (TEAM_BUDGETS[teamId] ?? 0) : 0;
+
+
 
   const selectedTeam = teams.find((t) => t.id === teamId);
   const isLoading = teamsLoading || salariesLoading;
