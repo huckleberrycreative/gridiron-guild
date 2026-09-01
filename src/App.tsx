@@ -81,7 +81,6 @@ const App = () => (
               <Route path="/rivalry-week" element={<RivalryWeek />} />
               <Route path="/rookie-draft" element={<RookieDraft />} />
               <Route path="/official-rosters-2026" element={<OfficialRosters2026 />} />
-              <Route path="/fall-draft-pool-2026" element={<FallDraftPool2026 />} />
               <Route path="/trade-analyzer" element={<TradeAnalyzer />} />
 
               {/* Dynamic pages route */}

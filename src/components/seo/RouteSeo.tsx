@@ -88,10 +88,6 @@ const routeMeta: Record<string, RouteMeta> = {
     title: "Official 2026 Rosters — Men's League Fantasy Football",
     description: "Locked-in 2026 Men's League rosters, practice squads, salaries, and fall draft capital by team.",
   },
-  '/fall-draft-pool-2026': {
-    title: "2026 Fall Draft Pool — Men's League Fantasy Football",
-    description: "Every available player in the 2026 Men's League fall draft with expected draft cost by position.",
-  },
   '/lottery': {
     title: "Draft Lottery — Men's League Fantasy Football",
     description: "The Men's League ping pong ball draft lottery simulator with weighted odds.",
