@@ -303,8 +303,7 @@ const TradeAnalyzer = () => {
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
             { label: 'Starting Output', value: r.parts.starters },
-            { label: 'Depth', value: r.parts.depth },
-            { label: 'Dynasty (Age-Adj.)', value: r.parts.dynasty },
+            { label: 'Injury-Tested Depth', value: r.parts.depth },
             { label: 'Cap Efficiency', value: r.parts.cap },
           ].map((m) => (
             <div key={m.label} className="rounded-md bg-muted/50 border border-border/60 px-2 py-2 text-center">
