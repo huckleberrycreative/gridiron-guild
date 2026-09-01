@@ -38,10 +38,16 @@ const WEEKLY_CURVE: Record<string, { base: number; drop: number; floor: number }
   TE: { base: 14, drop: 0.55, floor: 3 },
 };
 
-const weeklyOutput = (position: string, posRank: number | null) => {
+// Salary is the league's own market signal — used when a player isn't in the
+// public rankings file (i.e. he's rostered, not in the fall draft pool).
+const SALARY_CEILING = 203;
+
+const weeklyOutput = (position: string, posRank: number | null, salary2026: number) => {
   const c = WEEKLY_CURVE[position] ?? WEEKLY_CURVE.WR;
-  if (posRank == null) return c.floor;
-  return Math.max(c.floor, c.base - c.drop * (posRank - 1));
+  if (posRank != null) return Math.max(c.floor, c.base - c.drop * (posRank - 1));
+  const pct = Math.min(1, salary2026 / SALARY_CEILING);
+  // salary-implied output, mildly convex so top contracts separate from mid-tier
+  return c.floor + (c.base - c.floor) * Math.pow(pct, 0.75);
 };
 
 // Dynasty age curve — multiplier on long-term value
