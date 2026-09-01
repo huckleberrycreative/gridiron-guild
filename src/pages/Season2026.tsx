@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries } from '@/hooks/usePlayerSalaries';
-import { usePowerRankRows } from '@/hooks/usePowerRanks';
+import { usePowerRankRows, STARTER_SLOTS, type Asset } from '@/hooks/usePowerRanks';
 import { PowerRanksTable } from '@/pages/PowerRanks';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,7 @@ const positionColors: Record<string, string> = {
   TE: 'bg-amber-100 text-amber-700 border-amber-200',
 };
 
-const POS_ORDER: Record<string, number> = { QB: 1, RB: 2, WR: 3, TE: 4 };
+
 const toNum = (v?: string) => (v && !isNaN(parseInt(v)) ? parseInt(v) : null);
 
 // Official fall draft budgets (remaining salary cap) per team
@@ -38,74 +38,58 @@ const Season2026 = () => {
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const { rows: powerRankRows, loading: powerRanksLoading } = usePowerRankRows();
 
+  // Starters/bench mirror the Power Ranks: best legal nine by projected PPG
+  // (FPTS ÷ 17), not by salary, so cheap non-keepers with real projections start.
   const teamData = useMemo(() => {
-    return teams.map((team) => {
-      const seen = new Set<string>();
-      const rows = salaries
-        .filter((s) => s.teamId === team.id)
-        .map((s) => ({
-          name: `${s.firstName} ${s.lastName}`,
-          position: s.position,
-          ft: s.franchiseTag,
-          ps: s.practiceSquad,
-          isRookie: !!s.rookieDraftRound,
-          s2026: toNum(s.salary2026),
-        }))
-        .filter((r) => {
-          const key = `${r.name}|${r.position}`.toLowerCase();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
+    const prByTeam = new Map(powerRankRows.map((r) => [r.team.id, r]));
+    const salById = new Map(salaries.map((s) => [s.id, s]));
 
-      const active = rows
-        .filter((r) => !r.ps)
-        .sort((a, b) => {
-          const p = (POS_ORDER[a.position] || 99) - (POS_ORDER[b.position] || 99);
-          if (p !== 0) return p;
-          return (b.s2026 ?? 0) - (a.s2026 ?? 0);
-        });
-
-      // Build likeliest starting lineup + bench
-      type Row = (typeof active)[number];
-      const pool = [...active].sort((a, b) => (b.s2026 ?? 0) - (a.s2026 ?? 0));
-      const used = new Set<Row>();
-      const take = (allowed: string[]) => {
-        const pick = pool.find((p) => !used.has(p) && allowed.includes(p.position));
-        if (pick) used.add(pick);
-        return pick ?? null;
+    type Row = {
+      name: string;
+      position: string;
+      ft: boolean;
+      ps: boolean;
+      isRookie: boolean;
+      s2026: number | null;
+    };
+    const toRow = (a: Asset): Row => {
+      const s = salById.get(a.id);
+      return {
+        name: a.name,
+        position: a.position,
+        ft: !!s?.franchiseTag,
+        ps: !!s?.practiceSquad,
+        isRookie: !!s?.rookieDraftRound,
+        s2026: toNum(s?.salary2026 ?? undefined),
       };
-      const FLEX = ['RB', 'WR', 'TE'];
-      const ANY = ['QB', 'RB', 'WR', 'TE'];
-      const starters: { label: string; player: Row | null }[] = [
-        { label: 'QB', player: take(['QB']) },
-        { label: 'RB', player: take(['RB']) },
-        { label: 'RB', player: take(['RB']) },
-        { label: 'WR', player: take(['WR']) },
-        { label: 'WR', player: take(['WR']) },
-        { label: 'FLEX', player: take(FLEX) },
-        { label: 'FLEX', player: take(FLEX) },
-        { label: 'FLEX', player: take(FLEX) },
-        { label: 'OP', player: take(ANY) },
-      ];
-      const benchPlayers = pool.filter((p) => !used.has(p));
-      const bench = Array.from({ length: Math.max(6, benchPlayers.length) }, (_, i) => ({
+    };
+
+    return teams.map((team) => {
+      const pr = prByTeam.get(team.id);
+      const starterAssets = pr?.starters ?? [];
+      const starterIds = new Set(starterAssets.map((a) => a.id));
+      const benchAssets = (pr?.roster ?? [])
+        .filter((a) => !starterIds.has(a.id))
+        .sort((a, b) => b.ppg - a.ppg);
+      const activeCount = (pr?.roster ?? []).length;
+
+      const starters: { label: string; player: Row | null }[] = STARTER_SLOTS.map(
+        (label, i) => ({ label, player: starterAssets[i] ? toRow(starterAssets[i]) : null })
+      );
+      const bench = Array.from({ length: Math.max(6, benchAssets.length) }, (_, i) => ({
         label: `BN${i + 1}`,
-        player: benchPlayers[i] ?? null,
+        player: benchAssets[i] ? toRow(benchAssets[i]) : null,
       }));
 
-      const veteranSpent = active.reduce((sum, r) => sum + (r.isRookie ? 0 : r.s2026 ?? 0), 0);
-      void veteranSpent;
       const budget = TEAM_BUDGETS[team.id] ?? 0;
-
-      const openSpots = Math.max(0, starters.length + bench.length - active.length);
+      const openSpots = Math.max(0, starters.length + bench.length - activeCount);
       const budgetPerSpot = openSpots > 0 ? Math.floor(budget / openSpots) : null;
       return { team, starters, bench, budget, openSpots, budgetPerSpot };
     });
-  }, [teams, salaries]);
+  }, [teams, salaries, powerRankRows]);
 
 
-  const isLoading = teamsLoading || salariesLoading;
+  const isLoading = teamsLoading || salariesLoading || powerRanksLoading;
 
   return (
     <Layout>
