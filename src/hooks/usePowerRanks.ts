@@ -67,6 +67,7 @@ export type PowerRankRow = {
     name: string;
     owner: string;
     totalPoints: number;
+    avgPPW: number;
   };
   roster: Asset[];
   starters: Asset[];
