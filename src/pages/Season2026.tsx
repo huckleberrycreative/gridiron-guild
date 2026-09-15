@@ -129,9 +129,14 @@ const Season2026 = () => {
                     {orderedTeams.map((team) => (
                       <th
                         key={team.id}
-                        className="px-2 py-2 text-center font-display uppercase tracking-wider text-[11px] whitespace-nowrap"
+                        title={team.name}
+                        className="px-2 py-2 text-center"
                       >
-                        {team.name}
+                        <TeamLogo
+                          teamName={team.name}
+                          size="lg"
+                          className="mx-auto w-14 h-14 md:w-16 md:h-16 rounded-md object-contain"
+                        />
                       </th>
                     ))}
                   </tr>
