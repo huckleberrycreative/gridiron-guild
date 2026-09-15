@@ -1,95 +1,91 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import { useTeams, usePlayerSalaries } from '@/hooks/usePlayerSalaries';
-import { usePowerRankRows, STARTER_SLOTS, type Asset } from '@/hooks/usePowerRanks';
-import { PowerRanksTable } from '@/pages/PowerRanks';
-import { Button } from '@/components/ui/button';
+import { useTeams } from '@/hooks/usePlayerSalaries';
+import {
+  useWeeklyScores,
+  REGULAR_SEASON_WEEKS,
+  pointsForFinish,
+} from '@/hooks/useWeeklyScores';
 import { cn } from '@/lib/utils';
-import { Loader2, Star } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-const positionColors: Record<string, string> = {
-  QB: 'bg-red-100 text-red-700 border-red-200',
-  RB: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  WR: 'bg-blue-100 text-blue-700 border-blue-200',
-  TE: 'bg-amber-100 text-amber-700 border-amber-200',
-};
+// Heatmap from best (green) through light green and yellow to worst (red).
+const RANK_STYLES = [
+  'bg-emerald-500 text-white',
+  'bg-emerald-400 text-emerald-950',
+  'bg-emerald-300 text-emerald-950',
+  'bg-lime-300 text-lime-950',
+  'bg-yellow-200 text-yellow-950',
+  'bg-amber-200 text-amber-950',
+  'bg-orange-200 text-orange-950',
+  'bg-orange-300 text-orange-950',
+  'bg-red-300 text-red-950',
+  'bg-red-500 text-white',
+];
 
-
-const toNum = (v?: string) => (v && !isNaN(parseInt(v)) ? parseInt(v) : null);
-
-// Official fall draft budgets (remaining salary cap) per team
-const TEAM_BUDGETS: Record<string, number> = {
-  '11111111-0001-0001-0001-000000000001': 1000, // Sylvan Park Forresters
-  '11111111-0001-0001-0001-000000000002': 105, // Franklin Fanatics
-  '11111111-0001-0001-0001-000000000003': 290, // Nashville Kats
-  '11111111-0001-0001-0001-000000000004': 560, // Abbottabad Geronimos
-  '11111111-0001-0001-0001-000000000005': 35, // Queen City Harambes
-  '11111111-0001-0001-0001-000000000006': 378, // West NY Mary Washington Fire Ants
-  '11111111-0001-0001-0001-000000000007': 217, // Austin Area Brock Party
-  '11111111-0001-0001-0001-000000000008': 406, // Germantown Gamblers
-  '11111111-0001-0001-0001-000000000009': 398, // Chicago Dawgs
-  '11111111-0001-0001-0001-000000000010': 0, // Nepo Beach Guppies
+const rankStyle = (place: number, fieldSize: number) => {
+  if (fieldSize <= 1) return RANK_STYLES[0];
+  const idx = Math.round((place * (RANK_STYLES.length - 1)) / (fieldSize - 1));
+  return RANK_STYLES[Math.min(RANK_STYLES.length - 1, idx)];
 };
 
 const Season2026 = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
-  const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
-  const { rows: powerRankRows, loading: powerRanksLoading } = usePowerRankRows();
+  const { data: scores = [], isLoading: scoresLoading } = useWeeklyScores();
 
-  // Starters/bench mirror the Power Ranks: best legal nine by projected PPG
-  // (FPTS ÷ 17), not by salary, so cheap non-keepers with real projections start.
-  const teamData = useMemo(() => {
-    const prByTeam = new Map(powerRankRows.map((r) => [r.team.id, r]));
-    const salById = new Map(salaries.map((s) => [s.id, s]));
+  const { weeks, grid, totals } = useMemo(() => {
+    const playedWeeks = Array.from(new Set(scores.map((s) => s.week))).sort((a, b) => a - b);
 
-    type Row = {
-      name: string;
-      position: string;
-      ft: boolean;
-      ps: boolean;
-      isRookie: boolean;
-      s2026: number | null;
-    };
-    const toRow = (a: Asset): Row => {
-      const s = salById.get(a.id);
-      return {
-        name: a.name,
-        position: a.position,
-        ft: !!s?.franchiseTag,
-        ps: !!s?.practiceSquad,
-        isRookie: !!s?.rookieDraftRound,
-        s2026: toNum(s?.salary2026 ?? undefined),
-      };
-    };
+    // week -> teamId -> { score, place, points }
+    const grid = new Map<
+      number,
+      Map<string, { score: number; place: number; points: number }>
+    >();
 
-    return teams.map((team) => {
-      const pr = prByTeam.get(team.id);
-      const starterAssets = pr?.starters ?? [];
-      const starterIds = new Set(starterAssets.map((a) => a.id));
-      const benchAssets = (pr?.roster ?? [])
-        .filter((a) => !starterIds.has(a.id))
-        .sort((a, b) => b.ppg - a.ppg);
-      const activeCount = (pr?.roster ?? []).length;
-
-      const starters: { label: string; player: Row | null }[] = STARTER_SLOTS.map(
-        (label, i) => ({ label, player: starterAssets[i] ? toRow(starterAssets[i]) : null })
-      );
-      const bench = Array.from({ length: Math.max(6, benchAssets.length) }, (_, i) => ({
-        label: `BN${i + 1}`,
-        player: benchAssets[i] ? toRow(benchAssets[i]) : null,
-      }));
-
-      const budget = TEAM_BUDGETS[team.id] ?? 0;
-      const openSpots = Math.max(0, starters.length + bench.length - activeCount);
-      const budgetPerSpot = openSpots > 0 ? Math.floor(budget / openSpots) : null;
-      return { team, starters, bench, budget, openSpots, budgetPerSpot };
+    playedWeeks.forEach((w) => {
+      const weekScores = scores
+        .filter((s) => s.week === w)
+        .sort((a, b) => b.score - a.score);
+      const inner = new Map<string, { score: number; place: number; points: number }>();
+      weekScores.forEach((s, i) => {
+        inner.set(s.teamId, {
+          score: s.score,
+          place: i,
+          points: pointsForFinish(i, weekScores.length),
+        });
+      });
+      grid.set(w, inner);
     });
-  }, [teams, salaries, powerRankRows]);
 
+    const totals = new Map<string, { points: number; pf: number }>();
+    teams.forEach((t) => {
+      let points = 0;
+      let pf = 0;
+      playedWeeks.forEach((w) => {
+        const cell = grid.get(w)?.get(t.id);
+        if (cell) {
+          points += cell.points;
+          pf += cell.score;
+        }
+      });
+      totals.set(t.id, { points, pf });
+    });
 
-  const isLoading = teamsLoading || salariesLoading || powerRanksLoading;
+    return { weeks: playedWeeks, grid, totals };
+  }, [scores, teams]);
+
+  const orderedTeams = useMemo(
+    () =>
+      [...teams].sort((a, b) => {
+        const ta = totals.get(a.id) ?? { points: 0, pf: 0 };
+        const tb = totals.get(b.id) ?? { points: 0, pf: 0 };
+        return tb.points - ta.points || tb.pf - ta.pf || a.name.localeCompare(b.name);
+      }),
+    [teams, totals]
+  );
+
+  const isLoading = teamsLoading || scoresLoading;
 
   return (
     <Layout>
@@ -103,110 +99,91 @@ const Season2026 = () => {
           >
             <h1 className="font-display text-3xl md:text-5xl font-bold mb-2">2026 SEASON</h1>
             <p className="text-muted-foreground">
-              Active rosters and remaining fall draft budgets for all ten franchises.
+              Weekly scores for all ten franchises across the {REGULAR_SEASON_WEEKS}-week regular
+              season. The small number in each cell is the points earned for that week's finish.
             </p>
           </motion.div>
-
-          {/* Truncated Power Ranks */}
-          <div className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="font-display text-xl font-bold">Power Ranks</h2>
-                <p className="text-sm text-muted-foreground">
-                  Live grades, projected lineup output, and championship odds.
-                </p>
-              </div>
-              <Button asChild variant="accent" size="sm">
-                <Link to="/power-ranks">View Full Power Ranks</Link>
-              </Button>
-            </div>
-            {powerRanksLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <PowerRanksTable rows={powerRankRows} compact />
-            )}
-          </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center min-h-[30vh]">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
+          ) : weeks.length === 0 ? (
+            <div className="rounded-lg border border-border bg-card p-10 text-center text-muted-foreground">
+              No weekly scores have been entered yet.
+            </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
-              {teamData.map(({ team, starters, bench, budget, openSpots, budgetPerSpot }) => (
-                <div
-                  key={team.id}
-                  className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
-                >
-                  <div className="flex flex-col border-b border-border bg-muted/50 px-4 py-4">
-                    <h3 className="font-display font-bold uppercase tracking-wide text-sm text-center mb-4">
-                      {team.name}
-                    </h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { label: 'Fall Draft Budget', value: `$${budget}`, valueClass: budget < 0 ? 'text-destructive' : 'text-primary' },
-                        { label: 'Open Roster Spots', value: openSpots.toString(), valueClass: 'text-foreground' },
-                        { label: 'Budget Per Spot', value: budgetPerSpot != null ? `$${budgetPerSpot}` : '-', valueClass: 'text-foreground' },
-                      ].map((metric) => (
-                        <div key={metric.label} className="text-center rounded-md bg-background/60 border border-border/60 px-2 py-2">
-                          <div className="font-display uppercase tracking-wider text-[10px] text-muted-foreground mb-1">
-                            {metric.label}
-                          </div>
-                          <div className={cn('font-mono font-extrabold text-lg', metric.valueClass)}>
-                            {metric.value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {([
-                    { title: 'Starting Lineup', slots: starters },
-                    { title: 'Bench', slots: bench },
-                  ] as const).map((group) => (
-                    <div key={group.title}>
-                      <div className="bg-primary/10 px-4 py-1.5 font-display uppercase tracking-wider text-[10px] font-bold">
-                        {group.title}
-                      </div>
-                      <ul className="divide-y divide-border/50">
-                        {group.slots.map((slot, i) => (
-                          <li key={i} className="flex items-center gap-3 px-4 py-2 text-sm">
-                            <span className="font-display uppercase tracking-wider text-[10px] text-muted-foreground w-10 shrink-0">
-                              {slot.label}
-                            </span>
-                            {slot.player ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    'inline-flex items-center justify-center w-8 h-6 rounded text-[10px] font-display font-bold border shrink-0',
-                                    positionColors[slot.player.position] ||
-                                      'bg-gray-100 text-gray-700 border-gray-200'
-                                  )}
-                                >
-                                  {slot.player.position}
-                                </span>
-                                <span className="font-medium flex-1 truncate">{slot.player.name}</span>
-                                {slot.player.ft && (
-                                  <Star size={14} className="text-gold fill-gold shrink-0" />
+            <div className="rounded-lg border border-border bg-card shadow-sm overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-muted/60">
+                    <th className="sticky left-0 z-10 bg-muted/60 px-3 py-2 text-left font-display uppercase tracking-wider text-[11px]">
+                      Team
+                    </th>
+                    {weeks.map((w) => (
+                      <th
+                        key={w}
+                        className="px-2 py-2 text-center font-display uppercase tracking-wider text-[11px] whitespace-nowrap"
+                      >
+                        Wk {w}
+                      </th>
+                    ))}
+                    <th className="px-3 py-2 text-center font-display uppercase tracking-wider text-[11px]">
+                      Pts
+                    </th>
+                    <th className="px-3 py-2 text-center font-display uppercase tracking-wider text-[11px]">
+                      Total PF
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderedTeams.map((team) => {
+                    const total = totals.get(team.id) ?? { points: 0, pf: 0 };
+                    return (
+                      <tr key={team.id} className="border-t border-border/60">
+                        <td className="sticky left-0 z-10 bg-card px-3 py-2 font-display font-bold uppercase text-[11px] whitespace-nowrap">
+                          {team.name}
+                        </td>
+                        {weeks.map((w) => {
+                          const cell = grid.get(w)?.get(team.id);
+                          const fieldSize = grid.get(w)?.size ?? 10;
+                          if (!cell) {
+                            return (
+                              <td
+                                key={w}
+                                className="px-2 py-2 text-center text-muted-foreground/60 bg-muted/20"
+                              >
+                                —
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={w} className="p-1">
+                              <div
+                                className={cn(
+                                  'relative rounded-md px-2 py-2 text-center font-mono font-bold tabular-nums',
+                                  rankStyle(cell.place, fieldSize)
                                 )}
-                                <span className="font-mono text-muted-foreground">
-                                  {slot.player.s2026 != null ? `$${slot.player.s2026}` : '-'}
+                              >
+                                <span className="absolute top-0.5 right-1 text-[9px] font-semibold opacity-80">
+                                  {cell.points}
                                 </span>
-                              </>
-                            ) : (
-                              <span className="flex-1 font-display uppercase tracking-wider text-[10px] italic text-muted-foreground">
-                                Open
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              ))}
-
+                                {cell.score.toFixed(1)}
+                              </div>
+                            </td>
+                          );
+                        })}
+                        <td className="px-3 py-2 text-center font-mono font-extrabold">
+                          {total.points}
+                        </td>
+                        <td className="px-3 py-2 text-center font-mono text-muted-foreground">
+                          {total.pf.toFixed(1)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

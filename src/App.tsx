@@ -48,6 +48,7 @@ import AdminPantheon from "./pages/admin/PantheonAdmin";
 import AdminCoaches from "./pages/admin/Coaches";
 import AdminRosters from "./pages/admin/Rosters";
 import AdminInjuries from "./pages/admin/Injuries";
+import AdminWeeklyScores from "./pages/admin/WeeklyScores";
 import DynamicPage from "./pages/DynamicPage";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,7 @@ const App = () => (
                 <Route path="coaches" element={<AdminCoaches />} />
                 <Route path="rosters" element={<AdminRosters />} />
                 <Route path="injuries" element={<AdminInjuries />} />
+                <Route path="weekly-scores" element={<AdminWeeklyScores />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
