@@ -133,12 +133,6 @@ const Season2026 = () => {
                         {team.name}
                       </th>
                     ))}
-                    <th className="px-3 py-2 text-center font-display uppercase tracking-wider text-[11px]">
-                      Pts
-                    </th>
-                    <th className="px-3 py-2 text-center font-display uppercase tracking-wider text-[11px]">
-                      Total PF
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -176,20 +170,6 @@ const Season2026 = () => {
                           </td>
                         );
                       })}
-                      <td className="px-3 py-2 text-center font-mono font-extrabold">
-                        {orderedTeams.reduce(
-                          (sum, team) => sum + (grid.get(w)?.get(team.id)?.points ?? 0),
-                          0
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-center font-mono text-muted-foreground">
-                        {orderedTeams
-                          .reduce(
-                            (sum, team) => sum + (grid.get(w)?.get(team.id)?.score ?? 0),
-                            0
-                          )
-                          .toFixed(1)}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -212,17 +192,6 @@ const Season2026 = () => {
                         </td>
                       );
                     })}
-                    <td className="px-3 py-2 text-center font-mono font-extrabold">
-                      {orderedTeams.reduce(
-                        (sum, team) => sum + (totals.get(team.id)?.points ?? 0),
-                        0
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-center font-mono text-muted-foreground">
-                      {orderedTeams
-                        .reduce((sum, team) => sum + (totals.get(team.id)?.pf ?? 0), 0)
-                        .toFixed(1)}
-                    </td>
                   </tr>
                 </tfoot>
               </table>
