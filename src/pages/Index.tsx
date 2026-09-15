@@ -7,10 +7,11 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { teams, comments, Comment, getAvgPPW } from '@/data/leagueData';
+import { comments, Comment } from '@/data/leagueData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TeamLogo } from '@/components/TeamLogo';
+import { TeamWithStandings, useActiveSeasonStandings } from '@/hooks/useLeagueData';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -20,6 +21,7 @@ const fadeInUp = {
 const Index = () => {
   const [newComment, setNewComment] = useState({ teamName: '', comment: '' });
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
+  const { data: standings = [] } = useActiveSeasonStandings();
 
   // Fetch latest published recap from database
   const { data: latestRecap, isLoading: recapLoading } = useQuery({
@@ -38,13 +40,10 @@ const Index = () => {
     },
   });
 
-  // Sort teams by total ranking points
-  const sortedTeams = [...teams].sort((a, b) => b.totalPoints - a.totalPoints);
-
   // Split into playoff tiers
-  const playoffTeams = sortedTeams.slice(0, 4);
-  const purgatoryTeam = sortedTeams[4];
-  const toiletBowlTeams = sortedTeams.slice(5);
+  const playoffTeams = standings.slice(0, 4);
+  const purgatoryTeam = standings[4];
+  const toiletBowlTeams = standings.slice(5);
 
   // Get comments for the current recap
   const recapComments = localComments.filter((c) => c.recapId === latestRecap?.id);
@@ -91,7 +90,7 @@ const Index = () => {
                       <img 
                         src={latestRecap.featured_image} 
                         alt={latestRecap.title}
-                        className="w-full h-auto rounded-lg object-cover max-h-[400px]"
+                        className="block w-full h-auto rounded-lg"
                       />
                     </div>
                   )}
@@ -251,11 +250,13 @@ const Index = () => {
                       Purgatory
                     </h3>
                   </div>
-                  <StandingsRow
-                    rank={5}
-                    team={purgatoryTeam}
-                    variant="purgatory"
-                  />
+                  {purgatoryTeam && (
+                    <StandingsRow
+                      rank={5}
+                      team={purgatoryTeam}
+                      variant="purgatory"
+                    />
+                  )}
                 </div>
 
                 {/* The Toilet Bowl */}
@@ -298,13 +299,11 @@ const Index = () => {
 
 interface StandingsRowProps {
   rank: number;
-  team: typeof teams[0];
+  team: TeamWithStandings;
   variant: 'playoff' | 'purgatory' | 'toilet';
 }
 
 const StandingsRow = ({ rank, team, variant }: StandingsRowProps) => {
-  const avgPPW = getAvgPPW(team);
-  
   return (
     <div
       className={cn(
@@ -331,7 +330,7 @@ const StandingsRow = ({ rank, team, variant }: StandingsRowProps) => {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-mono">{team.wins}-{team.losses}</span>
           <span>•</span>
-          <span className="font-mono">{avgPPW.toFixed(1)} PPW</span>
+          <span className="font-mono">{team.avgPPW.toFixed(1)} PPW</span>
         </div>
       </div>
       <div className="text-right">
