@@ -84,32 +84,34 @@ const Index = () => {
                 </div>
               ) : latestRecap ? (
                 <>
-                  {/* Featured Image - Full Width Above Title */}
-                  {latestRecap.featured_image && (
-                    <div className="mb-6 flex justify-center">
-                      <img 
-                        src={latestRecap.featured_image} 
-                        alt={latestRecap.title}
-                        className="block h-auto max-h-80 w-auto max-w-sm rounded-lg object-contain"
-                      />
+                  {/* Title + Featured Image Side by Side */}
+                  <div className="grid md:grid-cols-[1fr,auto] gap-6 mb-6 items-start">
+                    <div>
+                      <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full mb-4">
+                        Season {latestRecap.season_year} • Week {latestRecap.week_number}
+                      </span>
+                      <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+                        {latestRecap.title}
+                      </h1>
+                      <p className="text-muted-foreground text-sm">
+                        {latestRecap.recap_date && new Date(latestRecap.recap_date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </p>
                     </div>
-                  )}
 
-                  <div className="mb-6">
-                    <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full mb-4">
-                      Season {latestRecap.season_year} • Week {latestRecap.week_number}
-                    </span>
-                    <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                      {latestRecap.title}
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                      {latestRecap.recap_date && new Date(latestRecap.recap_date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </p>
+                    {latestRecap.featured_image && (
+                      <div className="flex justify-center md:justify-end order-first md:order-none">
+                        <img 
+                          src={latestRecap.featured_image} 
+                          alt={latestRecap.title}
+                          className="block h-auto max-h-72 w-auto max-w-xs rounded-lg object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Content from WYSIWYG with improved styling */}
