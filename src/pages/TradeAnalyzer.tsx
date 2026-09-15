@@ -256,16 +256,29 @@ const TradeAnalyzer = () => {
         };
       }
       const ppgDelta =
-        gained.reduce((s, p) => s + p.ppg, 0) - lost.reduce((s, p) => s + p.ppg, 0);
-      return { parts, overall, salaryDelta, futureDelta, counts, gained, lost, ppgDelta };
+        gained.reduce((s, p) => s + p.healthyPpg, 0) -
+        lost.reduce((s, p) => s + p.healthyPpg, 0);
+      return {
+        parts,
+        overall,
+        winNowPpw,
+        dynastyPpw,
+        contention,
+        salaryDelta,
+        futureDelta,
+        counts,
+        gained,
+        lost,
+        ppgDelta,
+      };
     };
 
     return {
-      A: build(rosters.A, afterA, outB, outA),
-      B: build(rosters.B, afterB, outA, outB),
+      A: build(teamA, rosters.A, afterA, outB, outA),
+      B: build(teamB, rosters.B, afterB, outA, outB),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rosters, selA, selB, teamA, teamB]);
+  }, [rosters, selA, selB, teamA, teamB, powerRows, weeksLeft]);
 
   const isLoading = teamsLoading || salariesLoading;
   const teamName = (id: string) => teams.find((t) => t.id === id)?.name ?? 'Team';
