@@ -145,7 +145,13 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
                   {r.team.name}
                 </div>
                 <div className="text-xs text-neutral-500">{r.team.owner}</div>
+                {!compact && r.injured.length > 0 && (
+                  <div className="mt-1 text-[11px] text-[#bf2121]">
+                    OUT: {r.injured.map((p) => `${p.name}${p.weeksOut ? ` (${p.weeksOut}w)` : ''}`).join(', ')}
+                  </div>
+                )}
               </td>
+
               <td className="px-3 py-3 text-right">
                 <span className="font-serif text-2xl font-bold text-[#bf2121]">
                   {r.score}
