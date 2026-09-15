@@ -290,6 +290,9 @@ export type Database = {
           created_at: string
           franchise_tag: boolean
           id: string
+          injury_note: string | null
+          injury_status: string
+          injury_weeks_out: number
           number: number | null
           player_id: string
           practice_squad: boolean
@@ -308,6 +311,9 @@ export type Database = {
           created_at?: string
           franchise_tag?: boolean
           id?: string
+          injury_note?: string | null
+          injury_status?: string
+          injury_weeks_out?: number
           number?: number | null
           player_id: string
           practice_squad?: boolean
@@ -326,6 +332,9 @@ export type Database = {
           created_at?: string
           franchise_tag?: boolean
           id?: string
+          injury_note?: string | null
+          injury_status?: string
+          injury_weeks_out?: number
           number?: number | null
           player_id?: string
           practice_squad?: boolean
