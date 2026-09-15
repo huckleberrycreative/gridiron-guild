@@ -291,6 +291,20 @@ const TradeAnalyzer = () => {
                       {p.practiceSquad && (
                         <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">PS</span>
                       )}
+                      {p.injuryStatus !== 'healthy' && (
+                        <span
+                          title={`${p.injuryStatus}${p.weeksOut ? ` · ~${p.weeksOut} wk${p.weeksOut === 1 ? '' : 's'} out` : ''}`}
+                          className={cn(
+                            'ml-2 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider border',
+                            p.out
+                              ? 'bg-red-100 text-red-700 border-red-200'
+                              : 'bg-amber-100 text-amber-700 border-amber-200'
+                          )}
+                        >
+                          {injuryLabel[p.injuryStatus] ?? p.injuryStatus}
+                          {p.out && p.weeksOut ? ` ${p.weeksOut}w` : ''}
+                        </span>
+                      )}
                     </span>
                     {p.franchiseTag && <Star size={14} className="text-gold fill-gold shrink-0" />}
                     <span className="font-mono text-[11px] text-muted-foreground w-14 text-right">
