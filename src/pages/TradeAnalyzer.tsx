@@ -407,7 +407,8 @@ const TradeAnalyzer = () => {
         </div>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            { label: 'Starting Output', value: r.parts.starters },
+            { label: 'Win-Now Lineup', value: r.parts.winNow },
+            { label: 'Dynasty Lineup', value: r.parts.dynasty },
             { label: 'Injury-Tested Depth', value: r.parts.depth },
             { label: 'Cap Efficiency', value: r.parts.cap },
           ].map((m) => (
