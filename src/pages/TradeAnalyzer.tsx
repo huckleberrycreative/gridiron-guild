@@ -449,7 +449,9 @@ const TradeAnalyzer = () => {
                 <p>
                   Every player is valued at his 2026 projected points per game (season FPTS &divide;
                   17) — the same engine that drives the Power Ranks. Players with no projection fall
-                  back to their league contract value. Overall change = 55% starting lineup output
+                  back to their league contract value. Current injuries are baked in: a questionable
+                  or doubtful player is discounted for this week, and an out/IR player is valued only
+                  for the weeks he's expected back for. Overall change = 55% starting lineup output
                   (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP nine), 25% injury-tested depth (average
                   lineup output when any one starter misses a week), and 20% cap efficiency (output
                   per dollar committed, counting the higher of 2026/2027 salary plus a quarter of
