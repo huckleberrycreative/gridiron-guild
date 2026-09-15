@@ -75,10 +75,16 @@ const PowerRanks = () => {
                   projection are valued off their league contract.
                 </li>
                 <li>
+                  <strong>Injuries:</strong> players marked out or on IR are pulled from the lineup
+                  entirely; questionable and doubtful tags discount a player's weekly output. Grades
+                  and odds move the moment the injury report is updated.
+                </li>
+                <li>
                   <strong>Depth:</strong> each starter is removed in turn and the lineup rebuilt —
                   the percentage of weekly output a team retains through an injury is its depth
                   score. Thin benches also carry an injury drag into the simulation.
                 </li>
+
                 <li>
                   <strong>Standings:</strong> accumulated weekly points scale in as the season runs,
                   reaching 40% of the grade by Week {REG_SEASON_WEEKS}.
