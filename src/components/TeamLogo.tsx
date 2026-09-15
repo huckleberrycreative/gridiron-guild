@@ -1,13 +1,19 @@
-import chicagoDawgs from '@/assets/logos/chicago-dawgs.png';
-import sylvanParkForresters from '@/assets/logos/sylvan-park-forresters.jpg';
+import chicagoDawgsAsset from '@/assets/logos/chicago-dawgs.webp.asset.json';
+import sylvanParkForrestersAsset from '@/assets/logos/sylvan-park-forresters.webp.asset.json';
 import sanDiegoGamblers from '@/assets/logos/san-diego-gamblers.webp.asset.json';
 import geronimos from '@/assets/logos/abbottabad-geronimos.webp.asset.json';
-import queenCityHarambes from '@/assets/logos/queen-city-harambes.png';
-import franklinFanatics from '@/assets/logos/franklin-fanatics.jpg';
+import queenCityHarambesAsset from '@/assets/logos/queen-city-harambes.webp.asset.json';
+import franklinFanaticsAsset from '@/assets/logos/franklin-fanatics.webp.asset.json';
 import nashvilleKats from '@/assets/logos/nashville-kats.png';
 import austinAreaBrockParty from '@/assets/logos/austin-area-brock-party.webp.asset.json';
-import maryWashingtonFireAnts from '@/assets/logos/mary-washington-fire-ants.jpg';
+import maryWashingtonFireAntsAsset from '@/assets/logos/mary-washington-fire-ants.webp.asset.json';
 import nepoBeachGuppies from '@/assets/logos/nepo-beach-guppies.png';
+
+const chicagoDawgs = chicagoDawgsAsset.url;
+const sylvanParkForresters = sylvanParkForrestersAsset.url;
+const queenCityHarambes = queenCityHarambesAsset.url;
+const franklinFanatics = franklinFanaticsAsset.url;
+const maryWashingtonFireAnts = maryWashingtonFireAntsAsset.url;
 import { cn } from '@/lib/utils';
 
 // Map team names to their logo imports (supports both with and without "The" prefix)
