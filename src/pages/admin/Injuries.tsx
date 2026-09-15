@@ -73,7 +73,7 @@ export default function Injuries() {
   });
 
   const update = useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+    mutationFn: async ({ id, patch }: { id: string; patch: { injury_status?: string; injury_weeks_out?: number; injury_note?: string } }) => {
       const { error } = await supabase.from('player_salaries').update(patch).eq('id', id);
       if (error) throw error;
     },
