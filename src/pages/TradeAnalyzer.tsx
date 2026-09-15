@@ -188,7 +188,8 @@ const TradeAnalyzer = () => {
   const evaluate = (roster: Asset[]) => {
     const active = roster.filter((p) => !p.practiceSquad);
     return {
-      starters: lineupTotal(active),
+      winNow: restOfSeasonPpw(active, weeksLeft),
+      dynasty: healthyLineupPpw(active),
       depth: injuryAdjustedOutput(active),
       cap: capEfficiency(active),
     };
@@ -203,19 +204,32 @@ const TradeAnalyzer = () => {
     const afterA = [...rosters.A.filter((p) => !selA.has(p.id)), ...outB];
     const afterB = [...rosters.B.filter((p) => !selB.has(p.id)), ...outA];
 
-    const build = (before: Asset[], after: Asset[], gained: Asset[], lost: Asset[]) => {
+    const build = (
+      teamId: string,
+      before: Asset[],
+      after: Asset[],
+      gained: Asset[],
+      lost: Asset[]
+    ) => {
       const b = evaluate(before);
       const a = evaluate(after);
       const pct = (x: number, y: number) => (y === 0 ? 0 : ((x - y) / y) * 100);
       const parts = {
-        starters: pct(a.starters, b.starters),
+        winNow: pct(a.winNow, b.winNow),
+        dynasty: pct(a.dynasty, b.dynasty),
         depth: pct(a.depth, b.depth),
         cap: pct(a.cap, b.cap),
       };
+      // Contenders are graded on this season; teams out of the race are graded
+      // on the long-term roster.
+      const contention = contentionFor(teamId);
+      const wWinNow = 0.35 + 0.5 * contention;
       const overall =
-        parts.starters * WEIGHTS.starters +
-        parts.depth * WEIGHTS.depth +
-        parts.cap * WEIGHTS.cap;
+        (parts.winNow * wWinNow + parts.dynasty * (1 - wWinNow)) * 0.72 +
+        parts.depth * 0.14 +
+        parts.cap * 0.14;
+      const winNowPpw = a.winNow - b.winNow;
+      const dynastyPpw = a.dynasty - b.dynasty;
       const salaryDelta =
         gained.reduce((s, p) => s + p.effectiveSalary, 0) -
         lost.reduce((s, p) => s + p.effectiveSalary, 0);
