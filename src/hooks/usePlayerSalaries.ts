@@ -15,6 +15,8 @@ export interface PlayerSalaryWithDetails {
   salary2027?: string;
   salary2028?: string;
   salary2029?: string;
+  injuryStatus: string;
+  injuryWeeksOut: number;
 }
 
 // Fetch player salaries with player and team data
@@ -44,6 +46,8 @@ export function usePlayerSalaries() {
         franchiseTag: s.franchise_tag || false,
         practiceSquad: s.practice_squad || false,
         rookieDraftRound: s.rookie_draft_round || undefined,
+        injuryStatus: (s as any).injury_status || 'healthy',
+        injuryWeeksOut: (s as any).injury_weeks_out ?? 0,
         // Remove $ prefix if present since we add it in the UI
         salary2026: s.salary_2026?.replace(/^\$/, '') || undefined,
         salary2027: s.salary_2027?.replace(/^\$/, '') || undefined,

@@ -14,7 +14,8 @@ import {
   Calendar,
   Medal,
   FileEdit,
-  ClipboardList
+  ClipboardList,
+  HeartPulse
 } from 'lucide-react';
 import logoImage from '@/assets/logo.png';
 
@@ -37,6 +38,7 @@ export default function AdminLayout() {
     { icon: Trophy, label: 'Playoffs', path: '/admin/playoffs' },
     { icon: ClipboardList, label: 'Rosters', path: '/admin/rosters' },
     { icon: DollarSign, label: 'Salaries', path: '/admin/salaries' },
+    { icon: HeartPulse, label: 'Injuries', path: '/admin/injuries' },
     { icon: FileText, label: 'Weekly Recaps', path: '/admin/weekly-recaps' },
     { icon: FileEdit, label: 'Page Content', path: '/admin/page-content' },
     { icon: Image, label: 'Media', path: '/admin/media' },
