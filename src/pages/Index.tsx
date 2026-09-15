@@ -109,7 +109,7 @@ const Index = () => {
                         <img 
                           src={latestRecap.featured_image} 
                           alt={latestRecap.title}
-                          className="block h-auto max-h-64 md:max-h-96 w-auto rounded-lg object-contain"
+                          className="block h-auto max-h-80 md:max-h-[460px] w-auto rounded-lg object-contain"
                         />
                       </div>
                     )}
