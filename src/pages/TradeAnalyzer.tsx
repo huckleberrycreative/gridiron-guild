@@ -21,6 +21,7 @@ import {
   REG_SEASON_WEEKS,
   OUT_STATUSES,
   INJURY_MULTIPLIER,
+  usePowerRankRows,
   type Asset as PRAsset,
 } from '@/hooks/usePowerRanks';
 
@@ -58,13 +59,40 @@ type Asset = {
 const lineupTotal = (roster: PRAsset[], excluded?: Set<string>) =>
   bestLineup(roster, excluded).reduce((s, p) => s + p.ppg, 0);
 
+// Value a roster at full health — the dynasty view. A player is only worth
+// what he adds to the best legal nine, so a 5th QB is worth ~nothing.
+const healthyLineupPpw = (roster: Asset[]) =>
+  lineupTotal(roster.map((p) => ({ ...p, ppg: p.healthyPpg })));
+
+// Week-by-week rest-of-season value: injured players re-enter the lineup the
+// week they're projected back, so a star missing 6 weeks still carries the
+// stretch run.
+const restOfSeasonPpw = (roster: Asset[], weeksLeft: number) => {
+  if (weeksLeft <= 0) return healthyLineupPpw(roster);
+  let sum = 0;
+  for (let w = 1; w <= weeksLeft; w++) {
+    const pool = roster
+      .filter((p) => !(p.out && p.weeksOut >= w))
+      .map((p) => ({
+        ...p,
+        ppg:
+          w === 1 && !p.out
+            ? p.healthyPpg * (INJURY_MULTIPLIER[p.injuryStatus] ?? 1)
+            : p.healthyPpg,
+      }));
+    sum += lineupTotal(pool);
+  }
+  return sum / weeksLeft;
+};
+
 // Average lineup output across "any one starter is out this week" scenarios —
 // this is what real depth buys you.
 const injuryAdjustedOutput = (roster: Asset[]) => {
-  const starters = bestLineup(roster);
+  const healthy = roster.map((p) => ({ ...p, ppg: p.healthyPpg }));
+  const starters = bestLineup(healthy);
   if (!starters.length) return 0;
   let sum = 0;
-  for (const s of starters) sum += lineupTotal(roster, new Set([s.id]));
+  for (const s of starters) sum += lineupTotal(healthy, new Set([s.id]));
   return sum / starters.length;
 };
 
@@ -73,11 +101,9 @@ const capEfficiency = (roster: Asset[]) => {
     (s, p) => s + p.effectiveSalary + p.futureSalary * 0.25,
     0
   );
-  const production = lineupTotal(roster) + injuryAdjustedOutput(roster) * 0.5;
+  const production = healthyLineupPpw(roster) + injuryAdjustedOutput(roster) * 0.5;
   return production / Math.max(50, spend / 100);
 };
-
-const WEIGHTS = { starters: 0.55, depth: 0.25, cap: 0.2 };
 
 const TradeAnalyzer = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
@@ -87,6 +113,17 @@ const TradeAnalyzer = () => {
   const [teamB, setTeamB] = useState<string>('');
   const [selA, setSelA] = useState<Set<string>>(new Set());
   const [selB, setSelB] = useState<Set<string>>(new Set());
+  const { rows: powerRows, weeksPlayed } = usePowerRankRows();
+  const weeksLeft = Math.max(0, REG_SEASON_WEEKS - weeksPlayed);
+
+  // How much a team should care about this season: playoff odds from the
+  // Power Ranks simulation (0 = out of it, 1 = firmly in the hunt).
+  const contentionFor = (teamId: string) => {
+    const row = powerRows.find((r) => r.team.id === teamId);
+    if (!row) return 0.5;
+    return Math.min(1, Math.max(0, row.odds.top5 / 100));
+  };
+
 
   useEffect(() => {
     (async () => {
@@ -163,7 +200,8 @@ const TradeAnalyzer = () => {
   const evaluate = (roster: Asset[]) => {
     const active = roster.filter((p) => !p.practiceSquad);
     return {
-      starters: lineupTotal(active),
+      winNow: restOfSeasonPpw(active, weeksLeft),
+      dynasty: healthyLineupPpw(active),
       depth: injuryAdjustedOutput(active),
       cap: capEfficiency(active),
     };
@@ -178,19 +216,32 @@ const TradeAnalyzer = () => {
     const afterA = [...rosters.A.filter((p) => !selA.has(p.id)), ...outB];
     const afterB = [...rosters.B.filter((p) => !selB.has(p.id)), ...outA];
 
-    const build = (before: Asset[], after: Asset[], gained: Asset[], lost: Asset[]) => {
+    const build = (
+      teamId: string,
+      before: Asset[],
+      after: Asset[],
+      gained: Asset[],
+      lost: Asset[]
+    ) => {
       const b = evaluate(before);
       const a = evaluate(after);
       const pct = (x: number, y: number) => (y === 0 ? 0 : ((x - y) / y) * 100);
       const parts = {
-        starters: pct(a.starters, b.starters),
+        winNow: pct(a.winNow, b.winNow),
+        dynasty: pct(a.dynasty, b.dynasty),
         depth: pct(a.depth, b.depth),
         cap: pct(a.cap, b.cap),
       };
+      // Contenders are graded on this season; teams out of the race are graded
+      // on the long-term roster.
+      const contention = contentionFor(teamId);
+      const wWinNow = 0.35 + 0.5 * contention;
       const overall =
-        parts.starters * WEIGHTS.starters +
-        parts.depth * WEIGHTS.depth +
-        parts.cap * WEIGHTS.cap;
+        (parts.winNow * wWinNow + parts.dynasty * (1 - wWinNow)) * 0.72 +
+        parts.depth * 0.14 +
+        parts.cap * 0.14;
+      const winNowPpw = a.winNow - b.winNow;
+      const dynastyPpw = a.dynasty - b.dynasty;
       const salaryDelta =
         gained.reduce((s, p) => s + p.effectiveSalary, 0) -
         lost.reduce((s, p) => s + p.effectiveSalary, 0);
@@ -205,16 +256,29 @@ const TradeAnalyzer = () => {
         };
       }
       const ppgDelta =
-        gained.reduce((s, p) => s + p.ppg, 0) - lost.reduce((s, p) => s + p.ppg, 0);
-      return { parts, overall, salaryDelta, futureDelta, counts, gained, lost, ppgDelta };
+        gained.reduce((s, p) => s + p.healthyPpg, 0) -
+        lost.reduce((s, p) => s + p.healthyPpg, 0);
+      return {
+        parts,
+        overall,
+        winNowPpw,
+        dynastyPpw,
+        contention,
+        salaryDelta,
+        futureDelta,
+        counts,
+        gained,
+        lost,
+        ppgDelta,
+      };
     };
 
     return {
-      A: build(rosters.A, afterA, outB, outA),
-      B: build(rosters.B, afterB, outA, outB),
+      A: build(teamA, rosters.A, afterA, outB, outA),
+      B: build(teamB, rosters.B, afterB, outA, outB),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rosters, selA, selB, teamA, teamB]);
+  }, [rosters, selA, selB, teamA, teamB, powerRows, weeksLeft]);
 
   const isLoading = teamsLoading || salariesLoading;
   const teamName = (id: string) => teams.find((t) => t.id === id)?.name ?? 'Team';
@@ -343,7 +407,8 @@ const TradeAnalyzer = () => {
         </div>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            { label: 'Starting Output', value: r.parts.starters },
+            { label: 'Win-Now Lineup', value: r.parts.winNow },
+            { label: 'Dynasty Lineup', value: r.parts.dynasty },
             { label: 'Injury-Tested Depth', value: r.parts.depth },
             { label: 'Cap Efficiency', value: r.parts.cap },
           ].map((m) => (
@@ -365,9 +430,18 @@ const TradeAnalyzer = () => {
         </div>
         <div className="space-y-1 text-xs text-muted-foreground">
           <p>
-            <span className="font-semibold text-foreground">Talent in/out:</span>{' '}
+            <span className="font-semibold text-foreground">Lineup impact:</span>{' '}
+            {r.winNowPpw >= 0 ? '+' : ''}
+            {r.winNowPpw.toFixed(1)} ppg rest of season &middot;{' '}
+            {r.dynastyPpw >= 0 ? '+' : ''}
+            {r.dynastyPpw.toFixed(1)} ppg at full health
+          </p>
+          <p>
+            <span className="font-semibold text-foreground">Raw talent in/out:</span>{' '}
             {r.ppgDelta >= 0 ? '+' : ''}
-            {r.ppgDelta.toFixed(1)} projected ppg
+            {r.ppgDelta.toFixed(1)} projected ppg &middot; graded{' '}
+            {Math.round((0.35 + 0.5 * r.contention) * 100)}% win-now /{' '}
+            {Math.round((1 - (0.35 + 0.5 * r.contention)) * 100)}% dynasty
           </p>
           <p>
             <span className="font-semibold text-foreground">Salary change:</span>{' '}
@@ -449,13 +523,21 @@ const TradeAnalyzer = () => {
                 <p>
                   Every player is valued at his 2026 projected points per game (season FPTS &divide;
                   17) — the same engine that drives the Power Ranks. Players with no projection fall
-                  back to their league contract value. Current injuries are baked in: a questionable
-                  or doubtful player is discounted for this week, and an out/IR player is valued only
-                  for the weeks he's expected back for. Overall change = 55% starting lineup output
-                  (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP nine), 25% injury-tested depth (average
-                  lineup output when any one starter misses a week), and 20% cap efficiency (output
-                  per dollar committed, counting the higher of 2026/2027 salary plus a quarter of
-                  remaining future years). Practice squad players are excluded from lineup math.
+                  back to their league contract value. Crucially, a player is only worth what he adds
+                  to the best legal nine (QB/RB/RB/WR/WR/3&times;FLEX/OP): a fifth quarterback who
+                  never cracks the lineup is worth close to nothing, while a top-10 receiver who
+                  displaces a weak starter is worth a lot.
+                </p>
+                <p className="mt-2">
+                  Injuries are modeled week by week for the rest of the regular season — a star
+                  missing six weeks costs you those six weeks but still counts for the stretch run —
+                  and questionable/doubtful players are discounted for the coming week. Because this
+                  is a dynasty league, each side is graded on both its rest-of-season lineup and its
+                  full-health lineup, weighted by how alive that team is in the playoff race (from
+                  the Power Ranks simulation). Contenders are judged mostly on this year; teams out
+                  of it are judged mostly on the long-term roster. Depth (average lineup output when
+                  any one starter misses a week) and cap efficiency each add 14%. Practice squad
+                  players are excluded from lineup math.
                 </p>
               </div>
             </>
