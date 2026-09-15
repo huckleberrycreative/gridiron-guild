@@ -84,41 +84,37 @@ const Index = () => {
                 </div>
               ) : latestRecap ? (
                 <>
-                  {/* Title + Featured Image Side by Side */}
-                  <div className="grid md:grid-cols-[1fr,auto] gap-6 mb-6 items-start">
-                    <div>
-                      <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full mb-4">
-                        Season {latestRecap.season_year} • Week {latestRecap.week_number}
-                      </span>
-                      <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                        {latestRecap.title}
-                      </h1>
-                      <p className="text-muted-foreground text-sm">
-                        {latestRecap.recap_date && new Date(latestRecap.recap_date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
+                  {/* Title and Meta */}
+                  <div className="mb-6">
+                    <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-xs font-display font-semibold uppercase tracking-wider rounded-full mb-4">
+                      Season {latestRecap.season_year} • Week {latestRecap.week_number}
+                    </span>
+                    <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+                      {latestRecap.title}
+                    </h1>
+                    <p className="text-muted-foreground text-sm">
+                      {latestRecap.recap_date && new Date(latestRecap.recap_date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </div>
 
+                  {/* Content from WYSIWYG with floating featured image */}
+                  <div className="blog-content prose prose-lg max-w-none mb-10">
                     {latestRecap.featured_image && (
-                      <div className="flex justify-center md:justify-end order-first md:order-none">
+                      <div className="float-none md:float-right md:ml-6 md:mb-4 w-full md:w-auto md:max-w-sm">
                         <img 
                           src={latestRecap.featured_image} 
                           alt={latestRecap.title}
-                          className="block h-auto max-h-72 w-auto max-w-xs rounded-lg object-contain"
+                          className="block h-auto max-h-64 md:max-h-96 w-auto rounded-lg object-contain"
                         />
                       </div>
                     )}
+                    <div dangerouslySetInnerHTML={{ __html: latestRecap.content || '' }} />
                   </div>
-
-                  {/* Content from WYSIWYG with improved styling */}
-                  <div 
-                    className="blog-content prose prose-lg max-w-none mb-10"
-                    dangerouslySetInnerHTML={{ __html: latestRecap.content || '' }}
-                  />
                 </>
               ) : (
                 <div className="text-center py-12">
