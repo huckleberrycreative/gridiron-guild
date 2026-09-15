@@ -121,15 +121,9 @@ const Season2026 = () => {
           ) : (
             <div className="rounded-lg border border-border bg-card shadow-sm overflow-x-auto">
               <table className="w-full border-collapse text-sm table-fixed">
-                <colgroup>
-                  <col className="w-1/12" />
-                  {orderedTeams.map((team) => (
-                    <col key={team.id} className="w-1/12" />
-                  ))}
-                </colgroup>
                 <thead>
                   <tr className="bg-muted/60">
-                    <th className="sticky left-0 z-10 bg-muted/60 px-2 py-2 text-left font-display uppercase tracking-wider text-[10px]">
+                    <th className="sticky left-0 z-10 bg-muted/60 w-16 px-2 py-2 text-left font-display uppercase tracking-wider text-[10px]">
                       Wk
                     </th>
                     {orderedTeams.map((team) => (
