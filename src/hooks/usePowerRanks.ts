@@ -323,7 +323,8 @@ export function usePowerRankRows() {
     const nStand = span(base.map((b) => b.team.totalPoints));
 
     const seasonProgress = Math.min(1, weeksPlayed / REG_SEASON_WEEKS);
-    const wStand = 0.4 * seasonProgress;
+    // Standings floor at 30% once games are played, ramping to 40% by season's end
+    const wStand = weeksPlayed === 0 ? 0 : 0.3 + 0.1 * seasonProgress;
     const wStart = (1 - wStand) * 0.68;
     const wDepth = (1 - wStand) * 0.32;
 
