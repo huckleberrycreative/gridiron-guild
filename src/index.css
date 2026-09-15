@@ -168,12 +168,12 @@
   margin-bottom: 1.5em;
 }
 
-.blog-content p:first-child {
+.blog-content > p:first-child {
   font-size: 1.125rem;
   line-height: 1.75;
 }
 
-.blog-content p:first-child::first-letter {
+.blog-content > p:first-child::first-letter {
   float: left;
   font-size: 4rem;
   line-height: 0.8;
@@ -237,6 +237,16 @@
   padding-left: 1.5rem;
 }
 
+.blog-content ol {
+  list-style-position: outside;
+  list-style-type: decimal;
+}
+
+.blog-content ol p {
+  display: inline;
+  margin: 0;
+}
+
 .blog-content li {
   margin-bottom: 0.5rem;
 }
@@ -256,7 +266,8 @@
   color: hsl(var(--gold));
 }
 
-.prose-invert .blog-content p:first-child::first-letter {
+.prose-invert.blog-content > p:first-child::first-letter,
+.prose-invert .blog-content > p:first-child::first-letter {
   color: hsl(var(--gold));
 }
 
