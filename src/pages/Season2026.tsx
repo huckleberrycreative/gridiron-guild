@@ -7,6 +7,7 @@ import {
   REGULAR_SEASON_WEEKS,
   pointsForFinish,
 } from '@/hooks/useWeeklyScores';
+import { TeamLogo } from '@/components/TeamLogo';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
