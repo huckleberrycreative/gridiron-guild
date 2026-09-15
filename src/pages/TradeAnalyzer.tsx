@@ -430,9 +430,18 @@ const TradeAnalyzer = () => {
         </div>
         <div className="space-y-1 text-xs text-muted-foreground">
           <p>
-            <span className="font-semibold text-foreground">Talent in/out:</span>{' '}
+            <span className="font-semibold text-foreground">Lineup impact:</span>{' '}
+            {r.winNowPpw >= 0 ? '+' : ''}
+            {r.winNowPpw.toFixed(1)} ppg rest of season &middot;{' '}
+            {r.dynastyPpw >= 0 ? '+' : ''}
+            {r.dynastyPpw.toFixed(1)} ppg at full health
+          </p>
+          <p>
+            <span className="font-semibold text-foreground">Raw talent in/out:</span>{' '}
             {r.ppgDelta >= 0 ? '+' : ''}
-            {r.ppgDelta.toFixed(1)} projected ppg
+            {r.ppgDelta.toFixed(1)} projected ppg &middot; graded{' '}
+            {Math.round((0.35 + 0.5 * r.contention) * 100)}% win-now /{' '}
+            {Math.round((1 - (0.35 + 0.5 * r.contention)) * 100)}% dynasty
           </p>
           <p>
             <span className="font-semibold text-foreground">Salary change:</span>{' '}
