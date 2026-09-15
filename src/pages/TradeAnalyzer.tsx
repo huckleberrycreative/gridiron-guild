@@ -48,6 +48,10 @@ type Asset = {
   salary2026: number;
   effectiveSalary: number;
   futureSalary: number;
+  healthyPpg: number;
+  injuryStatus: string;
+  weeksOut: number;
+  out: boolean;
 };
 
 const lineupTotal = (roster: PRAsset[], excluded?: Set<string>) =>
