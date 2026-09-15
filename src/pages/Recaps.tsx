@@ -136,11 +136,11 @@ const Recaps = () => {
                 >
                   <div className="bg-card rounded-lg border border-border overflow-hidden shadow-md hover-lift">
                     {recap.featured_image && (
-                      <div className="px-6 pt-6 md:px-8 md:pt-8">
+                      <div className="px-6 pt-6 md:px-8 md:pt-8 flex justify-center">
                         <img
                           src={recap.featured_image}
                           alt={`Featured image for ${recap.title}`}
-                          className="block w-full h-auto max-h-64 object-contain rounded-md border border-border"
+                          className="block w-auto h-auto max-h-32 max-w-md object-contain rounded-md border border-border"
                           loading={index === 0 ? 'eager' : 'lazy'}
                         />
                       </div>
