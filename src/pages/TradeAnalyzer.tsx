@@ -18,6 +18,7 @@ import {
   toNum,
   salaryImpliedPpg,
   NFL_WEEKS,
+  REG_SEASON_WEEKS,
   OUT_STATUSES,
   INJURY_MULTIPLIER,
   type Asset as PRAsset,
