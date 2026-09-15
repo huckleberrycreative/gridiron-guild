@@ -21,6 +21,7 @@ import {
   REG_SEASON_WEEKS,
   OUT_STATUSES,
   INJURY_MULTIPLIER,
+  usePowerRankRows,
   type Asset as PRAsset,
 } from '@/hooks/usePowerRanks';
 
