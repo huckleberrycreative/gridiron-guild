@@ -18,8 +18,17 @@ import {
   toNum,
   salaryImpliedPpg,
   NFL_WEEKS,
+  OUT_STATUSES,
+  INJURY_MULTIPLIER,
   type Asset as PRAsset,
 } from '@/hooks/usePowerRanks';
+
+const injuryLabel: Record<string, string> = {
+  questionable: 'Q',
+  doubtful: 'D',
+  out: 'OUT',
+  ir: 'IR',
+};
 
 const positionColors: Record<string, string> = {
   QB: 'bg-red-100 text-red-700 border-red-200',
