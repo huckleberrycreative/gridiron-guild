@@ -168,22 +168,6 @@
   margin-bottom: 1.5em;
 }
 
-.blog-content p:first-child {
-  font-size: 1.125rem;
-  line-height: 1.75;
-}
-
-.blog-content p:first-child::first-letter {
-  float: left;
-  font-size: 4rem;
-  line-height: 0.8;
-  font-weight: 700;
-  font-family: 'Playfair Display', Georgia, serif;
-  margin-right: 0.5rem;
-  margin-top: 0.1em;
-  color: hsl(var(--accent));
-}
-
 .blog-content h1 {
   font-family: 'Playfair Display', Georgia, serif;
   font-weight: 900;
@@ -237,6 +221,16 @@
   padding-left: 1.5rem;
 }
 
+.blog-content ol {
+  list-style: none;
+  padding-left: 0;
+}
+
+.blog-content ol p {
+  display: inline;
+  margin: 0;
+}
+
 .blog-content li {
   margin-bottom: 0.5rem;
 }
@@ -253,10 +247,6 @@
 }
 
 .prose-invert .blog-content h3 {
-  color: hsl(var(--gold));
-}
-
-.prose-invert .blog-content p:first-child::first-letter {
   color: hsl(var(--gold));
 }
 

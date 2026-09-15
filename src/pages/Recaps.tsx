@@ -19,6 +19,7 @@ interface Recap {
   id: string;
   title: string;
   content: string | null;
+  featured_image: string | null;
   season_year: number | null;
   week_number: number | null;
   recap_date: string | null;
@@ -34,7 +35,7 @@ const Recaps = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('id, title, content, season_year, week_number, recap_date, published')
+        .select('id, title, content, featured_image, season_year, week_number, recap_date, published')
         .eq('published', true)
         .order('recap_date', { ascending: false, nullsFirst: false });
 
@@ -134,6 +135,15 @@ const Recaps = () => {
                   className="scroll-mt-24"
                 >
                   <div className="bg-card rounded-lg border border-border overflow-hidden shadow-md hover-lift">
+                    {recap.featured_image && (
+                      <img
+                        src={recap.featured_image}
+                        alt={`Featured image for ${recap.title}`}
+                        className="block w-full max-h-[520px] object-cover"
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                      />
+                    )}
+
                     {/* Header */}
                     <div className="bg-gradient-to-r from-primary to-primary/90 p-6 md:p-8">
                       <div className="flex flex-wrap items-center gap-3 mb-4">
