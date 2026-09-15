@@ -18,8 +18,18 @@ import {
   toNum,
   salaryImpliedPpg,
   NFL_WEEKS,
+  REG_SEASON_WEEKS,
+  OUT_STATUSES,
+  INJURY_MULTIPLIER,
   type Asset as PRAsset,
 } from '@/hooks/usePowerRanks';
+
+const injuryLabel: Record<string, string> = {
+  questionable: 'Q',
+  doubtful: 'D',
+  out: 'OUT',
+  ir: 'IR',
+};
 
 const positionColors: Record<string, string> = {
   QB: 'bg-red-100 text-red-700 border-red-200',
@@ -39,6 +49,10 @@ type Asset = {
   salary2026: number;
   effectiveSalary: number;
   futureSalary: number;
+  healthyPpg: number;
+  injuryStatus: string;
+  weeksOut: number;
+  out: boolean;
 };
 
 const lineupTotal = (roster: PRAsset[], excluded?: Set<string>) =>
@@ -109,11 +123,24 @@ const TradeAnalyzer = () => {
     );
     const futureSalary =
       toNum(s.salary2027) + toNum(s.salary2028) + toNum(s.salary2029);
+    const healthyPpg = projected ?? salaryImpliedPpg(s.position, effectiveSalary);
+    const injuryStatus = s.injuryStatus ?? 'healthy';
+    const weeksOut = s.injuryWeeksOut ?? 0;
+    const out = OUT_STATUSES.includes(injuryStatus) && weeksOut > 0;
+    // Out/IR players keep the value of the weeks they'll be back for;
+    // questionable/doubtful players get this week's availability haircut.
+    const availability = out
+      ? Math.max(0, (REG_SEASON_WEEKS - Math.min(weeksOut, REG_SEASON_WEEKS)) / REG_SEASON_WEEKS)
+      : INJURY_MULTIPLIER[injuryStatus] ?? 1;
     return {
       id: s.id,
       name,
       position: s.position,
-      ppg: projected ?? salaryImpliedPpg(s.position, effectiveSalary),
+      ppg: healthyPpg * availability,
+      healthyPpg,
+      injuryStatus,
+      weeksOut,
+      out,
       projected: projected != null,
       franchiseTag: s.franchiseTag,
       practiceSquad: s.practiceSquad,
@@ -264,6 +291,20 @@ const TradeAnalyzer = () => {
                       {p.practiceSquad && (
                         <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">PS</span>
                       )}
+                      {p.injuryStatus !== 'healthy' && (
+                        <span
+                          title={`${p.injuryStatus}${p.weeksOut ? ` · ~${p.weeksOut} wk${p.weeksOut === 1 ? '' : 's'} out` : ''}`}
+                          className={cn(
+                            'ml-2 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider border',
+                            p.out
+                              ? 'bg-red-100 text-red-700 border-red-200'
+                              : 'bg-amber-100 text-amber-700 border-amber-200'
+                          )}
+                        >
+                          {injuryLabel[p.injuryStatus] ?? p.injuryStatus}
+                          {p.out && p.weeksOut ? ` ${p.weeksOut}w` : ''}
+                        </span>
+                      )}
                     </span>
                     {p.franchiseTag && <Star size={14} className="text-gold fill-gold shrink-0" />}
                     <span className="font-mono text-[11px] text-muted-foreground w-14 text-right">
@@ -408,7 +449,9 @@ const TradeAnalyzer = () => {
                 <p>
                   Every player is valued at his 2026 projected points per game (season FPTS &divide;
                   17) — the same engine that drives the Power Ranks. Players with no projection fall
-                  back to their league contract value. Overall change = 55% starting lineup output
+                  back to their league contract value. Current injuries are baked in: a questionable
+                  or doubtful player is discounted for this week, and an out/IR player is valued only
+                  for the weeks he's expected back for. Overall change = 55% starting lineup output
                   (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP nine), 25% injury-tested depth (average
                   lineup output when any one starter misses a week), and 20% cap efficiency (output
                   per dollar committed, counting the higher of 2026/2027 salary plus a quarter of
