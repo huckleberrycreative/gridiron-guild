@@ -75,10 +75,16 @@ const PowerRanks = () => {
                   projection are valued off their league contract.
                 </li>
                 <li>
+                  <strong>Injuries:</strong> players marked out or on IR are pulled from the lineup
+                  entirely; questionable and doubtful tags discount a player's weekly output. Grades
+                  and odds move the moment the injury report is updated.
+                </li>
+                <li>
                   <strong>Depth:</strong> each starter is removed in turn and the lineup rebuilt —
                   the percentage of weekly output a team retains through an injury is its depth
                   score. Thin benches also carry an injury drag into the simulation.
                 </li>
+
                 <li>
                   <strong>Standings:</strong> accumulated weekly points scale in as the season runs,
                   reaching 40% of the grade by Week {REG_SEASON_WEEKS}.
@@ -145,7 +151,13 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
                   {r.team.name}
                 </div>
                 <div className="text-xs text-neutral-500">{r.team.owner}</div>
+                {!compact && r.injured.length > 0 && (
+                  <div className="mt-1 text-[11px] text-[#bf2121]">
+                    OUT: {r.injured.map((p) => `${p.name}${p.weeksOut ? ` (${p.weeksOut}w)` : ''}`).join(', ')}
+                  </div>
+                )}
               </td>
+
               <td className="px-3 py-3 text-right">
                 <span className="font-serif text-2xl font-bold text-[#bf2121]">
                   {r.score}
