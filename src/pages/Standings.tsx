@@ -61,7 +61,7 @@ const Standings = () => {
       sortable: true,
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <TeamLogo teamName={row.name} size="md" />
+          <TeamLogo teamName={row.name} size="lg" className="w-14 h-14 md:w-16 md:h-16" />
           <div>
             <p className="font-semibold">{row.name}</p>
             <p className="text-xs text-muted-foreground">{row.owner}</p>

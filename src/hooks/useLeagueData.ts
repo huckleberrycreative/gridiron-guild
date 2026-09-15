@@ -74,17 +74,21 @@ export function useActiveSeasonStandings() {
       if (standingsError) throw standingsError;
 
       // Transform to the format expected by the UI
-      const transformedStandings: TeamWithStandings[] = (standings || []).map((s) => ({
-        id: s.team?.id || s.team_id,
-        name: s.team?.name || 'Unknown Team',
-        owner: s.team?.owner_name || 'Unknown Owner',
-        rank: s.rank,
-        totalPoints: s.points_accumulated || 0,
-        pointsFor: s.total_points_for || 0,
-        wins: s.wins || 0,
-        losses: s.losses || 0,
-        avgPPW: s.average_ppw || 0,
-      }));
+      const transformedStandings: TeamWithStandings[] = (standings || []).map((s) => {
+        const weeksPlayed = (s.wins || 0) + (s.losses || 0);
+        return {
+          id: s.team?.id || s.team_id,
+          name: s.team?.name || 'Unknown Team',
+          owner: s.team?.owner_name || 'Unknown Owner',
+          rank: s.rank,
+          totalPoints: s.points_accumulated || 0,
+          pointsFor: s.total_points_for || 0,
+          wins: s.wins || 0,
+          losses: s.losses || 0,
+          // Compute PPW live: total points divided by weeks played
+          avgPPW: weeksPlayed > 0 ? (s.total_points_for || 0) / weeksPlayed : 0,
+        };
+      });
 
       return transformedStandings;
     },
@@ -109,17 +113,21 @@ export function useSeasonStandings(seasonId: string | undefined) {
 
       if (error) throw error;
 
-      const transformedStandings: TeamWithStandings[] = (standings || []).map((s) => ({
-        id: s.team?.id || s.team_id,
-        name: s.team?.name || 'Unknown Team',
-        owner: s.team?.owner_name || 'Unknown Owner',
-        rank: s.rank,
-        totalPoints: s.points_accumulated || 0,
-        pointsFor: s.total_points_for || 0,
-        wins: s.wins || 0,
-        losses: s.losses || 0,
-        avgPPW: s.average_ppw || 0,
-      }));
+      const transformedStandings: TeamWithStandings[] = (standings || []).map((s) => {
+        const weeksPlayed = (s.wins || 0) + (s.losses || 0);
+        return {
+          id: s.team?.id || s.team_id,
+          name: s.team?.name || 'Unknown Team',
+          owner: s.team?.owner_name || 'Unknown Owner',
+          rank: s.rank,
+          totalPoints: s.points_accumulated || 0,
+          pointsFor: s.total_points_for || 0,
+          wins: s.wins || 0,
+          losses: s.losses || 0,
+          // Compute PPW live: total points divided by weeks played
+          avgPPW: weeksPlayed > 0 ? (s.total_points_for || 0) / weeksPlayed : 0,
+        };
+      });
 
       return transformedStandings;
     },
