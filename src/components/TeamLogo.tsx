@@ -1,11 +1,11 @@
 import chicagoDawgs from '@/assets/logos/chicago-dawgs.png';
 import sylvanParkForresters from '@/assets/logos/sylvan-park-forresters.jpg';
-import germantownGamblers from '@/assets/logos/germantown-gamblers.jpg';
+import sanDiegoGamblers from '@/assets/logos/san-diego-gamblers.webp.asset.json';
 import geronimos from '@/assets/logos/geronimos.jpg';
 import queenCityHarambes from '@/assets/logos/queen-city-harambes.png';
 import franklinFanatics from '@/assets/logos/franklin-fanatics.jpg';
 import nashvilleKats from '@/assets/logos/nashville-kats.png';
-import kenFrancisExperience from '@/assets/logos/ken-francis-experience.png';
+import austinAreaBrockParty from '@/assets/logos/austin-area-brock-party.webp.asset.json';
 import maryWashingtonFireAnts from '@/assets/logos/mary-washington-fire-ants.jpg';
 import nepoBeachGuppies from '@/assets/logos/nepo-beach-guppies.png';
 import { cn } from '@/lib/utils';
@@ -15,25 +15,29 @@ const teamLogos: Record<string, string> = {
   // Without "The" prefix (database format)
   'Chicago Dawgs': chicagoDawgs,
   'Sylvan Park Forresters': sylvanParkForresters,
-  'Germantown Gamblers': germantownGamblers,
+  'San Diego Gamblers': sanDiegoGamblers.url,
+  'Germantown Gamblers': sanDiegoGamblers.url,
   'Abbottabad Geronimos': geronimos,
   'Queen City Harambes': queenCityHarambes,
   'Franklin Fanatics': franklinFanatics,
   'Nashville Kats': nashvilleKats,
-  'Miami Area Ken Francis Experience': kenFrancisExperience,
+  'Austin Area Brock Party': austinAreaBrockParty.url,
+  'Miami Area Ken Francis Experience': austinAreaBrockParty.url,
   'West NY Mary Washington Fire Ants': maryWashingtonFireAnts,
   'Nepo Beach Guppies': nepoBeachGuppies,
   // With "The" prefix (local leagueData format)
   'The Chicago Dawgs': chicagoDawgs,
   'The Sylvan Park Forresters': sylvanParkForresters,
-  'The Germantown Gamblers': germantownGamblers,
+  'The San Diego Gamblers': sanDiegoGamblers.url,
+  'The Germantown Gamblers': sanDiegoGamblers.url,
   'The Abbattabad Geronimos': geronimos,
   'The Abbottabad Geronimos': geronimos,
   'The Queen City Harambes': queenCityHarambes,
   'The Franklin Fanatics': franklinFanatics,
   'The Nashville Kats': nashvilleKats,
-  'The Miami Area Ken Francis Experience': kenFrancisExperience,
-  'The Florida Area Ken Francis Experience': kenFrancisExperience,
+  'The Austin Area Brock Party': austinAreaBrockParty.url,
+  'The Miami Area Ken Francis Experience': austinAreaBrockParty.url,
+  'The Florida Area Ken Francis Experience': austinAreaBrockParty.url,
   'The West NY Mary Washington Fire Ants': maryWashingtonFireAnts,
   'The Nepo Beach Guppies': nepoBeachGuppies,
 };
