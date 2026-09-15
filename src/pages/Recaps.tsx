@@ -136,12 +136,14 @@ const Recaps = () => {
                 >
                   <div className="bg-card rounded-lg border border-border overflow-hidden shadow-md hover-lift">
                     {recap.featured_image && (
-                      <img
-                        src={recap.featured_image}
-                        alt={`Featured image for ${recap.title}`}
-                        className="block w-full h-auto object-contain"
-                        loading={index === 0 ? 'eager' : 'lazy'}
-                      />
+                      <div className="px-6 pt-6 md:px-8 md:pt-8">
+                        <img
+                          src={recap.featured_image}
+                          alt={`Featured image for ${recap.title}`}
+                          className="block w-full h-auto max-h-64 object-contain rounded-md border border-border"
+                          loading={index === 0 ? 'eager' : 'lazy'}
+                        />
+                      </div>
                     )}
 
                     {/* Header */}
