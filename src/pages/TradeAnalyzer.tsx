@@ -122,11 +122,24 @@ const TradeAnalyzer = () => {
     );
     const futureSalary =
       toNum(s.salary2027) + toNum(s.salary2028) + toNum(s.salary2029);
+    const healthyPpg = projected ?? salaryImpliedPpg(s.position, effectiveSalary);
+    const injuryStatus = s.injuryStatus ?? 'healthy';
+    const weeksOut = s.injuryWeeksOut ?? 0;
+    const out = OUT_STATUSES.includes(injuryStatus) && weeksOut > 0;
+    // Out/IR players keep the value of the weeks they'll be back for;
+    // questionable/doubtful players get this week's availability haircut.
+    const availability = out
+      ? Math.max(0, (REG_SEASON_WEEKS - Math.min(weeksOut, REG_SEASON_WEEKS)) / REG_SEASON_WEEKS)
+      : INJURY_MULTIPLIER[injuryStatus] ?? 1;
     return {
       id: s.id,
       name,
       position: s.position,
-      ppg: projected ?? salaryImpliedPpg(s.position, effectiveSalary),
+      ppg: healthyPpg * availability,
+      healthyPpg,
+      injuryStatus,
+      weeksOut,
+      out,
       projected: projected != null,
       franchiseTag: s.franchiseTag,
       practiceSquad: s.practiceSquad,
