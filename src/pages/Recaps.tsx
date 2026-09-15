@@ -139,7 +139,7 @@ const Recaps = () => {
                       <img
                         src={recap.featured_image}
                         alt={`Featured image for ${recap.title}`}
-                        className="block w-full max-h-[520px] object-cover"
+                        className="block w-full h-auto object-contain"
                         loading={index === 0 ? 'eager' : 'lazy'}
                       />
                     )}
