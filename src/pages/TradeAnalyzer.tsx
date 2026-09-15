@@ -523,13 +523,21 @@ const TradeAnalyzer = () => {
                 <p>
                   Every player is valued at his 2026 projected points per game (season FPTS &divide;
                   17) — the same engine that drives the Power Ranks. Players with no projection fall
-                  back to their league contract value. Current injuries are baked in: a questionable
-                  or doubtful player is discounted for this week, and an out/IR player is valued only
-                  for the weeks he's expected back for. Overall change = 55% starting lineup output
-                  (best legal QB/RB/RB/WR/WR/3&times;FLEX/OP nine), 25% injury-tested depth (average
-                  lineup output when any one starter misses a week), and 20% cap efficiency (output
-                  per dollar committed, counting the higher of 2026/2027 salary plus a quarter of
-                  remaining future years). Practice squad players are excluded from lineup math.
+                  back to their league contract value. Crucially, a player is only worth what he adds
+                  to the best legal nine (QB/RB/RB/WR/WR/3&times;FLEX/OP): a fifth quarterback who
+                  never cracks the lineup is worth close to nothing, while a top-10 receiver who
+                  displaces a weak starter is worth a lot.
+                </p>
+                <p className="mt-2">
+                  Injuries are modeled week by week for the rest of the regular season — a star
+                  missing six weeks costs you those six weeks but still counts for the stretch run —
+                  and questionable/doubtful players are discounted for the coming week. Because this
+                  is a dynasty league, each side is graded on both its rest-of-season lineup and its
+                  full-health lineup, weighted by how alive that team is in the playoff race (from
+                  the Power Ranks simulation). Contenders are judged mostly on this year; teams out
+                  of it are judged mostly on the long-term roster. Depth (average lineup output when
+                  any one starter misses a week) and cap efficiency each add 14%. Practice squad
+                  players are excluded from lineup math.
                 </p>
               </div>
             </>
