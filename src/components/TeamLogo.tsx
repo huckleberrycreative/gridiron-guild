@@ -7,7 +7,8 @@ import franklinFanaticsAsset from '@/assets/logos/franklin-fanatics.webp.asset.j
 import nashvilleKats from '@/assets/logos/nashville-kats.png';
 import austinAreaBrockParty from '@/assets/logos/austin-area-brock-party.webp.asset.json';
 import maryWashingtonFireAntsAsset from '@/assets/logos/mary-washington-fire-ants.webp.asset.json';
-import nepoBeachGuppies from '@/assets/logos/nepo-beach-guppies.png';
+import nepoBeachGuppiesAsset from '@/assets/logos/nepo-beach-guppies.png.asset.json';
+const nepoBeachGuppies = nepoBeachGuppiesAsset.url;
 
 const chicagoDawgs = chicagoDawgsAsset.url;
 const sylvanParkForresters = sylvanParkForrestersAsset.url;
