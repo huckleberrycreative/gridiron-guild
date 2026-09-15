@@ -57,6 +57,18 @@ export type Asset = {
   position: string;
   ppg: number;
   projected: boolean;
+  injuryStatus?: string;
+  weeksOut?: number;
+  out?: boolean;
+};
+
+export const OUT_STATUSES = ['out', 'ir'];
+export const INJURY_MULTIPLIER: Record<string, number> = {
+  healthy: 1,
+  questionable: 0.8,
+  doubtful: 0.4,
+  out: 0,
+  ir: 0,
 };
 
 export type Odds = { top2: number; top4: number; top5: number; champ: number };
@@ -71,6 +83,7 @@ export type PowerRankRow = {
   };
   roster: Asset[];
   starters: Asset[];
+  injured: Asset[];
   starterPpw: number;
   retained: number;
   replacementPpg: number;
@@ -282,18 +295,29 @@ export function usePowerRankRows() {
             toNum(s.salary2027),
             s.franchiseTag ? 100 : 0
           );
+          const status = s.injuryStatus ?? 'healthy';
+          const weeksOut = s.injuryWeeksOut ?? 0;
+          const isOut = OUT_STATUSES.includes(status) && weeksOut > 0;
+          const raw = projected ?? salaryImpliedPpg(s.position, salary);
           return {
             id: s.id,
             name,
             position: s.position,
-            ppg: projected ?? salaryImpliedPpg(s.position, salary),
+            ppg: raw * (INJURY_MULTIPLIER[status] ?? 1),
             projected: projected != null,
+            injuryStatus: status,
+            weeksOut,
+            out: isOut,
           };
         });
 
-      const starters = bestLineup(roster);
+      const available = roster.filter((p) => !p.out);
+      const injured = roster.filter(
+        (p) => p.out || (p.injuryStatus && p.injuryStatus !== 'healthy')
+      );
+      const starters = bestLineup(available);
       const starterPpw = starters.reduce((s, p) => s + p.ppg, 0);
-      const { retained, replacementPpg } = depthResilience(roster);
+      const { retained, replacementPpg } = depthResilience(available);
 
       return {
         team: {
@@ -305,10 +329,11 @@ export function usePowerRankRows() {
         },
         roster,
         starters,
+        injured,
         starterPpw,
         retained,
         replacementPpg,
-        benchCount: Math.max(0, roster.length - starters.length),
+        benchCount: Math.max(0, available.length - starters.length),
       };
     });
 
