@@ -58,13 +58,40 @@ type Asset = {
 const lineupTotal = (roster: PRAsset[], excluded?: Set<string>) =>
   bestLineup(roster, excluded).reduce((s, p) => s + p.ppg, 0);
 
+// Value a roster at full health — the dynasty view. A player is only worth
+// what he adds to the best legal nine, so a 5th QB is worth ~nothing.
+const healthyLineupPpw = (roster: Asset[]) =>
+  lineupTotal(roster.map((p) => ({ ...p, ppg: p.healthyPpg })));
+
+// Week-by-week rest-of-season value: injured players re-enter the lineup the
+// week they're projected back, so a star missing 6 weeks still carries the
+// stretch run.
+const restOfSeasonPpw = (roster: Asset[], weeksLeft: number) => {
+  if (weeksLeft <= 0) return healthyLineupPpw(roster);
+  let sum = 0;
+  for (let w = 1; w <= weeksLeft; w++) {
+    const pool = roster
+      .filter((p) => !(p.out && p.weeksOut >= w))
+      .map((p) => ({
+        ...p,
+        ppg:
+          w === 1 && !p.out
+            ? p.healthyPpg * (INJURY_MULTIPLIER[p.injuryStatus] ?? 1)
+            : p.healthyPpg,
+      }));
+    sum += lineupTotal(pool);
+  }
+  return sum / weeksLeft;
+};
+
 // Average lineup output across "any one starter is out this week" scenarios —
 // this is what real depth buys you.
 const injuryAdjustedOutput = (roster: Asset[]) => {
-  const starters = bestLineup(roster);
+  const healthy = roster.map((p) => ({ ...p, ppg: p.healthyPpg }));
+  const starters = bestLineup(healthy);
   if (!starters.length) return 0;
   let sum = 0;
-  for (const s of starters) sum += lineupTotal(roster, new Set([s.id]));
+  for (const s of starters) sum += lineupTotal(healthy, new Set([s.id]));
   return sum / starters.length;
 };
 
@@ -73,11 +100,9 @@ const capEfficiency = (roster: Asset[]) => {
     (s, p) => s + p.effectiveSalary + p.futureSalary * 0.25,
     0
   );
-  const production = lineupTotal(roster) + injuryAdjustedOutput(roster) * 0.5;
+  const production = healthyLineupPpw(roster) + injuryAdjustedOutput(roster) * 0.5;
   return production / Math.max(50, spend / 100);
 };
-
-const WEIGHTS = { starters: 0.55, depth: 0.25, cap: 0.2 };
 
 const TradeAnalyzer = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
