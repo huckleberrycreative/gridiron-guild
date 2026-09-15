@@ -10,18 +10,18 @@ import {
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
-// Heatmap from best (green) through light green and yellow to worst (red).
+// Muted heatmap from best (soft green) through yellow to worst (soft red).
 const RANK_STYLES = [
-  'bg-emerald-500 text-white',
-  'bg-emerald-400 text-emerald-950',
-  'bg-emerald-300 text-emerald-950',
-  'bg-lime-300 text-lime-950',
-  'bg-yellow-200 text-yellow-950',
-  'bg-amber-200 text-amber-950',
-  'bg-orange-200 text-orange-950',
-  'bg-orange-300 text-orange-950',
+  'bg-emerald-200 text-emerald-900',
+  'bg-emerald-100 text-emerald-800',
+  'bg-green-100 text-green-800',
+  'bg-lime-100 text-lime-800',
+  'bg-yellow-100 text-yellow-800',
+  'bg-amber-100 text-amber-800',
+  'bg-orange-100 text-orange-800',
+  'bg-orange-200 text-orange-900',
+  'bg-red-200 text-red-900',
   'bg-red-300 text-red-950',
-  'bg-red-500 text-white',
 ];
 
 const rankStyle = (place: number, fieldSize: number) => {
@@ -85,6 +85,11 @@ const Season2026 = () => {
     [teams, totals]
   );
 
+  const allWeeks = useMemo(
+    () => Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => i + 1),
+    []
+  );
+
   const isLoading = teamsLoading || scoresLoading;
 
   return (
@@ -118,71 +123,77 @@ const Season2026 = () => {
                 <thead>
                   <tr className="bg-muted/60">
                     <th className="sticky left-0 z-10 bg-muted/60 px-3 py-2 text-left font-display uppercase tracking-wider text-[11px]">
-                      Team
+                      Week
                     </th>
-                    {weeks.map((w) => (
+                    {orderedTeams.map((team) => (
                       <th
-                        key={w}
+                        key={team.id}
                         className="px-2 py-2 text-center font-display uppercase tracking-wider text-[11px] whitespace-nowrap"
                       >
-                        Wk {w}
+                        {team.name}
                       </th>
                     ))}
-                    <th className="px-3 py-2 text-center font-display uppercase tracking-wider text-[11px]">
-                      Pts
-                    </th>
-                    <th className="px-3 py-2 text-center font-display uppercase tracking-wider text-[11px]">
-                      Total PF
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orderedTeams.map((team) => {
-                    const total = totals.get(team.id) ?? { points: 0, pf: 0 };
-                    return (
-                      <tr key={team.id} className="border-t border-border/60">
-                        <td className="sticky left-0 z-10 bg-card px-3 py-2 font-display font-bold uppercase text-[11px] whitespace-nowrap">
-                          {team.name}
-                        </td>
-                        {weeks.map((w) => {
-                          const cell = grid.get(w)?.get(team.id);
-                          const fieldSize = grid.get(w)?.size ?? 10;
-                          if (!cell) {
-                            return (
-                              <td
-                                key={w}
-                                className="px-2 py-2 text-center text-muted-foreground/60 bg-muted/20"
-                              >
-                                —
-                              </td>
-                            );
-                          }
+                  {allWeeks.map((w) => (
+                    <tr key={w} className="border-t border-border/60">
+                      <td className="sticky left-0 z-10 bg-card px-3 py-2 font-display font-bold uppercase text-[11px] whitespace-nowrap">
+                        Wk {w}
+                      </td>
+                      {orderedTeams.map((team) => {
+                        const cell = grid.get(w)?.get(team.id);
+                        const fieldSize = grid.get(w)?.size ?? 10;
+                        if (!cell) {
                           return (
-                            <td key={w} className="p-1">
-                              <div
-                                className={cn(
-                                  'relative rounded-md px-2 py-2 text-center font-mono font-bold tabular-nums',
-                                  rankStyle(cell.place, fieldSize)
-                                )}
-                              >
-                                <span className="absolute top-0.5 right-1 text-[9px] font-semibold opacity-80">
-                                  {cell.points}
-                                </span>
-                                {cell.score.toFixed(1)}
-                              </div>
+                            <td
+                              key={team.id}
+                              className="px-2 py-2 text-center text-muted-foreground/60 bg-muted/20"
+                            >
+                              —
                             </td>
                           );
-                        })}
-                        <td className="px-3 py-2 text-center font-mono font-extrabold">
-                          {total.points}
-                        </td>
-                        <td className="px-3 py-2 text-center font-mono text-muted-foreground">
-                          {total.pf.toFixed(1)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        }
+                        return (
+                          <td key={team.id} className="p-1">
+                            <div
+                              className={cn(
+                                'relative rounded-md px-2 py-2 text-center font-mono font-bold tabular-nums',
+                                rankStyle(cell.place, fieldSize)
+                              )}
+                            >
+                              <span className="absolute top-0.5 right-1 text-[9px] font-semibold opacity-80">
+                                {cell.points}
+                              </span>
+                              {cell.score.toFixed(1)}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border bg-muted/40">
+                    <td className="sticky left-0 z-10 bg-muted/40 px-3 py-2 font-display font-bold uppercase text-[11px]">
+                      Total
+                    </td>
+                    {orderedTeams.map((team) => {
+                      const total = totals.get(team.id) ?? { points: 0, pf: 0 };
+                      return (
+                        <td
+                          key={team.id}
+                          className="px-2 py-2 text-center font-mono font-extrabold"
+                        >
+                          <div className="text-foreground">{total.points}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {total.pf.toFixed(1)}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
