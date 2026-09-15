@@ -112,6 +112,17 @@ const TradeAnalyzer = () => {
   const [teamB, setTeamB] = useState<string>('');
   const [selA, setSelA] = useState<Set<string>>(new Set());
   const [selB, setSelB] = useState<Set<string>>(new Set());
+  const { rows: powerRows, weeksPlayed } = usePowerRankRows();
+  const weeksLeft = Math.max(0, REG_SEASON_WEEKS - weeksPlayed);
+
+  // How much a team should care about this season: playoff odds from the
+  // Power Ranks simulation (0 = out of it, 1 = firmly in the hunt).
+  const contentionFor = (teamId: string) => {
+    const row = powerRows.find((r) => r.team.id === teamId);
+    if (!row) return 0.5;
+    return Math.min(1, Math.max(0, row.odds.top5 / 100));
+  };
+
 
   useEffect(() => {
     (async () => {
