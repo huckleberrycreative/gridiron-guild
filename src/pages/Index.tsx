@@ -86,11 +86,11 @@ const Index = () => {
                 <>
                   {/* Featured Image - Full Width Above Title */}
                   {latestRecap.featured_image && (
-                    <div className="mb-6 -mx-4 md:-mx-0">
+                    <div className="mb-6 flex justify-center">
                       <img 
                         src={latestRecap.featured_image} 
                         alt={latestRecap.title}
-                        className="block w-full h-auto rounded-lg"
+                        className="block h-auto max-h-32 w-auto max-w-xs rounded-lg object-contain"
                       />
                     </div>
                   )}
