@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Trophy, Crown, Skull, AlertTriangle, ChevronRight, Send } from 'lucide-react';
+import { Trophy, Crown, Skull, AlertTriangle, Eye, ChevronRight, Send } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -316,7 +316,7 @@ const Index = () => {
 interface StandingsRowProps {
   rank: number;
   team: TeamWithStandings;
-  variant: 'playoff' | 'purgatory' | 'toilet';
+  variant: 'playoff' | 'purgatory' | 'toilet' | 'lurker';
 }
 
 const StandingsRow = ({ rank, team, variant }: StandingsRowProps) => {
@@ -326,7 +326,8 @@ const StandingsRow = ({ rank, team, variant }: StandingsRowProps) => {
         'flex items-center gap-3 p-2 rounded-md transition-colors',
         variant === 'playoff' && 'hover:bg-gold/10',
         variant === 'purgatory' && 'hover:bg-amber-500/10',
-        variant === 'toilet' && 'hover:bg-loss/10'
+        variant === 'toilet' && 'hover:bg-loss/10',
+        variant === 'lurker' && 'hover:bg-muted'
       )}
     >
       <span
@@ -335,7 +336,8 @@ const StandingsRow = ({ rank, team, variant }: StandingsRowProps) => {
           variant === 'playoff' && rank === 1 && 'bg-gold text-gold-foreground',
           variant === 'playoff' && rank > 1 && 'bg-primary/10 text-primary',
           variant === 'purgatory' && 'bg-amber-500/20 text-amber-600',
-          variant === 'toilet' && 'bg-loss/20 text-loss'
+          variant === 'toilet' && 'bg-loss/20 text-loss',
+          variant === 'lurker' && 'bg-muted text-muted-foreground'
         )}
       >
         {rank}
