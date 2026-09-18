@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
     const moved: string[] = [];
     let injuryUpdates = 0;
 
-    for (const t of league.teams ?? []) {
+    for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
       if (!teamId) continue;
 
