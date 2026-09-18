@@ -135,10 +135,21 @@ Deno.serve(async (req) => {
     const teamIdByEspn = new Map<number, string>();
     const unmatchedTeams: string[] = [];
 
-    for (const t of league.teams ?? []) {
+    const espnTeamName = (t: any): string =>
+      t.name ?? `${t.location ?? ''} ${t.nickname ?? ''}`.trim();
+    const isPracticeSquadTeam = (t: any) => /practice\s*squad/i.test(espnTeamName(t));
+
+    const practiceSquadEspnTeams = (league.teams ?? []).filter(isPracticeSquadTeam);
+    const realEspnTeams = (league.teams ?? []).filter((t: any) => !isPracticeSquadTeam(t));
+
+    // never let a practice-squad holding roster be mapped to a league team
+    for (const t of practiceSquadEspnTeams) {
+      await admin.from('teams').update({ espn_team_id: null }).eq('espn_team_id', t.id);
+    }
+
+    for (const t of realEspnTeams) {
       const espnId: number = t.id;
-      const espnName: string =
-        t.name ?? `${t.location ?? ''} ${t.nickname ?? ''}`.trim();
+      const espnName: string = espnTeamName(t);
       const existing = teams.find((x: any) => x.espn_team_id === espnId);
       if (existing) {
         teamIdByEspn.set(espnId, existing.id);
