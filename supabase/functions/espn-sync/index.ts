@@ -255,9 +255,11 @@ Deno.serve(async (req) => {
 
     // --- players no longer rostered on ESPN become free agents ---
     let released = 0;
+    const syncedLeagueTeamIds = new Set(teamIdByEspn.values());
     if (teamIdByEspn.size > 0) {
       for (const s of salaryRows ?? []) {
-        if (s.team_id && !seenSalaryIds.has(s.id)) {
+        // only touch teams that ESPN actually reported on
+        if (s.team_id && syncedLeagueTeamIds.has(s.team_id) && !seenSalaryIds.has(s.id)) {
           await admin.from('player_salaries').update({ team_id: null }).eq('id', s.id);
           released++;
         }
