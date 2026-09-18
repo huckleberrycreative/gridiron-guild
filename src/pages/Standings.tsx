@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { SortableTable, Column } from '@/components/SortableTable';
 import { useActiveSeasonStandings, TeamWithStandings } from '@/hooks/useLeagueData';
-import { Trophy, Medal, AlertTriangle, Skull, Loader2 } from 'lucide-react';
+import { Trophy, Medal, AlertTriangle, Skull, Eye, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TeamLogo } from '@/components/TeamLogo';
 // Ranking points by position (1st through 10th)
