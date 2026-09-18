@@ -1,1 +1,4 @@
 project_id = "penesjyfcmrwhhzlvwrq"
+
+[functions.espn-sync]
+verify_jwt = false

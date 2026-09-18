@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
       body = {};
     }
     const mappings = body?.mappings as Record<string, string | null> | undefined;
+    if (mappings && !isAdmin) return json({ error: 'Admins only.' }, 403);
     if (mappings) {
       for (const [espnIdRaw, leagueTeamId] of Object.entries(mappings)) {
         const espnId = parseInt(espnIdRaw, 10);
