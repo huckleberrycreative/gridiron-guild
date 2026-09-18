@@ -15,7 +15,8 @@ import {
   Medal,
   FileEdit,
   ClipboardList,
-  HeartPulse
+  HeartPulse,
+  RefreshCw
 } from 'lucide-react';
 import logoImage from '@/assets/logo.png';
 
@@ -37,6 +38,7 @@ export default function AdminLayout() {
     { icon: BarChart3, label: 'Standings', path: '/admin/standings' },
     { icon: Trophy, label: 'Playoffs', path: '/admin/playoffs' },
     { icon: ClipboardList, label: 'Rosters', path: '/admin/rosters' },
+    { icon: RefreshCw, label: 'ESPN Sync', path: '/admin/espn-sync' },
     { icon: DollarSign, label: 'Salaries', path: '/admin/salaries' },
     { icon: HeartPulse, label: 'Injuries', path: '/admin/injuries' },
     { icon: BarChart3, label: 'Weekly Scores', path: '/admin/weekly-scores' },

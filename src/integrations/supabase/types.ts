@@ -707,6 +707,7 @@ export type Database = {
       teams: {
         Row: {
           created_at: string
+          espn_team_id: number | null
           governor_response: string | null
           highest_high: string | null
           id: string
@@ -719,6 +720,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          espn_team_id?: number | null
           governor_response?: string | null
           highest_high?: string | null
           id?: string
@@ -731,6 +733,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          espn_team_id?: number | null
           governor_response?: string | null
           highest_high?: string | null
           id?: string
