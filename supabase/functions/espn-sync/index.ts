@@ -177,10 +177,17 @@ Deno.serve(async (req) => {
 
     const { data: salaryRows } = await admin
       .from('player_salaries')
-      .select('id, player_id, team_id');
-    const salaryByPlayer = new Map<string, { id: string; team_id: string | null }>();
+      .select('id, player_id, team_id, practice_squad');
+    const salaryByPlayer = new Map<
+      string,
+      { id: string; team_id: string | null; practice_squad: boolean }
+    >();
     for (const s of salaryRows ?? [])
-      salaryByPlayer.set(s.player_id, { id: s.id, team_id: s.team_id });
+      salaryByPlayer.set(s.player_id, {
+        id: s.id,
+        team_id: s.team_id,
+        practice_squad: !!s.practice_squad,
+      });
 
     const seenSalaryIds = new Set<string>();
     const added: string[] = [];
