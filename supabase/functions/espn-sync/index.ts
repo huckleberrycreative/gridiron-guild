@@ -164,9 +164,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    const espnTeams = (league.teams ?? []).map((t: any) => ({
+    const espnTeams = realEspnTeams.map((t: any) => ({
       espnId: t.id as number,
-      espnName: (t.name ?? `${t.location ?? ''} ${t.nickname ?? ''}`.trim()) as string,
+      espnName: espnTeamName(t),
       mappedTeamId: teamIdByEspn.get(t.id) ?? null,
     }));
 
