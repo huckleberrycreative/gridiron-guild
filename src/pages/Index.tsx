@@ -43,7 +43,8 @@ const Index = () => {
   // Split into playoff tiers
   const playoffTeams = standings.slice(0, 4);
   const purgatoryTeam = standings[4];
-  const toiletBowlTeams = standings.slice(5);
+  const toiletBowlTeams = standings.slice(5, 9);
+  const lurkerTeam = standings[9];
 
   // Get comments for the current recap
   const recapComments = localComments.filter((c) => c.recapId === latestRecap?.id);
@@ -258,7 +259,7 @@ const Index = () => {
                 </div>
 
                 {/* The Toilet Bowl */}
-                <div className="p-4 bg-loss/5">
+                <div className="p-4 border-b border-border bg-loss/5">
                   <div className="flex items-center gap-2 mb-3">
                     <Skull size={16} className="text-loss" />
                     <h3 className="font-display text-xs font-bold uppercase tracking-wider text-loss">
@@ -275,6 +276,23 @@ const Index = () => {
                       />
                     ))}
                   </div>
+                </div>
+
+                {/* The Lurker Zone */}
+                <div className="p-4 bg-muted/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Eye size={16} className="text-muted-foreground" />
+                    <h3 className="font-display text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      The Lurker Zone
+                    </h3>
+                  </div>
+                  {lurkerTeam && (
+                    <StandingsRow
+                      rank={10}
+                      team={lurkerTeam}
+                      variant="lurker"
+                    />
+                  )}
                 </div>
 
                 {/* View Full Standings Link */}

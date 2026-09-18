@@ -183,12 +183,12 @@ const Standings = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="mb-6 grid sm:grid-cols-3 gap-4"
+            className="mb-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
             <div className="p-3 bg-gold/10 border border-gold/20 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 <Trophy size={16} className="text-gold" />
-                <span className="font-display font-bold text-sm text-gold">If Playoffs Started Tomorrow</span>
+                <span className="font-display font-bold text-sm text-gold">If the Playoffs Started Tomorrow</span>
               </div>
               <p className="text-xs text-muted-foreground">Ranks 1-4</p>
             </div>
@@ -202,9 +202,16 @@ const Standings = () => {
             <div className="p-3 bg-loss/10 border border-loss/20 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 <Skull size={16} className="text-loss" />
-                <span className="font-display font-bold text-sm text-loss">The Toilet Bowl</span>
+                <span className="font-display font-bold text-sm text-loss">The Toilet Bowl, Presented by Ruggables™</span>
               </div>
-              <p className="text-xs text-muted-foreground">Ranks 6-10</p>
+              <p className="text-xs text-muted-foreground">Ranks 6-9</p>
+            </div>
+            <div className="p-3 bg-muted border border-border rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Eye size={16} className="text-muted-foreground" />
+                <span className="font-display font-bold text-sm text-muted-foreground">The Lurker Zone</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Rank 10</p>
             </div>
           </motion.div>
 
