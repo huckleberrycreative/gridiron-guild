@@ -81,12 +81,12 @@ export const RANKING_POINTS: Record<number, number> = {
   2: 18,
   3: 16,
   4: 14,
-  5: 12,
-  6: 5,
-  7: 4,
-  8: 3,
-  9: 2,
-  10: 1,
+  5: 8,
+  6: 4,
+  7: 3,
+  8: 2,
+  9: 1,
+  10: 0,
 };
 
 // Max positional values for salary calculations
