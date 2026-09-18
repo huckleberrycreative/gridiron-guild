@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -29,13 +30,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
           <p className="mt-3 text-sm text-muted-foreground">
             This account does not have commissioner access.
           </p>
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={() => void signOut()}
-            className="mt-6 text-sm font-semibold text-primary underline-offset-4 hover:underline"
+            className="mt-4"
           >
             Sign out and use another account
-          </button>
+          </Button>
         </div>
       </div>
     );
