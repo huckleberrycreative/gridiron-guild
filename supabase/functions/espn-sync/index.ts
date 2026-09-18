@@ -79,6 +79,26 @@ Deno.serve(async (req) => {
     const swid = Deno.env.get('ESPN_SWID');
     if (!s2 || !swid) return json({ error: 'ESPN credentials are not configured.' }, 400);
 
+    // --- optional manual team mappings from the admin UI ---
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+    const mappings = body?.mappings as Record<string, string | null> | undefined;
+    if (mappings) {
+      for (const [espnIdRaw, leagueTeamId] of Object.entries(mappings)) {
+        const espnId = parseInt(espnIdRaw, 10);
+        if (!espnId) continue;
+        // clear this espn id from any other team first
+        await admin.from('teams').update({ espn_team_id: null }).eq('espn_team_id', espnId);
+        if (leagueTeamId) {
+          await admin.from('teams').update({ espn_team_id: espnId }).eq('id', leagueTeamId);
+        }
+      }
+    }
+
     // --- fetch league ---
     const espnUrl =
       `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}` +
@@ -129,6 +149,12 @@ Deno.serve(async (req) => {
         unmatchedTeams.push(espnName);
       }
     }
+
+    const espnTeams = (league.teams ?? []).map((t: any) => ({
+      espnId: t.id as number,
+      espnName: (t.name ?? `${t.location ?? ''} ${t.nickname ?? ''}`.trim()) as string,
+      mappedTeamId: teamIdByEspn.get(t.id) ?? null,
+    }));
 
     // --- existing players / salary rows ---
     const { data: players } = await admin.from('players').select('id, full_name, position');
@@ -229,9 +255,11 @@ Deno.serve(async (req) => {
 
     // --- players no longer rostered on ESPN become free agents ---
     let released = 0;
+    const syncedLeagueTeamIds = new Set(teamIdByEspn.values());
     if (teamIdByEspn.size > 0) {
       for (const s of salaryRows ?? []) {
-        if (s.team_id && !seenSalaryIds.has(s.id)) {
+        // only touch teams that ESPN actually reported on
+        if (s.team_id && syncedLeagueTeamIds.has(s.team_id) && !seenSalaryIds.has(s.id)) {
           await admin.from('player_salaries').update({ team_id: null }).eq('id', s.id);
           released++;
         }
@@ -264,6 +292,7 @@ Deno.serve(async (req) => {
       ok: true,
       teamsSynced: teamIdByEspn.size,
       unmatchedTeams,
+      espnTeams,
       playersAdded: added,
       rosterMoves: moved.length,
       released,
