@@ -11,20 +11,21 @@ const RANKING_POINTS: Record<number, number> = {
   2: 18,
   3: 16,
   4: 14,
-  5: 12,
-  6: 5,
-  7: 4,
-  8: 3,
-  9: 2,
-  10: 1,
+  5: 8,
+  6: 4,
+  7: 3,
+  8: 2,
+  9: 1,
+  10: 0,
 };
 
 const Standings = () => {
   const { data: standings = [], isLoading, error } = useActiveSeasonStandings();
 
-  const getPlayoffTier = (rank: number): 'playoff' | 'purgatory' | 'toilet' => {
+  const getPlayoffTier = (rank: number): 'playoff' | 'purgatory' | 'toilet' | 'lurker' => {
     if (rank <= 4) return 'playoff';
     if (rank === 5) return 'purgatory';
+    if (rank === 10) return 'lurker';
     return 'toilet';
   };
 
@@ -43,11 +44,13 @@ const Standings = () => {
             {rank === 3 && <Medal size={16} className="text-amber-700" />}
             {tier === 'purgatory' && <AlertTriangle size={14} className="text-amber-500" />}
             {tier === 'toilet' && <Skull size={14} className="text-loss" />}
+            {tier === 'lurker' && <Eye size={14} className="text-muted-foreground" />}
             <span className={cn(
               'font-display font-bold',
               rank <= 3 && 'text-gold',
               tier === 'purgatory' && 'text-amber-500',
-              tier === 'toilet' && 'text-loss'
+              tier === 'toilet' && 'text-loss',
+              tier === 'lurker' && 'text-muted-foreground'
             )}>
               {rank}
             </span>
