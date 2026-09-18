@@ -1,7 +1,7 @@
 import chicagoDawgsAsset from '@/assets/logos/chicago-dawgs.webp.asset.json';
 import sylvanParkForrestersAsset from '@/assets/logos/sylvan-park-forresters.webp.asset.json';
 import sanDiegoGamblers from '@/assets/logos/san-diego-gamblers.webp.asset.json';
-import geronimos from '@/assets/logos/abbottabad-geronimos.webp.asset.json';
+import americanLurkers from '@/assets/logos/american-lurkers.webp.asset.json';
 import queenCityHarambesAsset from '@/assets/logos/queen-city-harambes.webp.asset.json';
 import franklinFanaticsAsset from '@/assets/logos/franklin-fanatics.webp.asset.json';
 import nashvilleKats from '@/assets/logos/nashville-kats.png';
@@ -24,7 +24,8 @@ const teamLogos: Record<string, string> = {
   'Sylvan Park Forresters': sylvanParkForresters,
   'San Diego Gamblers': sanDiegoGamblers.url,
   'Germantown Gamblers': sanDiegoGamblers.url,
-  'American Lurkers': geronimos.url,
+  'American Lurkers': americanLurkers.url,
+  'Abbottabad Geronimos': americanLurkers.url,
   'Queen City Harambes': queenCityHarambes,
   'Franklin Fanatics': franklinFanatics,
   'Nashville Kats': nashvilleKats,
@@ -37,8 +38,8 @@ const teamLogos: Record<string, string> = {
   'The Sylvan Park Forresters': sylvanParkForresters,
   'The San Diego Gamblers': sanDiegoGamblers.url,
   'The Germantown Gamblers': sanDiegoGamblers.url,
-  'The American Lurkers': geronimos.url,
-  'The American Lurkers': geronimos.url,
+  'The American Lurkers': americanLurkers.url,
+  'The Abbattabad Geronimos': americanLurkers.url,
   'The Queen City Harambes': queenCityHarambes,
   'The Franklin Fanatics': franklinFanatics,
   'The Nashville Kats': nashvilleKats,
