@@ -25,6 +25,12 @@ type SyncResult = {
   released?: number;
   injuryUpdates?: number;
   weeksSynced?: number;
+  practiceSquad?: {
+    holdingRosters?: string[];
+    espnCount?: number;
+    unassigned?: string[];
+    dropped?: string[];
+  };
 };
 
 const NONE = 'none';
@@ -111,6 +117,35 @@ export default function EspnSync() {
             <p>
               <strong>New players added at $1:</strong> {result.playersAdded.join(', ')}
             </p>
+          )}
+        </div>
+      )}
+
+      {result && !result.error && result.practiceSquad && (
+        <div className="bg-white rounded-lg border p-5 space-y-2 text-sm">
+          <h2 className="font-semibold">Practice squad check</h2>
+          <p className="text-muted-foreground">
+            The ESPN practice squad rosters are never imported as teams. They're only used to
+            double-check the practice squad players assigned to each league team.
+          </p>
+          <p>
+            <strong>{result.practiceSquad.espnCount ?? 0}</strong> players sitting on ESPN's
+            practice squad rosters
+          </p>
+          {result.practiceSquad.unassigned?.length ? (
+            <p className="text-amber-700">
+              <strong>Not assigned to a team's practice squad yet:</strong>{' '}
+              {result.practiceSquad.unassigned.join(', ')}
+            </p>
+          ) : null}
+          {result.practiceSquad.dropped?.length ? (
+            <p className="text-destructive">
+              <strong>Marked practice squad here but no longer on ESPN:</strong>{' '}
+              {result.practiceSquad.dropped.join(', ')}
+            </p>
+          ) : null}
+          {!result.practiceSquad.unassigned?.length && !result.practiceSquad.dropped?.length && (
+            <p className="text-green-700">Everything matches up.</p>
           )}
         </div>
       )}
