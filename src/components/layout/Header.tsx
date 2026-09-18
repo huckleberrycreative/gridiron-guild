@@ -276,6 +276,7 @@ export function Header() {
                   View Standings
                 </Link>
               </Button>
+              <EspnRefreshButton className="w-full" onDone={() => setMobileMenuOpen(false)} />
             </nav>
           </motion.div>
         )}
