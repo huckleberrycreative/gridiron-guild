@@ -25,6 +25,12 @@ type SyncResult = {
   released?: number;
   injuryUpdates?: number;
   weeksSynced?: number;
+  practiceSquad?: {
+    holdingRosters?: string[];
+    espnCount?: number;
+    unassigned?: string[];
+    dropped?: string[];
+  };
 };
 
 const NONE = 'none';
