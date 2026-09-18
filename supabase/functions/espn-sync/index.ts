@@ -349,6 +349,12 @@ Deno.serve(async (req) => {
       released,
       injuryUpdates,
       weeksSynced,
+      practiceSquad: {
+        holdingRosters: practiceSquadEspnTeams.map((t: any) => espnTeamName(t)),
+        espnCount: espnPsNames.length,
+        unassigned: unassignedPracticeSquad,
+        dropped: droppedPracticeSquad,
+      },
     });
   } catch (e) {
     console.error(e);
