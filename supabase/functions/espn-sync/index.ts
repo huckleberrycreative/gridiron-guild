@@ -274,11 +274,41 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- practice squad holding rosters: cross-reference only, never import ---
+    const playerNameById = new Map<string, string>();
+    for (const p of players ?? []) playerNameById.set(p.id, p.full_name);
+
+    const espnPsNames: string[] = [];
+    for (const t of practiceSquadEspnTeams) {
+      for (const entry of t.roster?.entries ?? []) {
+        const name = entry.playerPoolEntry?.player?.fullName;
+        if (name) espnPsNames.push(name);
+      }
+    }
+    const espnPsKeys = new Set(espnPsNames.map(norm));
+
+    const assignedPsNames = new Set<string>();
+    for (const s of salaryRows ?? []) {
+      if (!s.practice_squad) continue;
+      const name = playerNameById.get(s.player_id);
+      if (name) assignedPsNames.add(norm(name));
+    }
+
+    // on an ESPN practice squad roster but not assigned to a team's practice squad here
+    const unassignedPracticeSquad = espnPsNames.filter((n) => !assignedPsNames.has(norm(n)));
+    // assigned to a practice squad here but no longer on an ESPN practice squad roster
+    const droppedPracticeSquad = (salaryRows ?? [])
+      .filter((s) => s.practice_squad)
+      .map((s) => playerNameById.get(s.player_id) ?? '')
+      .filter((n) => n && !espnPsKeys.has(norm(n)));
+
     // --- players no longer rostered on ESPN become free agents ---
     let released = 0;
     const syncedLeagueTeamIds = new Set(teamIdByEspn.values());
     if (teamIdByEspn.size > 0) {
       for (const s of salaryRows ?? []) {
+        // practice squad stashes live on the holding rosters, so never release them here
+        if (s.practice_squad || espnPsKeys.has(norm(playerNameById.get(s.player_id) ?? ''))) continue;
         // only touch teams that ESPN actually reported on
         if (s.team_id && syncedLeagueTeamIds.has(s.team_id) && !seenSalaryIds.has(s.id)) {
           await admin.from('player_salaries').update({ team_id: null }).eq('id', s.id);
