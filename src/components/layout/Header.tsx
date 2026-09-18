@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,6 +16,52 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 import logoImage from '@/assets/logo.png';
+import espnLogo from '@/assets/espn-logo.png';
+
+function EspnRefreshButton({
+  className,
+  onDone,
+}: {
+  className?: string;
+  onDone?: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke<any>('espn-sync', { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: 'Rosters refreshed',
+        description: `${data?.teamsSynced ?? 0} teams updated from ESPN.`,
+      });
+      ['player-salaries', 'injury-rows', 'weekly-scores', 'teams', 'standings'].forEach((k) =>
+        queryClient.invalidateQueries({ queryKey: [k] })
+      );
+    } catch (e: any) {
+      toast({
+        title: 'Refresh failed',
+        description: e.message ?? 'Could not reach ESPN.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+      onDone?.();
+    }
+  };
+
+  return (
+    <Button variant="outline" size="sm" onClick={refresh} disabled={loading} className={className}>
+      <img src={espnLogo} alt="ESPN" loading="lazy" width={816} height={816} className="h-4 w-4 mr-2 object-contain" />
+      {loading ? 'Refreshing...' : 'Refresh from ESPN'}
+      <RefreshCw className={cn('h-3.5 w-3.5 ml-2', loading && 'animate-spin')} />
+    </Button>
+  );
+}
 
 interface NavItem {
   href?: string;
@@ -128,11 +177,12 @@ export function Header() {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* CTA Button */}
-          <div className="hidden md:block">
+          {/* CTA Buttons */}
+          <div className="hidden md:flex items-center gap-2">
             <Button variant="accent" size="sm" asChild>
               <Link to="/standings">View Standings</Link>
             </Button>
+            <EspnRefreshButton />
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -226,6 +276,7 @@ export function Header() {
                   View Standings
                 </Link>
               </Button>
+              <EspnRefreshButton className="w-full" onDone={() => setMobileMenuOpen(false)} />
             </nav>
           </motion.div>
         )}

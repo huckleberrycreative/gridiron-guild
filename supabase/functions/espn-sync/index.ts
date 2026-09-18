@@ -57,23 +57,25 @@ Deno.serve(async (req) => {
     const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
     const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // --- auth: admins only ---
-    const authHeader = req.headers.get('Authorization') ?? '';
-    if (!authHeader.startsWith('Bearer ')) return json({ error: 'Not signed in.' }, 401);
-
-    const userClient = createClient(url, anon, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData } = await userClient.auth.getUser();
-    const user = userData?.user;
-    if (!user) return json({ error: 'Not signed in.' }, 401);
-
+    // --- auth: refreshing is open to everyone; team re-mapping stays admin-only ---
     const admin = createClient(url, service);
-    const { data: isAdmin } = await admin.rpc('has_role', {
-      _user_id: user.id,
-      _role: 'admin',
-    });
-    if (!isAdmin) return json({ error: 'Admins only.' }, 403);
+
+    let isAdmin = false;
+    const authHeader = req.headers.get('Authorization') ?? '';
+    if (authHeader.startsWith('Bearer ')) {
+      const userClient = createClient(url, anon, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      const user = userData?.user;
+      if (user) {
+        const { data: roleCheck } = await admin.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin',
+        });
+        isAdmin = !!roleCheck;
+      }
+    }
 
     const s2 = Deno.env.get('ESPN_S2');
     const swid = Deno.env.get('ESPN_SWID');
@@ -87,6 +89,7 @@ Deno.serve(async (req) => {
       body = {};
     }
     const mappings = body?.mappings as Record<string, string | null> | undefined;
+    if (mappings && !isAdmin) return json({ error: 'Admins only.' }, 403);
     if (mappings) {
       for (const [espnIdRaw, leagueTeamId] of Object.entries(mappings)) {
         const espnId = parseInt(espnIdRaw, 10);
