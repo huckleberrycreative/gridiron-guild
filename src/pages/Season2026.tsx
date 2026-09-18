@@ -6,6 +6,7 @@ import {
   useWeeklyScores,
   REGULAR_SEASON_WEEKS,
   pointsForFinish,
+  LEGACY_WEEK1_FINISH_POINTS,
 } from '@/hooks/useWeeklyScores';
 import { TeamLogo } from '@/components/TeamLogo';
 import { cn } from '@/lib/utils';
@@ -53,7 +54,10 @@ const Season2026 = () => {
         inner.set(s.teamId, {
           score: s.score,
           place: i,
-          points: pointsForFinish(i, weekScores.length),
+          points:
+            w === 1
+              ? LEGACY_WEEK1_FINISH_POINTS[i] ?? 1
+              : pointsForFinish(i, weekScores.length),
         });
       });
       grid.set(w, inner);
