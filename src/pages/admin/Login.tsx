@@ -13,17 +13,16 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [success, setSuccess] = useState('');
-  const { signIn, user, loading: authLoading } = useAuth();
+  const { signIn, signOut, user, isAdmin, roleLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // If the user is authenticated, don't let them get stuck on /admin/login
-    if (user) {
+    if (user && isAdmin && !roleLoading) {
       navigate('/admin/dashboard', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, isAdmin, roleLoading, navigate]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -31,26 +30,9 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        // Sign up new user
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-          },
-        });
-
-        if (signUpError) throw signUpError;
-        
-        setSuccess('Account created! You can now sign in. Note: An admin will need to grant you admin access.');
-        setIsSignUp(false);
-      } else {
-        await signIn(email, password);
-        // Redirect happens via the useEffect once auth state is updated.
-      }
+      await signIn(email, password);
     } catch (err: any) {
-      setError(err.message || 'Failed to ' + (isSignUp ? 'sign up' : 'sign in'));
+      setError(err.message || 'Failed to sign in');
     } finally {
       setLoading(false);
     }
@@ -82,13 +64,10 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">
-            {isSignUp ? 'Create Admin Account' : 'Admin Login'}
+            Commissioner Login
           </CardTitle>
           <CardDescription>
-            {isSignUp 
-              ? 'Create your account to access the Gridiron Guild admin panel'
-              : 'Enter your credentials to access the Gridiron Guild admin panel'
-            }
+            Sign in to manage Men's League.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,6 +80,16 @@ export default function Login() {
             {success && (
               <Alert>
                 <AlertDescription>{success}</AlertDescription>
+              </Alert>
+            )}
+            {user && !roleLoading && !isAdmin && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  This account does not have commissioner access.
+                  <Button type="button" variant="link" className="ml-1 h-auto p-0" onClick={() => void signOut()}>
+                    Use another account
+                  </Button>
+                </AlertDescription>
               </Alert>
             )}
             <div className="space-y-2">
@@ -118,16 +107,15 @@ export default function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                {!isSignUp && (
-                  <button
+                <Button
                     type="button"
+                    variant="link"
                     onClick={handleForgotPassword}
-                    className="text-xs text-blue-600 hover:underline"
+                    className="h-auto p-0 text-xs"
                     disabled={loading}
                   >
                     Forgot password?
-                  </button>
-                )}
+                </Button>
               </div>
               <Input
                 id="password"
@@ -140,21 +128,8 @@ export default function Login() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
-            <div className="text-center text-sm">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setError('');
-                  setSuccess('');
-                }}
-                className="text-blue-600 hover:underline"
-              >
-                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-              </button>
-            </div>
           </form>
         </CardContent>
       </Card>

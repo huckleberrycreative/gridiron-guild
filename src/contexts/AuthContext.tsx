@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  roleLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
@@ -29,23 +30,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const checkAdminRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: userId,
+        _role: 'admin',
+      });
 
       if (error) {
         console.error('Error checking admin role:', error);
         return false;
       }
 
-      return !!data;
+      return data === true;
     } catch (error) {
       console.error('Error checking admin role:', error);
       return false;
@@ -55,25 +55,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let cancelled = false;
 
-    const applySession = (nextSession: Session | null) => {
+    const ensureProfile = async (authenticatedUser: User) => {
+      const displayName =
+        typeof authenticatedUser.user_metadata?.display_name === 'string'
+          ? authenticatedUser.user_metadata.display_name
+          : null;
+      const avatarUrl =
+        typeof authenticatedUser.user_metadata?.avatar_url === 'string'
+          ? authenticatedUser.user_metadata.avatar_url
+          : null;
+
+      const { error } = await supabase.from('profiles').upsert(
+        { id: authenticatedUser.id, display_name: displayName, avatar_url: avatarUrl },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
+      if (error) console.error('Error ensuring profile:', error);
+    };
+
+    const applySession = async (nextSession: Session | null) => {
       if (cancelled) return;
 
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
+      setRoleLoading(true);
 
       if (nextSession?.user) {
-        // Don't block routing/UI on role lookup
-        checkAdminRole(nextSession.user.id)
-          .then((hasAdminRole) => {
-            if (!cancelled) setIsAdmin(hasAdminRole);
-          })
-          .catch((error) => {
-            console.error('Error checking admin role:', error);
-            if (!cancelled) setIsAdmin(false);
-          });
+        const authenticatedUser = nextSession.user;
+        const hasAdminRole = await checkAdminRole(authenticatedUser.id);
+        if (!cancelled) {
+          setIsAdmin(hasAdminRole);
+          setRoleLoading(false);
+        }
+        void ensureProfile(authenticatedUser);
       } else {
         setIsAdmin(false);
+        setRoleLoading(false);
       }
     };
 
@@ -81,14 +98,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      applySession(nextSession);
+      window.setTimeout(() => void applySession(nextSession), 0);
     });
 
     // THEN get initial session
     supabase.auth
       .getSession()
       .then(({ data: { session: initialSession } }) => {
-        applySession(initialSession);
+        void applySession(initialSession);
       })
       .catch((error) => {
         console.error('getSession() failed:', error);
@@ -97,6 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(null);
           setIsAdmin(false);
           setLoading(false);
+          setRoleLoading(false);
         }
       });
 
@@ -119,12 +137,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(data.user ?? null);
 
     if (data.user) {
-      // Don't block sign-in on role lookup
-      checkAdminRole(data.user.id)
-        .then((hasAdminRole) => setIsAdmin(hasAdminRole))
-        .catch(() => setIsAdmin(false));
+      setRoleLoading(true);
+      const hasAdminRole = await checkAdminRole(data.user.id);
+      setIsAdmin(hasAdminRole);
+      setRoleLoading(false);
     } else {
       setIsAdmin(false);
+      setRoleLoading(false);
     }
   };
 
@@ -135,12 +154,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setSession(null);
     setUser(null);
     setIsAdmin(false);
+    setRoleLoading(false);
   };
 
   const value = {
     user,
     session,
     loading,
+    roleLoading,
     signIn,
     signOut,
     isAdmin,
