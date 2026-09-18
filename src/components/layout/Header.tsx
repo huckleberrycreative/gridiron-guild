@@ -177,11 +177,12 @@ export function Header() {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* CTA Button */}
-          <div className="hidden md:block">
+          {/* CTA Buttons */}
+          <div className="hidden md:flex items-center gap-2">
             <Button variant="accent" size="sm" asChild>
               <Link to="/standings">View Standings</Link>
             </Button>
+            <EspnRefreshButton />
           </div>
 
           {/* Mobile Menu Toggle */}
