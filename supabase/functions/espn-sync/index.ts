@@ -292,6 +292,7 @@ Deno.serve(async (req) => {
       ok: true,
       teamsSynced: teamIdByEspn.size,
       unmatchedTeams,
+      espnTeams,
       playersAdded: added,
       rosterMoves: moved.length,
       released,
