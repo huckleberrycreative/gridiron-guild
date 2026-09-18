@@ -246,13 +246,16 @@ const articleII: Section = {
       '2nd: eighteen points',
       '3rd: sixteen points',
       '4th: fourteen points',
-      '5th: twelve points',
-      '6th: five points',
-      '7th: four points',
-      '8th: three points',
-      '9th: two points',
-      '10th: one point',
+      '5th: eight points',
+      '6th: four points',
+      '7th: three points',
+      '8th: two points',
+      '9th: one point',
+      '10th: zero points',
     ]),
+    p(
+      'In seasons where the total teams is less than ten -- for reasons including but not limited to relegation -- the weekly scoring system adjusts to ensure no more than 50% of teams are rewarded for true "wins." Historically, in a 9-governor league, the 5th spot shifts from 12 points to 8, placing it firmly in a "tie" zone.'
+    ),
     p(
       'The first place finisher each week will receive an extra aggregate point for every twenty points they score above and beyond the second highest scorer that week.'
     ),

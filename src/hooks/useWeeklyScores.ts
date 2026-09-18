@@ -30,11 +30,18 @@ export const useWeeklyScores = (seasonYear: number = SEASON_YEAR) =>
     },
   });
 
-// Points awarded by weekly finish: 1st = 20 ... 10th = 1
-export const WEEKLY_FINISH_POINTS = [20, 18, 16, 14, 12, 5, 4, 3, 2, 1];
+// Points awarded by weekly finish: 1st = 20 ... 10th = 0
+export const WEEKLY_FINISH_POINTS = [20, 18, 16, 14, 8, 4, 3, 2, 1, 0];
 
 export const pointsForFinish = (place: number, fieldSize: number) => {
-  if (fieldSize >= 10) return WEEKLY_FINISH_POINTS[place] ?? 1;
-  // Smaller fields: scale down from 20 to 1 linearly
-  return Math.round(20 - (place * 19) / Math.max(1, fieldSize - 1));
+  if (fieldSize >= 10) return WEEKLY_FINISH_POINTS[place] ?? 0;
+  // Smaller fields (per the Constitution): no more than 50% of teams are
+  // rewarded for true "wins." Top 4 keep 20/18/16/14, the next spot is the
+  // 8-point "tie" zone, and the rest scale down to 0.
+  if (place <= 3) return WEEKLY_FINISH_POINTS[place];
+  const tieSpot = Math.ceil(fieldSize / 2) - 1; // 0-indexed midpoint
+  if (place === tieSpot) return 8;
+  if (place < tieSpot) return WEEKLY_FINISH_POINTS[place];
+  const remaining = fieldSize - 1 - tieSpot;
+  return Math.max(0, Math.round(8 - ((place - tieSpot) * 8) / Math.max(1, remaining)));
 };

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { SortableTable, Column } from '@/components/SortableTable';
 import { useActiveSeasonStandings, TeamWithStandings } from '@/hooks/useLeagueData';
-import { Trophy, Medal, AlertTriangle, Skull, Loader2 } from 'lucide-react';
+import { Trophy, Medal, AlertTriangle, Skull, Eye, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TeamLogo } from '@/components/TeamLogo';
 // Ranking points by position (1st through 10th)
@@ -11,20 +11,21 @@ const RANKING_POINTS: Record<number, number> = {
   2: 18,
   3: 16,
   4: 14,
-  5: 12,
-  6: 5,
-  7: 4,
-  8: 3,
-  9: 2,
-  10: 1,
+  5: 8,
+  6: 4,
+  7: 3,
+  8: 2,
+  9: 1,
+  10: 0,
 };
 
 const Standings = () => {
   const { data: standings = [], isLoading, error } = useActiveSeasonStandings();
 
-  const getPlayoffTier = (rank: number): 'playoff' | 'purgatory' | 'toilet' => {
+  const getPlayoffTier = (rank: number): 'playoff' | 'purgatory' | 'toilet' | 'lurker' => {
     if (rank <= 4) return 'playoff';
     if (rank === 5) return 'purgatory';
+    if (rank === 10) return 'lurker';
     return 'toilet';
   };
 
@@ -43,11 +44,13 @@ const Standings = () => {
             {rank === 3 && <Medal size={16} className="text-amber-700" />}
             {tier === 'purgatory' && <AlertTriangle size={14} className="text-amber-500" />}
             {tier === 'toilet' && <Skull size={14} className="text-loss" />}
+            {tier === 'lurker' && <Eye size={14} className="text-muted-foreground" />}
             <span className={cn(
               'font-display font-bold',
               rank <= 3 && 'text-gold',
               tier === 'purgatory' && 'text-amber-500',
-              tier === 'toilet' && 'text-loss'
+              tier === 'toilet' && 'text-loss',
+              tier === 'lurker' && 'text-muted-foreground'
             )}>
               {rank}
             </span>
@@ -180,12 +183,12 @@ const Standings = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="mb-6 grid sm:grid-cols-3 gap-4"
+            className="mb-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
             <div className="p-3 bg-gold/10 border border-gold/20 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 <Trophy size={16} className="text-gold" />
-                <span className="font-display font-bold text-sm text-gold">If Playoffs Started Tomorrow</span>
+                <span className="font-display font-bold text-sm text-gold">If the Playoffs Started Tomorrow</span>
               </div>
               <p className="text-xs text-muted-foreground">Ranks 1-4</p>
             </div>
@@ -199,9 +202,16 @@ const Standings = () => {
             <div className="p-3 bg-loss/10 border border-loss/20 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 <Skull size={16} className="text-loss" />
-                <span className="font-display font-bold text-sm text-loss">The Toilet Bowl</span>
+                <span className="font-display font-bold text-sm text-loss">The Toilet Bowl, Presented by Ruggables™</span>
               </div>
-              <p className="text-xs text-muted-foreground">Ranks 6-10</p>
+              <p className="text-xs text-muted-foreground">Ranks 6-9</p>
+            </div>
+            <div className="p-3 bg-muted border border-border rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Eye size={16} className="text-muted-foreground" />
+                <span className="font-display font-bold text-sm text-muted-foreground">The Lurker Zone</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Rank 10</p>
             </div>
           </motion.div>
 
