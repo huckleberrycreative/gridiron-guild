@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { LEGACY_WEEK1_FINISH_POINTS, pointsForFinish } from '@/hooks/useWeeklyScores';
 
 export interface TeamWithStandings {
   id: string;
@@ -46,7 +47,7 @@ export function useActiveSeason() {
   });
 }
 
-// Fetch standings for the active season with team data
+// Fetch standings for the active season, derived live from weekly scores
 export function useActiveSeasonStandings() {
   return useQuery({
     queryKey: ['active-season-standings'],
@@ -61,19 +62,84 @@ export function useActiveSeasonStandings() {
       if (seasonError) throw seasonError;
       if (!season) return [];
 
-      // Then get standings for that season with team data
-      const { data: standings, error: standingsError } = await supabase
-        .from('regular_season_standings')
-        .select(`
-          *,
-          team:teams(*)
-        `)
-        .eq('season_id', season.id)
-        .order('rank');
+      const [{ data: weekly, error: weeklyError }, { data: standings, error: standingsError }] =
+        await Promise.all([
+          supabase
+            .from('weekly_scores')
+            .select('week, team_id, score')
+            .eq('season_year', season.year),
+          supabase
+            .from('regular_season_standings')
+            .select(`*, team:teams(*)`)
+            .eq('season_id', season.id)
+            .order('rank'),
+        ]);
 
+      if (weeklyError) throw weeklyError;
       if (standingsError) throw standingsError;
 
-      // Transform to the format expected by the UI
+      const teamInfo = new Map<string, { name: string; owner: string }>();
+      (standings || []).forEach((s: any) => {
+        teamInfo.set(s.team_id, {
+          name: s.team?.name || 'Unknown Team',
+          owner: s.team?.owner_name || 'Unknown Owner',
+        });
+      });
+
+      // Derive standings from entered weekly scores when available
+      if (weekly && weekly.length > 0) {
+        const byWeek = new Map<number, { teamId: string; score: number }[]>();
+        weekly.forEach((r: any) => {
+          const list = byWeek.get(r.week) || [];
+          list.push({ teamId: r.team_id, score: Number(r.score) });
+          byWeek.set(r.week, list);
+        });
+
+        const totals = new Map<
+          string,
+          { points: number; pf: number; wins: number; losses: number; weeks: number }
+        >();
+
+        Array.from(byWeek.entries())
+          .sort((a, b) => a[0] - b[0])
+          .forEach(([week, rows]) => {
+            const ordered = [...rows].sort((a, b) => b.score - a.score);
+            const fieldSize = ordered.length;
+            ordered.forEach((row, index) => {
+              const pts =
+                week === 1
+                  ? LEGACY_WEEK1_FINISH_POINTS[index] ?? 1
+                  : pointsForFinish(index, fieldSize);
+              const cur =
+                totals.get(row.teamId) || { points: 0, pf: 0, wins: 0, losses: 0, weeks: 0 };
+              cur.points += pts;
+              cur.pf += row.score;
+              cur.weeks += 1;
+              if (index < Math.ceil(fieldSize / 2)) cur.wins += 1;
+              else cur.losses += 1;
+              totals.set(row.teamId, cur);
+            });
+          });
+
+        const derived: TeamWithStandings[] = Array.from(totals.entries())
+          .map(([teamId, t]) => ({
+            id: teamId,
+            name: teamInfo.get(teamId)?.name || 'Unknown Team',
+            owner: teamInfo.get(teamId)?.owner || 'Unknown Owner',
+            rank: 0,
+            totalPoints: t.points,
+            pointsFor: t.pf,
+            wins: t.wins,
+            losses: t.losses,
+            avgPPW: t.weeks > 0 ? t.pf / t.weeks : 0,
+          }))
+          .sort((a, b) => b.totalPoints - a.totalPoints || b.pointsFor - a.pointsFor)
+          .map((row, i) => ({ ...row, rank: i + 1 }));
+
+        return derived;
+      }
+
+      // Fallback: stored standings table
       const transformedStandings: TeamWithStandings[] = (standings || []).map((s) => {
         const weeksPlayed = (s.wins || 0) + (s.losses || 0);
         return {
@@ -85,7 +151,6 @@ export function useActiveSeasonStandings() {
           pointsFor: s.total_points_for || 0,
           wins: s.wins || 0,
           losses: s.losses || 0,
-          // Compute PPW live: total points divided by weeks played
           avgPPW: weeksPlayed > 0 ? (s.total_points_for || 0) / weeksPlayed : 0,
         };
       });
