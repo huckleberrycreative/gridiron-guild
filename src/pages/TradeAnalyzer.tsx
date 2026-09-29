@@ -342,6 +342,8 @@ const TradeAnalyzer = () => {
         valueScore,
         fitScore,
         score,
+        starterIn,
+        eliteOut,
       };
     };
 
