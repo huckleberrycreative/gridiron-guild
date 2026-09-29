@@ -229,7 +229,7 @@ const TradeValueChart = () => {
         <div className="mb-6 grid gap-4 md:grid-cols-3 text-sm">
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Talent (0–100)</p>
-            <p className="text-muted-foreground">45% dynasty ranking (future), 25% rest-of-season ranking + projected PPG (now), 30% value over replacement — how far above the league average at his position he scores, as a percentage.</p>
+            <p className="text-muted-foreground">45% dynasty ranking (future), 25% rest-of-season ranking + projected PPG (now), 30% value over replacement. PPG is anchored to the preseason projection: hot starts get credit quickly (especially rookies), while slow starts from proven players are forgiven early. Real output takes over as the season progresses.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Cost</p>
