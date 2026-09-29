@@ -47,6 +47,20 @@ Deno.serve(async (req) => {
     if (!res.ok) return json({ error: `ESPN returned an error (${res.status}).` }, 502);
     const data = await res.json();
 
+    // previous week's box scores for "last game"
+    const lastById = new Map<number, number>();
+    if (week > 1) {
+      const prev = await fetch(`${base}?scoringPeriodId=${week - 1}&view=kona_player_info`, {
+        headers: { ...headers, 'x-fantasy-filter': JSON.stringify(filter) },
+      });
+      if (prev.ok) {
+        for (const e of (await prev.json()).players ?? []) {
+          const st = (e.player?.stats ?? []).find((s: any) => s.seasonId === SEASON && s.statSourceId === 0 && s.statSplitTypeId === 1 && s.scoringPeriodId === week - 1);
+          if (e.player?.id) lastById.set(e.player.id, st?.appliedTotal ?? 0);
+        }
+      }
+    }
+
     const players = (data.players ?? [])
       .map((e: any) => {
         const p = e.player;
@@ -78,8 +92,8 @@ Deno.serve(async (req) => {
           weekProj: weekProj?.appliedTotal ?? null,
           avgPpg: seasonAct?.appliedAverage ?? (games ? (seasonAct?.appliedTotal ?? 0) / games : null),
           games,
-          lastGame: last ? last.appliedTotal ?? 0 : null,
-          lastWeek: last?.scoringPeriodId ?? null,
+          lastGame: lastById.has(p.id) ? lastById.get(p.id) : last ? last.appliedTotal ?? 0 : null,
+          lastWeek: week > 1 ? week - 1 : null,
         };
       })
       .filter(Boolean);
