@@ -339,6 +339,33 @@ Deno.serve(async (req) => {
       weeksSynced = new Set(scoreRows.map((r) => r.week)).size;
     }
 
+    // --- live player stats (all rosters, incl. practice squad holding teams) ---
+    let statsUpdated = 0;
+    const nowIso = new Date().toISOString();
+    for (const t of league.teams ?? []) {
+      for (const entry of t.roster?.entries ?? []) {
+        const p = entry.playerPoolEntry?.player;
+        if (!p?.fullName) continue;
+        const pid = playerIdByName.get(norm(p.fullName));
+        const sal = pid ? salaryByPlayer.get(pid) : undefined;
+        if (!sal) continue;
+        const stats: any[] = p.stats ?? [];
+        const actual = stats.find((s) => s.seasonId === SEASON && s.statSourceId === 0 && s.statSplitTypeId === 0);
+        const proj = stats.find((s) => s.seasonId === SEASON && s.statSourceId === 1 && s.statSplitTypeId === 0);
+        const weekly = stats.filter(
+          (s) => s.seasonId === SEASON && s.statSourceId === 0 && s.statSplitTypeId === 1 && (s.appliedTotal ?? 0) !== 0
+        );
+        const games = weekly.length || (actual?.appliedAverage ? Math.round((actual.appliedTotal ?? 0) / actual.appliedAverage) : 0);
+        const actualPpg = actual?.appliedAverage ?? (games ? (actual?.appliedTotal ?? 0) / games : null);
+        const projPpg = proj?.appliedTotal ? proj.appliedTotal / 17 : null;
+        await admin
+          .from('player_salaries')
+          .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, stats_updated_at: nowIso })
+          .eq('id', sal.id);
+        statsUpdated++;
+      }
+    }
+
     return json({
       ok: true,
       teamsSynced: teamIdByEspn.size,
@@ -349,6 +376,7 @@ Deno.serve(async (req) => {
       released,
       injuryUpdates,
       weeksSynced,
+      statsUpdated,
       practiceSquad: {
         holdingRosters: practiceSquadEspnTeams.map((t: any) => espnTeamName(t)),
         espnCount: espnPsNames.length,
