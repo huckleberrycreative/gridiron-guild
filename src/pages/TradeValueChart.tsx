@@ -58,7 +58,7 @@ const TradeValueChart = () => {
     ros: Map<string, Rank>;
     proj: Map<string, number>;
   } | null>(null);
-  const [showFA, setShowFA] = useState(false);
+  const [onlyFA, setOnlyFA] = useState(false);
   const [pos, setPos] = useState('ALL');
 
   useEffect(() => {
@@ -222,7 +222,7 @@ const TradeValueChart = () => {
       bounds[g] = [v.length ? Math.min(...v) : 0, Math.max(1, anchor)];
     });
     return withRaw
-      .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.group === pos))
+      .filter((r) => (onlyFA ? !r.teamId : !!r.teamId) && (pos === 'ALL' || r.group === pos))
       .map((r) => {
         const [bottom, top] = bounds[r.group];
         const baseValue = Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.6) * 100)));
@@ -235,7 +235,7 @@ const TradeValueChart = () => {
       })
       .sort((a, b) => b.value - a.value)
       .map((r, i) => ({ ...r, rank: i + 1 }));
-  }, [players, ranks, showFA, pos]);
+  }, [players, ranks, onlyFA, pos]);
 
   const columns: Column<Row & { rank: number }>[] = [
     { key: 'rank', label: '#', sortable: true, align: 'center' },
@@ -350,10 +350,17 @@ const TradeValueChart = () => {
               {label}
             </button>
           ))}
-          <label className="ml-auto flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={showFA} onChange={(e) => setShowFA(e.target.checked)} />
-            Include free agents
-          </label>
+          <button
+            onClick={() => setOnlyFA((v) => !v)}
+            title="Show only players on waivers"
+            aria-pressed={onlyFA}
+            className={cn(
+              'ml-auto rounded-md border px-3 py-1.5 text-sm font-semibold',
+              onlyFA ? 'border-accent bg-accent text-accent-foreground' : 'border-border bg-card'
+            )}
+          >
+            {onlyFA ? 'Showing waivers only' : 'Isolate FAs'}
+          </button>
         </div>
 
         {isLoading || !ranks ? (
