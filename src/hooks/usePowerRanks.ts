@@ -406,7 +406,7 @@ export function usePowerRankRows() {
   const lineupPpw = useMemo(() => {
     const m: Record<string, number> = {};
     salaries.forEach((s) => {
-      if (!s.teamId || s.espnLineupSlot == null || s.espnLineupSlot === 20 || s.espnLineupSlot === 21) return;
+      if (!s.teamId || s.practiceSquad || s.espnLineupSlot == null || s.espnLineupSlot === 20 || s.espnLineupSlot === 21) return;
       m[s.teamId] = (m[s.teamId] ?? 0) + (s.actualPpg ?? 0);
     });
     return m;
