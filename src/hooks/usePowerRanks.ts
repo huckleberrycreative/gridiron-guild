@@ -65,7 +65,7 @@ export type Asset = {
 export const OUT_STATUSES = ['out', 'ir'];
 export const INJURY_MULTIPLIER: Record<string, number> = {
   healthy: 1,
-  questionable: 0.8,
+  questionable: 1,
   doubtful: 0.4,
   out: 0,
   ir: 0,
