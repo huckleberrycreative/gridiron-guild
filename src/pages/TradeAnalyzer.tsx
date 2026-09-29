@@ -470,6 +470,12 @@ const TradeAnalyzer = () => {
     const lineupUp = r.winNowPpw > 0.3;
     const lineupDown = r.winNowPpw < -0.3;
 
+    // Deterministic variety: same trade reads the same, different trades read differently.
+    const seedStr = `${r.team.id}|${r.gained.map((p) => p.id).sort().join(',')}|${r.lost.map((p) => p.id).sort().join(',')}`;
+    let h = 0;
+    for (let i = 0; i < seedStr.length; i++) h = (h * 31 + seedStr.charCodeAt(i)) >>> 0;
+    const pick = (variants: string[], salt: number) => variants[(h + salt * 7919) % variants.length];
+
     const st = r.starterIn;
     const eo = r.eliteOut;
     const sellingStarForDepth =
@@ -480,84 +486,210 @@ const TradeAnalyzer = () => {
 
     // Roster-specific reads take priority over generic standings talk.
     if (st?.hurt) {
-      bull = `${st.p.name} isn't a stash — he starts tomorrow, and with ${st.hurt.name} sidelined you need him to.`;
+      bull = pick([
+        `${st.p.name} isn't a stash — he starts tomorrow, and with ${st.hurt.name} sidelined you need him to.`,
+        `With ${st.hurt.name} in street clothes, ${st.p.name} isn't depth — he's your starter the moment the trade clears.`,
+        `This is really about the ${st.hurt.name} hole — ${st.p.name} plugs it immediately, no waiting around.`,
+      ], 1);
     } else if (st && st.bump > 1.5) {
-      bull = `${st.p.name} walks straight in as your best ${st.p.position} — about ${st.bump.toFixed(1)} more points a week from that slot.`;
+      bull = pick([
+        `${st.p.name} walks straight in as your best ${st.p.position} — about ${st.bump.toFixed(1)} more points a week from that slot.`,
+        `Your ${st.p.position} room gets a real upgrade: ${st.p.name} is worth roughly ${st.bump.toFixed(1)} more points a week than what you're rolling out now.`,
+        `${st.p.name} doesn't sit — he takes over the ${st.p.position} spot and adds about ${st.bump.toFixed(1)} points a week to your lineup.`,
+      ], 2);
     } else if (s.mode === 'rebuild') {
       bull = youngIn.length
-        ? `At ${where}, this season is a sunk cost — ${youngIn.map((p) => p.name).join(' and ')} is exactly the kind of young piece a rebuild is built around.`
+        ? pick([
+            `At ${where}, this season is a sunk cost — ${youngIn.map((p) => p.name).join(' and ')} is exactly the kind of young piece a rebuild is built around.`,
+            `The standings say ${where}, so the only wins that matter are in 2027 — ${youngIn.map((p) => p.name).join(' and ')} is that kind of win.`,
+            `You're ${where}; the playoffs are someone else's problem. ${youngIn.map((p) => p.name).join(' and ')} is the kind of asset that makes next season yours.`,
+          ], 3)
         : buying
-          ? `At ${where}, stacking future value is the job, and this deal adds ${valueDiff} points of it.`
+          ? pick([
+              `At ${where}, stacking future value is the job, and this deal adds ${valueDiff} points of it.`,
+              `A team at ${where} should be hoarding value — this banks ${valueDiff} points of it.`,
+              `This adds ${valueDiff} points of long-term value to a team sitting ${where} — that's the whole game right now.`,
+            ], 4)
           : lineupDown
-            ? `At ${where}, losing a few points a week costs you almost nothing — the Toilet Bowl doesn't care.`
-            : `At ${where}, any move that doesn't cost you future assets is a free swing.`;
+            ? pick([
+                `At ${where}, losing a few points a week costs you almost nothing — the Toilet Bowl doesn't care.`,
+                `You're ${where}; a slightly worse Sunday lineup is a small price for a better 2027.`,
+              ], 5)
+            : pick([
+                `At ${where}, any move that doesn't cost you future assets is a free swing.`,
+                `With your season at ${where}, there's no such thing as a risky trade — only missed ones.`,
+              ], 6);
       bear = lineupUp && !buying
-        ? `You'd be paying future value for ${r.winNowPpw.toFixed(1)} points a week on a team the simulation gives ${odds}% odds — that's decorating a house you're about to sell.`
+        ? pick([
+            `You'd be paying future value for ${r.winNowPpw.toFixed(1)} points a week on a team the simulation gives ${odds}% odds — that's decorating a house you're about to sell.`,
+            `${r.winNowPpw.toFixed(1)} extra points a week doesn't change a ${odds}% playoff picture — it just costs you pieces you'll want next year.`,
+            `Spending future assets to win more games at ${odds}% odds is how rebuilds stay rebuilds.`,
+          ], 7)
         : bestOut && valueOf(bestOut.id) >= 60 && (age(bestOut) ?? 99) <= 26
-          ? `${bestOut.name} is young enough to still be here when you're good again — rebuilds shouldn't ship out the foundation.`
+          ? pick([
+              `${bestOut.name} is young enough to still be here when you're good again — rebuilds shouldn't ship out the foundation.`,
+              `Trading ${bestOut.name} now means watching him anchor someone else's contender while you're still rebuilding.`,
+            ], 8)
           : injuredIn
-            ? `${injuredIn.name} is out about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, though for a team playing for 2027 that matters less than it looks.`
-            : `A ${odds}% team can still get hot — if you believe the roster is better than the standings, selling now locks in the bad start.`;
+            ? pick([
+                `${injuredIn.name} is out about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, though for a team playing for 2027 that matters less than it looks.`,
+                `You're buying ${injuredIn.name} on the injury discount — fine for a rebuild, as long as the ~${injuredIn.weeksOut}-week wait is priced in.`,
+              ], 9)
+            : pick([
+                `A ${odds}% team can still get hot — if you believe the roster is better than the standings, selling now locks in the bad start.`,
+                `Standings in September lie sometimes; sell now and you've made the bad start permanent.`,
+              ], 10);
     } else if (s.mode === 'contender') {
       bull = lineupUp
-        ? `At ${where}, the only thing that matters is December — and this adds ${r.winNowPpw.toFixed(1)} points a week to your starting lineup.`
+        ? pick([
+            `At ${where}, the only thing that matters is December — and this adds ${r.winNowPpw.toFixed(1)} points a week to your starting lineup.`,
+            `You're built to win now (${where}), and this makes your best nine ${r.winNowPpw.toFixed(1)} points better every single week.`,
+            `Contenders buy points, and this buys ${r.winNowPpw.toFixed(1)} a week — no waiting, no projecting.`,
+          ], 11)
         : buying
-          ? `You're a contender (${where}) and still walking away with ${valueDiff} more points of value — rare to get richer and stay dangerous.`
-          : `A ${odds}% playoff team can afford to spend a little future to smooth out the present.`;
+          ? pick([
+              `You're a contender (${where}) and still walking away with ${valueDiff} more points of value — rare to get richer and stay dangerous.`,
+              `Most contenders mortgage the future; you'd be adding ${valueDiff} points of value while staying in the hunt.`,
+            ], 12)
+          : pick([
+              `A ${odds}% playoff team can afford to spend a little future to smooth out the present.`,
+              `At ${odds}% playoff odds, you've earned the right to buy — depth now is insurance in December.`,
+            ], 13);
       bear = lineupDown
-        ? `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week in the middle of a title push — contenders don't sell starters for prospects.`
+        ? pick([
+            `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week in the middle of a title push — contenders don't sell starters for prospects.`,
+            `Losing ${Math.abs(r.winNowPpw).toFixed(1)} points a week from your lineup is how a favorite becomes a first-round exit.`,
+            `Every point you shed now (${Math.abs(r.winNowPpw).toFixed(1)} a week) is a point you're chasing in a playoff semifinal.`,
+          ], 14)
         : injuredIn
-          ? `${injuredIn.name} is in street clothes for about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, and you're trying to win now, not in November.`
+          ? pick([
+              `${injuredIn.name} is in street clothes for about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, and you're trying to win now, not in November.`,
+              `A contender can't wait ~${injuredIn.weeksOut} weeks for ${injuredIn.name} — the race doesn't pause for rehab.`,
+            ], 15)
           : r.salaryDelta > 0
-            ? `$${r.salaryDelta} more salary lands on a contender's books — cap you'll wish you had when the injury bug hits.`
-            : `A lead in the standings isn't a trophy; if this doesn't make the lineup better, it's just risk.`;
+            ? pick([
+                `$${r.salaryDelta} more salary lands on a contender's books — cap you'll wish you had when the injury bug hits.`,
+                `Taking on $${r.salaryDelta} in salary shrinks the wiggle room every contender needs in November.`,
+              ], 16)
+            : pick([
+                `A lead in the standings isn't a trophy; if this doesn't make the lineup better, it's just risk.`,
+                `You're already where you want to be — a trade that doesn't add points only adds ways to lose.`,
+              ], 17);
     } else {
       bull = lineupUp
-        ? `At ${where}, you're a coin flip, and ${r.winNowPpw.toFixed(1)} more points a week is exactly what tips a coin flip.`
+        ? pick([
+            `At ${where}, you're a coin flip, and ${r.winNowPpw.toFixed(1)} more points a week is exactly what tips a coin flip.`,
+            `Bubble teams live and die on margins like this — ${r.winNowPpw.toFixed(1)} points a week could be the difference between 4th and 6th.`,
+          ], 18)
         : buying
-          ? `Sitting on the bubble (${where}), banking ${valueDiff} points of value keeps both doors open — buy later or sell later.`
-          : `On the bubble at ${odds}% odds, flexibility is worth something, and this keeps your options open.`;
+          ? pick([
+              `Sitting on the bubble (${where}), banking ${valueDiff} points of value keeps both doors open — buy later or sell later.`,
+              `At ${where} you can't commit to a direction yet, and ${valueDiff} points of extra value lets you pick one later.`,
+            ], 19)
+          : pick([
+              `On the bubble at ${odds}% odds, flexibility is worth something, and this keeps your options open.`,
+              `At ${odds}% playoff odds you're not locked into buying or selling — this deal preserves that.`,
+            ], 20);
       bear = lineupDown
-        ? `A bubble team losing ${Math.abs(r.winNowPpw).toFixed(1)} points a week is effectively choosing to rebuild — make sure that's the plan.`
+        ? pick([
+            `A bubble team losing ${Math.abs(r.winNowPpw).toFixed(1)} points a week is effectively choosing to rebuild — make sure that's the plan.`,
+            `Shedding ${Math.abs(r.winNowPpw).toFixed(1)} points a week at ${odds}% odds is a quiet surrender — own it if you mean it.`,
+          ], 21)
         : !buying && bestOut
-          ? `You're paying ${bestOut.name} to maybe move from ${odds}% to a slightly better coin flip — half-measures are how teams finish 5th.`
+          ? pick([
+              `You're paying ${bestOut.name} to maybe move from ${odds}% to a slightly better coin flip — half-measures are how teams finish 5th.`,
+              `Giving up ${bestOut.name} for a marginal nudge at ${odds}% odds is the classic bubble trap — neither all-in nor all-out.`,
+            ], 22)
           : injuredIn
-            ? `${injuredIn.name} misses about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, and bubble teams can't spot anyone games.`
-            : `Neither buyer nor seller — this doesn't clearly push you in either direction.`;
+            ? pick([
+                `${injuredIn.name} misses about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, and bubble teams can't spot anyone games.`,
+                `Waiting ~${injuredIn.weeksOut} weeks on ${injuredIn.name} is a luxury a ${odds}% team doesn't have.`,
+              ], 23)
+            : pick([
+                `Neither buyer nor seller — this doesn't clearly push you in either direction.`,
+                `This is a sideways move for a team that needs a direction.`,
+              ], 24);
     }
 
     // If a roster-specific bull short-circuited the mode chain, bear still needs a value.
     if (!bear!) {
       bear = lineupDown
-        ? `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week from your starting lineup — that's real ground to concede.`
+        ? pick([
+            `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week from your starting lineup — that's real ground to concede.`,
+            `Your starting nine gets ${Math.abs(r.winNowPpw).toFixed(1)} points a week worse — that shows up on the scoreboard, not just the spreadsheet.`,
+          ], 25)
         : injuredIn
-          ? `${injuredIn.name} is out about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'} — you'd be paying now for points later.`
+          ? pick([
+              `${injuredIn.name} is out about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'} — you'd be paying now for points later.`,
+              `${injuredIn.name} won't help you for ~${injuredIn.weeksOut} weeks — you're buying a wait.`,
+            ], 26)
           : r.salaryDelta > 0
-            ? `$${r.salaryDelta} more salary lands on your books — cap you'll wish you had when the injury bug hits.`
-            : `If the best player in the deal is already yours, this doesn't clearly make you better.`;
+            ? pick([
+                `$${r.salaryDelta} more salary lands on your books — cap you'll wish you had when the injury bug hits.`,
+                `The $${r.salaryDelta} salary bump is the quiet cost here — it limits every future move you make.`,
+              ], 27)
+            : pick([
+                `If the best player in the deal is already yours, this doesn't clearly make you better.`,
+                `When you already hold the best piece, the burden of proof is on the trade — and this one doesn't meet it.`,
+              ], 28);
     }
 
     // Roster-specific bear cases override the generic ones.
     if (sellingStarForDepth && eo) {
-      bear = `You're giving up ${eo.name}, a legitimate top ${eo.position}, for depth — it might help this week, but it's the kind of deal you regret in December.`;
+      bear = pick([
+        `You're giving up ${eo.name}, a legitimate top ${eo.position}, for depth — it might help this week, but it's the kind of deal you regret in December.`,
+        `Breaking up a star like ${eo.name} into spare parts almost never ages well — quantity has a quality problem.`,
+        `${eo.name} is the kind of player you build a Sunday around; spreading him across your bench is a downgrade disguised as depth.`,
+      ], 29);
     } else if (buying && st && st.over && st.bump < 1.5 && !st.hurt) {
-      bear = `You're paying real future value for a guy scoring only ${Math.max(0, st.bump).toFixed(1)} more points a week than ${st.over.name} — that's a marginal upgrade at a premium price.`;
+      bear = pick([
+        `You're paying real future value for a guy scoring only ${Math.max(0, st.bump).toFixed(1)} more points a week than ${st.over.name} — that's a marginal upgrade at a premium price.`,
+        `The gap between ${st.p.name} and ${st.over.name} is about ${Math.max(0, st.bump).toFixed(1)} points a week — you're paying star prices for a rounding error.`,
+        `${st.over.name} already gives you most of what ${st.p.name} does; the extra ${Math.max(0, st.bump).toFixed(1)} points a week isn't worth the asset cost.`,
+      ], 30);
     } else if (buying && st?.hurt) {
-      bear = `${st.p.name} fills the ${st.hurt.name} hole, but you're paying full price for a rental — when ${st.hurt.name} is back, where does everyone fit?`;
+      bear = pick([
+        `${st.p.name} fills the ${st.hurt.name} hole, but you're paying full price for a rental — when ${st.hurt.name} is back, where does everyone fit?`,
+        `Once ${st.hurt.name} is healthy, ${st.p.name} becomes an expensive insurance policy — make sure the price reflects that.`,
+      ], 31);
     }
 
     const plan = s.mode === 'rebuild' ? 'a rebuilding team' : s.mode === 'contender' ? 'a contender' : 'a bubble team';
     const base = Math.abs(r.score) <= 2
       ? r.score >= 0
-        ? `Fair, with a slight lean your way for ${plan} — shake hands if it fills a real need.`
-        : `Slightly against you for ${plan}, but inside the noise — only if it fixes a genuine hole.`
+        ? pick([
+            `Fair, with a slight lean your way for ${plan} — shake hands if it fills a real need.`,
+            `Essentially even, maybe a hair in your favor — fine to do if it fixes something specific.`,
+            `A wash on paper with a whisper of an edge to you — do it for the fit, not the math.`,
+          ], 32)
+        : pick([
+            `Slightly against you for ${plan}, but inside the noise — only if it fixes a genuine hole.`,
+            `Marginally underwater, but close enough that need can justify it — don't do it just to do something.`,
+            `A tick against you, nothing more — acceptable if the roster fit is real.`,
+          ], 33)
       : r.score > 0
         ? r.score > 5
-          ? `Do it — for ${plan} at ${odds}% odds, this is exactly the direction you should be moving, and it isn't close.`
-          : `Do it — it fits where ${plan} should be headed.`
+          ? pick([
+              `Do it — for ${plan} at ${odds}% odds, this is exactly the direction you should be moving, and it isn't close.`,
+              `Take it and run — this is the move ${plan} at ${odds}% odds is supposed to make.`,
+              `Yes, before they reconsider — this is squarely in your interest and then some.`,
+            ], 34)
+          : pick([
+              `Do it — it fits where ${plan} should be headed.`,
+              `Yes — the edge is modest but it's yours, and it matches your situation.`,
+              `Lean in — small edge, right direction.`,
+            ], 35)
         : r.score < -5
-          ? `Hard pass — this points ${plan} the wrong way; counter or let it die in the DMs.`
-          : `Pass for now — for ${plan} this is the wrong trade; counter before you sign.`;
+          ? pick([
+              `Hard pass — this points ${plan} the wrong way; counter or let it die in the DMs.`,
+              `No — this is the opposite of what ${plan} should be doing. Send back a counter or nothing at all.`,
+              `Walk away — the shape of this deal works against everything your season is telling you.`,
+            ], 36)
+          : pick([
+              `Pass for now — for ${plan} this is the wrong trade; counter before you sign.`,
+              `Not at these terms — the idea might work, but this version costs you too much.`,
+              `Hold off — there's a version of this worth doing, but it isn't this one.`,
+            ], 37);
 
     return { bull, bear, base };
   };
