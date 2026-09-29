@@ -249,7 +249,7 @@ const TeamCaptains = () => {
             </table>
           </div>
           <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Crown size={12} className="text-gold" /> Scores fill in automatically after "Refresh from ESPN." 🔒 = used twice, or a QB was already captained.
+            <Crown size={12} className="text-gold" /> Scores fill in automatically after "Refresh from ESPN." Red name = locked (used twice, or a QB was already captained).
             {!isAdmin && ' Sign in as commissioner to make picks.'}
           </p>
         </div>
