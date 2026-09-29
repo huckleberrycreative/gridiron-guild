@@ -37,6 +37,7 @@ type Row = {
   team: string;
   ppg: number;
   vor: number | null;
+  actual: number | null;
   rosRank: number | null;
   dynastyRank: number | null;
   talent: number;
@@ -150,6 +151,7 @@ const TradeValueChart = () => {
           position: p.position,
           team: p.fantasyTeam,
           ppg,
+          actual: hasActual ? (p.actualPpg as number) : null,
           vor: ppg > 0 ? ppg - avg : null,
           rosRank: ros?.overall ?? null,
           dynastyRank: dyn?.overall ?? null,
@@ -193,7 +195,8 @@ const TradeValueChart = () => {
       },
     },
     { key: 'talent', label: 'Talent', sortable: true, align: 'center' },
-    { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
+    { key: 'ppg', label: 'PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
+    { key: 'actual', label: '2026 PPG', sortable: true, align: 'center', render: (v) => (v == null ? '—' : Number(v).toFixed(1)) },
     { key: 'vor', label: 'VOR', sortable: true, align: 'center', render: (v) => (v == null ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`) },
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
