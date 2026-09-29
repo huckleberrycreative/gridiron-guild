@@ -228,6 +228,18 @@ const TradeAnalyzer = () => {
       gained: Asset[],
       lost: Asset[]
     ) => {
+      // Taking back more bodies than you send means cutting your worst active
+      // players to make room — those cuts count as value going out.
+      const extra = gained.filter((p) => !p.practiceSquad).length - lost.filter((p) => !p.practiceSquad).length;
+      const drops =
+        extra > 0
+          ? after
+              .filter((p) => !p.practiceSquad)
+              .sort((x, y) => valueOf(x.id) - valueOf(y.id) || x.ppg - y.ppg)
+              .slice(0, extra)
+          : [];
+      const dropIds = new Set(drops.map((p) => p.id));
+      after = after.filter((p) => !dropIds.has(p.id));
       const b = evaluate(before);
       const a = evaluate(after);
       const pct = (x: number, y: number) => (y === 0 ? 0 : ((x - y) / y) * 100);
@@ -268,7 +280,7 @@ const TradeAnalyzer = () => {
           .sort((x, y) => y - x)
           .reduce((s, v, i) => s + v * Math.pow(0.6, i), 0);
       const valueIn = pkg(gained);
-      const valueOut = pkg(lost);
+      const valueOut = pkg([...lost, ...drops]);
       const valueScore = ((valueIn - valueOut) / Math.max(valueIn, valueOut, 1)) * 100;
       // Headline grade is a % change, same scale as the Power Ranks-based grade.
       // Trade value gap maps onto that scale (a 100% value gap ≈ 15%).
@@ -288,6 +300,7 @@ const TradeAnalyzer = () => {
         counts,
         gained,
         lost,
+        drops,
         ppgDelta,
         valueIn,
         valueOut,
@@ -445,6 +458,9 @@ const TradeAnalyzer = () => {
           <div className="min-w-0">
             <h3 className="font-display font-bold uppercase tracking-wide text-sm truncate">{label}</h3>
             <p className="text-xs text-muted-foreground truncate">Gets: {names(r.gained)}</p>
+            {r.drops.length > 0 && (
+              <p className="text-xs text-destructive truncate">Must cut to make room: {names(r.drops)}</p>
+            )}
           </div>
           <div className={cn('flex items-center gap-1 shrink-0', up ? 'text-emerald-600' : 'text-destructive')}>
             {up ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
@@ -521,6 +537,7 @@ const TradeAnalyzer = () => {
                 <ul className="list-disc pl-5 space-y-1">
                   <li><b className="text-foreground">Half Trade Value</b> — the number next to each name, from the Trade Value Chart. Your best player in the deal counts fully; extras count less.</li>
                   <li><b className="text-foreground">Half Power Rank impact</b> — does your starting lineup actually get better, this year and long term, counting injuries, depth and salary.</li>
+                  <li>Taking back more players than you send? Your lowest-value players get cut to make room, and they count as value you give up.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
                   <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
                 </ul>
