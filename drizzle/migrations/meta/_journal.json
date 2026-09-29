@@ -29,6 +29,13 @@
       "when": 1790692219458,
       "tag": "0003_captain_picks",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790694164323,
+      "tag": "0004_add_lineup_slot",
+      "breakpoints": true
     }
   ]
 }

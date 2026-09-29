@@ -1,0 +1,1 @@
+ALTER TABLE public.player_salaries ADD COLUMN IF NOT EXISTS espn_lineup_slot integer;

@@ -366,7 +366,7 @@ Deno.serve(async (req) => {
         const projPpg = proj?.appliedTotal ? proj.appliedTotal / 17 : null;
         await admin
           .from('player_salaries')
-          .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, stats_updated_at: nowIso })
+          .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, espn_lineup_slot: entry.lineupSlotId ?? null, stats_updated_at: nowIso })
           .eq('id', sal.id);
         statsUpdated++;
         const weekRows = weekly
