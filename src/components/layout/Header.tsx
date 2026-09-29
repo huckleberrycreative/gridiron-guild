@@ -70,22 +70,26 @@ interface NavItem {
 }
 
 const navLinks: NavItem[] = [
-  { href: '/', label: 'Home' },
   { href: '/season-2026', label: '2026 Season' },
-  { href: '/power-ranks', label: 'Power Ranks' },
+  {
+    label: 'GM Tools',
+    children: [
+      { href: '/power-ranks', label: 'Power Ranks', description: 'Live team grades and playoff odds' },
+      { href: '/team-captains', label: 'Team Captains', description: 'Weekly captain selections' },
+      { href: '/salaries', label: 'Player Salaries', description: 'Contract values and salary progression' },
+      { href: '/trade-value-chart', label: 'Trade Value Chart', description: 'Every player valued 0-100 by talent and contract' },
+      { href: '/trade-analyzer', label: 'Trade Analyzer', description: 'Grade any trade for both sides' },
+    ],
+  },
   { href: '/constitution', label: 'Constitution' },
   {
-    label: 'Dynasty Information',
+    label: 'Dynasty Info',
     children: [
       { href: '/rookie-draft', label: 'Rookie Draft', description: 'Annual rookie selection board' },
-      { href: '/official-rosters-2026', label: 'Official 2026 Rosters', description: 'Locked-in rosters and fall draft capital' },
-      { href: '/salaries', label: 'Player Salaries', description: 'Contract values and salary progression' },
-      { href: '/team-captains', label: 'Team Captains', description: 'Weekly captain selections' },
+      { href: '/official-rosters-2026', label: '2026 Rosters', description: 'Locked-in rosters' },
       { href: '/practice-squad', label: 'Practice Squad', description: 'Roster management' },
       { href: '/coaching-carousel', label: 'Coaching Carousel', description: 'Head coach histories' },
       { href: '/lottery', label: 'Lottery', description: 'Ping pong ball draft lottery simulator' },
-      { href: '/trade-analyzer', label: 'Trade Analyzer', description: 'Grade any trade for both sides' },
-      { href: '/trade-value-chart', label: 'Trade Value Chart', description: 'Every player valued 0-100 by talent and contract' },
     ],
   },
   {
