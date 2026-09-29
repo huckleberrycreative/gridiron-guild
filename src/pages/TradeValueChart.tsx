@@ -14,14 +14,15 @@ const parseCsv = (text: string) =>
     .split(/\r?\n/)
     .map((line) => (line.match(/("([^"]*)"|[^,]*)(,|$)/g) || []).map((c) => c.replace(/,$/, '').replace(/^"|"$/g, '').trim()));
 
-type Rank = { overall: number; posRank: number };
-const loadRanks = async (url: string, nameCol: number, posCol: number) => {
+type Rank = { overall: number; posRank: number; age?: number };
+const loadRanks = async (url: string, nameCol: number, posCol: number, ageCol?: number) => {
   const rows = parseCsv(await (await fetch(url)).text()).slice(1);
   const map = new Map<string, Rank>();
   rows.forEach((r) => {
     const name = r[nameCol];
     if (!name) return;
-    map.set(normalize(name), { overall: toNum(r[0]), posRank: toNum(r[posCol]?.replace(/^[A-Z]+/, '')) });
+    const age = ageCol != null ? toNum(r[ageCol]) : 0;
+    map.set(normalize(name), { overall: toNum(r[0]), posRank: toNum(r[posCol]?.replace(/^[A-Z]+/, '')), age: age || undefined });
   });
   return map;
 };
@@ -63,8 +64,8 @@ const TradeValueChart = () => {
   useEffect(() => {
     (async () => {
       const [dyn, rook, ros, projText] = await Promise.all([
-        loadRanks('/data/dynasty-2026.csv', 2, 4),
-        loadRanks('/data/rookies-2026.csv', 2, 4),
+        loadRanks('/data/dynasty-2026.csv', 2, 4, 5),
+        loadRanks('/data/rookies-2026.csv', 2, 4, 5),
         loadRanks('/data/ros-2026.csv', 1, 3),
         fetch('/data/projections-2026.csv').then((r) => r.text()),
       ]);
@@ -98,25 +99,30 @@ const TradeValueChart = () => {
         const dyn = ranks.dyn.get(key);
         const rook = ranks.rook.get(key);
         const ros = ranks.ros.get(key);
-        // PPG anchored to the projection (FantasyPros + ESPN), blended with actual
-        // 2026 output asymmetrically: players beating their projection get credit
-        // quickly, while slow starts are forgiven early — a proven stud having a
-        // quiet September stays near his projection, but a young riser outplaying
-        // his draft stock isn't punished. Both sides converge to real output as
-        // the season goes on.
+        // PPG anchored to the preseason projection (which reflects multi-year history),
+        // blended with actual 2026 output. Established veterans (age 25+, not rookies)
+        // lean heavily on their track record: a hot or cold 3 weeks moves them only a
+        // little. Young players (rookies / age ≤ 24) get credit for hot starts quickly
+        // so risers aren't punished. Everyone converges to real output over the season.
+        const age = dyn?.age ?? rook?.age;
+        const young = !!rook || (age != null && age <= 24);
         const pre = ranks.proj.get(key);
         const espn = p.espnProjPpg && p.espnProjPpg > 0 ? p.espnProjPpg : undefined;
-        const base = pre && espn ? (pre + espn) / 2 : pre ?? espn ?? 0;
+        const base = pre && espn ? pre * 0.7 + espn * 0.3 : pre ?? espn ?? 0;
         const g = p.gamesPlayed || 0;
         const hasActual = p.actualPpg != null && g > 0;
         const actual = hasActual ? (p.actualPpg as number) : base;
-        const wUp = g / (g + (rook ? 2 : 3)); // hot starts count fast (fastest for rookies)
-        const wDown = g / (g + 8); // slow starts are forgiven early
+        const wUp = g / (g + (rook ? 2 : young ? 4 : 10));
+        const wDown = g / (g + (young ? 8 : 12));
         const ppg = hasActual
           ? base + Math.max(0, actual - base) * wUp - Math.max(0, base - actual) * wDown
           : base;
-        // Young players (rookies) outplaying their projection also get a future-growth bump
-        const rookieBump = rook && hasActual ? Math.max(0, Math.min(15, (actual - base) * 3 * wUp * 2)) : 0;
+        // Young players outplaying their projection also get a future-growth bump
+        const rookieBump = young && hasActual ? Math.max(0, Math.min(15, (actual - base) * 3 * wUp * 2)) : 0;
+        // Age / longevity: value fades past each position's prime (floor 45%)
+        const PRIME: Record<string, number> = { QB: 32, RB: 26, WR: 29, TE: 30 };
+        const agePenalty = age && age > PRIME[p.position] ? (age - PRIME[p.position]) * (p.position === 'RB' ? 0.09 : 0.08) : 0;
+        const ageMult = Math.max(0.45, 1 - agePenalty);
 
         // Future value: dynasty rank; unlisted rookies approximated from rookie rank
         const dynastyRank = dyn?.overall ?? (rook ? 20 + rook.overall * 4 : null);
@@ -163,6 +169,8 @@ const TradeValueChart = () => {
           salary: toNum(p.salary2027) || fallback,
           avgCost,
           ft: p.franchiseTag,
+          ageMult,
+          age: age ?? null,
           teamId: p.teamId,
         };
       });
@@ -201,12 +209,17 @@ const TradeValueChart = () => {
       const surplusScore = Math.max(0, ((r.surplus - sMin) / (sMax - sMin)) * 100);
       const prodScore = Math.min(100, (r.ppg / gTop[r.group]) * 100);
       const score = surplusScore * 0.65 + r.dynScore * 0.2 + prodScore * 0.15;
-      return { ...r, raw: score * (r.ft ? 0.875 : 1) };
+      return { ...r, raw: score * (r.ft ? 0.875 : 1) * r.ageMult };
     });
     const bounds: Record<string, [number, number]> = {};
     GROUPS.forEach((g) => {
       const v = withRaw.filter((r) => r.teamId && r.group === g).map((r) => r.raw);
-      bounds[g] = [v.length ? Math.min(...v) : 0, Math.max(1, ...v)];
+      // Anchor the top of each group to the average of its top 3 so one outlier
+      // doesn't compress everyone else; the #1 still caps at 100.
+      const d = [...v].sort((a, b) => b - a);
+      const top3 = d.slice(0, 3);
+      const anchor = top3.length ? top3.reduce((a, b) => a + b, 0) / top3.length : 1;
+      bounds[g] = [v.length ? Math.min(...v) : 0, Math.max(1, anchor)];
     });
     return withRaw
       .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.group === pos))
@@ -214,7 +227,7 @@ const TradeValueChart = () => {
         const [bottom, top] = bounds[r.group];
         return {
           ...r,
-          value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.8) * 100))),
+          value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.6) * 100))),
           talent: Math.round(r.talent),
           surplus: Math.round(r.surplus),
         };
