@@ -71,6 +71,20 @@ const TradeValueChart = () => {
 
   const rows = useMemo<Row[]>(() => {
     if (!ranks) return [];
+    // Replacement level: average projected PPG of rostered players at each position
+    const posTotals: Record<string, { sum: number; n: number }> = {};
+    players.forEach((p) => {
+      if (!POS_MAX[p.position] || !p.teamId) return;
+      const v = ranks.proj.get(normalize(`${p.firstName} ${p.lastName}`.trim())) ?? 0;
+      if (v <= 0) return;
+      posTotals[p.position] ??= { sum: 0, n: 0 };
+      posTotals[p.position].sum += v;
+      posTotals[p.position].n += 1;
+    });
+    const posAvg = (pos: string) => {
+      const t = posTotals[pos];
+      return t && t.n ? t.sum / t.n : 10;
+    };
     const raw = players
       .filter((p) => POS_MAX[p.position])
       .map((p) => {
@@ -88,7 +102,11 @@ const TradeValueChart = () => {
         const rosScore = ros ? rankScore(ros.overall, 400) : 0;
         const ppgScore = Math.min(100, (ppg / 22) * 100);
         const now = ros ? rosScore * 0.7 + ppgScore * 0.3 : ppgScore * 0.8;
-        const talent = dynScore * 0.6 + now * 0.4;
+        // Value over replacement: % above the league average at the position
+        const avg = posAvg(p.position);
+        const vorPct = ppg > 0 ? (ppg - avg) / avg : -0.5;
+        const vorScore = Math.max(0, Math.min(100, 50 + vorPct * 60));
+        const talent = dynScore * 0.45 + now * 0.25 + vorScore * 0.3;
 
         // Cost: weighted average of next three contract years vs. positional max.
         // 2027 dominates (62.5%) since everyone shares the same progression;
