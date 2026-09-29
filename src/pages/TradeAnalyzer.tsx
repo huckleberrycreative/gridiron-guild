@@ -421,31 +421,48 @@ const TradeAnalyzer = () => {
     const bestIn = [...r.gained].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
     const bestOut = [...r.lost].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
     const injuredIn = r.gained.find((p) => p.out);
-    const bull = r.valueIn > r.valueOut
-      ? `You get more trade value back (${Math.round(r.valueIn)} vs ${Math.round(r.valueOut)})${bestIn ? `, led by ${bestIn.name} (${valueOf(bestIn.id)})` : ''}.`
+    const injuredOut = r.lost.find((p) => p.out);
+    const buying = r.valueIn > r.valueOut;
+    const valueDiff = Math.abs(Math.round(r.valueIn) - Math.round(r.valueOut));
+
+    const bull = buying
+      ? bestIn && bestOut
+        ? `Trading ${bestOut.name} for ${bestIn.name} is the kind of buy-low everyone talks themselves out of — you're pocketing ${valueDiff} points of value and daring the league to notice.`
+        : `The value ledger swings ${valueDiff} points your way, and those are the trades champions are built on.`
       : r.winNowPpw > 0.3
-        ? `Your lineup scores about ${r.winNowPpw.toFixed(1)} more points a week the rest of this season.`
+        ? `This is a win-now swing — your lineup adds roughly ${r.winNowPpw.toFixed(1)} points a week down the stretch, and points in November are trophies in December.`
         : r.salaryDelta < 0
-          ? `You free up $${Math.abs(r.salaryDelta)} of cap space to use elsewhere.`
+          ? `You come out ahead twice: a live body off waivers and $${Math.abs(r.salaryDelta)} of cap space back in your pocket for the deadline.`
           : bestIn
-            ? `${bestIn.name} fills a spot on your roster and has room to grow.`
-            : `You clear a roster spot with no one coming back.`;
-    const bear = r.valueOut > r.valueIn
-      ? `You give up more trade value than you get${bestOut ? `, especially ${bestOut.name} (${valueOf(bestOut.id)})` : ''}.`
+            ? `${bestIn.name} is a cheap lottery ticket on a contender's roster — the kind of stash that quietly wins October.`
+            : `Clearing a clogged roster spot counts as progress, even if the return is a rounding error.`;
+
+    const bear = !buying && r.valueOut > r.valueIn
+      ? bestOut
+        ? `You're shipping ${bestOut.name} (${valueOf(bestOut.id)}) and receiving spare parts in return — a move you'll be watching from someone else's roster by Week 12.`
+        : `You're giving up ${valueDiff} more points of value than you're getting back, and value given up rarely finds its way home.`
       : injuredIn
-        ? `${injuredIn.name} is hurt and could miss about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}.`
+        ? `The headliner coming back, ${injuredIn.name}, is in street clothes for about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'} — you're betting on a training room, and training rooms don't return calls.`
         : r.winNowPpw < -0.3
-          ? `Your lineup gets about ${Math.abs(r.winNowPpw).toFixed(1)} points a week weaker this season.`
+          ? `Your starting lineup sheds roughly ${Math.abs(r.winNowPpw).toFixed(1)} points a week this season — you'd be losing real games to chase hypothetical assets.`
           : r.salaryDelta > 0
-            ? `You take on $${r.salaryDelta} more in salary, which squeezes your cap.`
-            : `The upside is modest — you're not changing your team much.`;
+            ? `$${r.salaryDelta} of fresh salary lands on your books, and that's cap you won't have when the injury bug hits.`
+            : injuredOut
+              ? `The one silver lining is unloading ${injuredOut.name}'s injury — but "less hurt" is a low bar to trade at.`
+              : `This deal rearranges deck chairs: nobody gets hurt, nobody gets better, and you've spent a trade chip to stand still.`;
+
     const base = Math.abs(r.score) <= 2
       ? r.score >= 0
-        ? `Do it — it's a fair deal that tilts slightly your way.`
-        : `Fair deal, slightly against you — fine to do if it fills a need.`
+        ? `Shake hands — it's fair with a whisper of an edge your way, and fair deals with a lean are how good rosters stay good.`
+        : `Slightly against you, but inside the noise — say yes only if it patches a genuine hole on your roster.`
       : r.score > 0
-        ? `Do it — this deal ${r.score > 5 ? 'is lopsided in your favor' : 'clearly helps you'}.`
-        : `Pass — ${r.score < -5 ? 'this is lopsided against you' : 'you give up too much'} unless you can get more back.`;
+        ? r.score > 5
+          ? `Do it before the other side rereads the fine print — this one runs heavily in your favor and everyone will know it by Friday.`
+          : `Do it — the edge is real, repeatable, and the sort of margin that compounds across a season.`
+        : r.score < -5
+          ? `Hard pass — you'd be funding someone else's title run; unless a pick or a sweetener comes back, let this one die in the DMs.`
+          : `Pass for now — you're on the wrong side of the ledger, so counter before you sign anything.`;
+
     return { bull, bear, base };
   };
 
