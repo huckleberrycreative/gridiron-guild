@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { SortableTable, type Column } from '@/components/SortableTable';
-import { usePlayerSalaries } from '@/hooks/usePlayerSalaries';
-import { normalize, toNum, NFL_WEEKS } from '@/hooks/usePowerRanks';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
@@ -145,7 +143,7 @@ const TradeValueChart = () => {
           </button>
         </div>
 
-        {isLoading || !ranks ? (
+        {isLoading ? (
           <div className="flex justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
           </div>
