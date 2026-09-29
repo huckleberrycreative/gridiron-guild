@@ -381,6 +381,37 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- backfill earlier weeks' player scores (ESPN only returns the latest week by default) ---
+    const curWeek: number = league.scoringPeriodId ?? 1;
+    const { data: haveRows } = await admin.from('player_week_scores').select('week').eq('season_year', SEASON);
+    const haveWeeks = new Set((haveRows ?? []).map((r: any) => r.week));
+    for (let w = 1; w <= curWeek; w++) {
+      if (haveWeeks.has(w) && w < curWeek - 1) continue;
+      const r = await fetch(
+        `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mRoster&scoringPeriodId=${w}`,
+        { headers: { Cookie: `espn_s2=${s2}; SWID=${swid}`, Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' } }
+      );
+      if (!r.ok) continue;
+      const wk = await r.json();
+      const rows: any[] = [];
+      for (const t of wk.teams ?? []) {
+        for (const entry of t.roster?.entries ?? []) {
+          const p = entry.playerPoolEntry?.player;
+          const pid = p?.fullName ? playerIdByName.get(norm(p.fullName)) : undefined;
+          if (!pid) continue;
+          const st = (p.stats ?? []).find(
+            (s: any) => s.seasonId === SEASON && s.statSourceId === 0 && s.statSplitTypeId === 1 && s.scoringPeriodId === w
+          );
+          if (st) rows.push({ season_year: SEASON, week: w, player_id: pid, points: st.appliedTotal ?? 0 });
+        }
+      }
+      if (rows.length) {
+        const { error: bErr } = await admin.from('player_week_scores').upsert(rows, { onConflict: 'season_year,week,player_id' });
+        if (bErr) console.error('backfill', w, bErr);
+      }
+    }
+
+
     return json({
       ok: true,
       teamsSynced: teamIdByEspn.size,

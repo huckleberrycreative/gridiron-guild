@@ -43,7 +43,7 @@ const TeamCaptains = () => {
         id: r.player_id, teamId: r.team_id, name: r.players?.full_name ?? '?', position: r.players?.position ?? '',
       }));
       const withRoster = new Set(roster.map((r) => r.teamId));
-      const teams: Team[] = (teamRes.data || []).filter((t) => withRoster.has(t.id));
+      const teams: Team[] = (teamRes.data || []).filter((t) => withRoster.has(t.id) && !/Lurkers/i.test(t.name));
       const picks: Pick[] = (pickRes.data || []).map((p: any) => ({ id: p.id, week: p.week, teamId: p.team_id, playerId: p.player_id, locked: p.locked }));
       const scores = new Map<string, number>();
       (scoreRes.data || []).forEach((s: any) => scores.set(`${s.week}:${s.player_id}`, Number(s.points)));
@@ -141,10 +141,10 @@ const TeamCaptains = () => {
           {/* Summary */}
           <div className="mb-5 grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Avg captain score', value: summary.n ? fmt(summary.avg) : '—' },
-              { label: 'Median captain score', value: summary.n ? fmt(summary.med) : '—' },
-              { label: 'Top team', value: summary.top ? `${shortName(summary.top.team.name)} +${fmt(summary.top.avg - summary.avg)}` : '—', tone: 'text-primary' },
-              { label: 'Bottom team', value: summary.bottom ? `${shortName(summary.bottom.team.name)} ${fmt(summary.bottom.avg - summary.avg)}` : '—', tone: 'text-accent' },
+              { label: 'Avg captain score', value: summary.n ? summary.avg.toFixed(1) : '—' },
+              { label: 'Median captain score', value: summary.n ? summary.med.toFixed(1) : '—' },
+              { label: 'Top team', value: summary.top ? `${shortName(summary.top.team.name)} +${(summary.top.avg - summary.avg).toFixed(1)}` : '—', tone: 'text-primary' },
+              { label: 'Bottom team', value: summary.bottom ? `${shortName(summary.bottom.team.name)} ${(summary.bottom.avg - summary.avg).toFixed(1)}` : '—', tone: 'text-accent' },
             ].map((s) => (
               <div key={s.label} className="rounded-md border border-border bg-card px-3 py-2">
                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
