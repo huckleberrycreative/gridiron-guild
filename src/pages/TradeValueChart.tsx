@@ -36,6 +36,7 @@ type Row = {
   position: string;
   team: string;
   ppg: number;
+  vor: number | null;
   rosRank: number | null;
   dynastyRank: number | null;
   talent: number;
@@ -71,6 +72,20 @@ const TradeValueChart = () => {
 
   const rows = useMemo<Row[]>(() => {
     if (!ranks) return [];
+    // Replacement level: average projected PPG of rostered players at each position
+    const posTotals: Record<string, { sum: number; n: number }> = {};
+    players.forEach((p) => {
+      if (!POS_MAX[p.position] || !p.teamId) return;
+      const v = ranks.proj.get(normalize(`${p.firstName} ${p.lastName}`.trim())) ?? 0;
+      if (v <= 0) return;
+      posTotals[p.position] ??= { sum: 0, n: 0 };
+      posTotals[p.position].sum += v;
+      posTotals[p.position].n += 1;
+    });
+    const posAvg = (pos: string) => {
+      const t = posTotals[pos];
+      return t && t.n ? t.sum / t.n : 10;
+    };
     const raw = players
       .filter((p) => POS_MAX[p.position])
       .map((p) => {
@@ -88,7 +103,11 @@ const TradeValueChart = () => {
         const rosScore = ros ? rankScore(ros.overall, 400) : 0;
         const ppgScore = Math.min(100, (ppg / 22) * 100);
         const now = ros ? rosScore * 0.7 + ppgScore * 0.3 : ppgScore * 0.8;
-        const talent = dynScore * 0.6 + now * 0.4;
+        // Value over replacement: % above the league average at the position
+        const avg = posAvg(p.position);
+        const vorPct = ppg > 0 ? (ppg - avg) / avg : -0.5;
+        const vorScore = Math.max(0, Math.min(100, 50 + vorPct * 60));
+        const talent = dynScore * 0.45 + now * 0.25 + vorScore * 0.3;
 
         // Cost: weighted average of next three contract years vs. positional max.
         // 2027 dominates (62.5%) since everyone shares the same progression;
@@ -109,7 +128,8 @@ const TradeValueChart = () => {
         const costShare = Math.min(1, avgCost / POS_MAX[p.position]);
         // Contract multiplier: a near-min deal is worth ~3x a max deal at equal talent.
         // Steep curve so $100 of savings outweighs a small PPG gap.
-        const contractMult = 0.5 + Math.pow(1 - costShare, 1.2);
+        // Cheapness only amplifies real talent — a $1 depth piece isn't a star.
+        const contractMult = 0.7 + Math.pow(1 - costShare, 1.2) * Math.min(1, talent / 60) * 0.8;
         // Franchise-tagged: salary is artificially deflated and can't be traded without penalty
         const ftMult = p.franchiseTag ? 0.875 : 1;
         const raw = talent * contractMult * ftMult;
@@ -120,6 +140,7 @@ const TradeValueChart = () => {
           position: p.position,
           team: p.fantasyTeam,
           ppg,
+          vor: ppg > 0 ? ppg - avg : null,
           rosRank: ros?.overall ?? null,
           dynastyRank: dyn?.overall ?? null,
           talent,
@@ -129,10 +150,10 @@ const TradeValueChart = () => {
           teamId: p.teamId,
         };
       });
-    const top = Math.max(1, ...raw.map((r) => r.raw));
+    const top = Math.max(1, ...raw.filter((r) => r.teamId).map((r) => r.raw));
     return raw
       .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.position === pos))
-      .map((r) => ({ ...r, value: Math.round((r.raw / top) * 100), talent: Math.round(r.talent) }))
+      .map((r) => ({ ...r, value: Math.min(100, Math.round(Math.pow(Math.max(0, r.raw) / top, 0.7) * 100)), talent: Math.round(r.talent) }))
       .sort((a, b) => b.value - a.value)
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }, [players, ranks, showFA, pos]);
@@ -163,6 +184,7 @@ const TradeValueChart = () => {
     },
     { key: 'talent', label: 'Talent', sortable: true, align: 'center' },
     { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
+    { key: 'vor', label: 'VOR', sortable: true, align: 'center', render: (v) => (v == null ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`) },
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
@@ -186,7 +208,7 @@ const TradeValueChart = () => {
         <div className="mb-6 grid gap-4 md:grid-cols-3 text-sm">
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Talent (0–100)</p>
-            <p className="text-muted-foreground">60% dynasty ranking (future), 40% rest-of-season ranking blended with projected PPG (now).</p>
+            <p className="text-muted-foreground">45% dynasty ranking (future), 25% rest-of-season ranking + projected PPG (now), 30% value over replacement — how far above the league average at his position he scores, as a percentage.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Cost</p>
@@ -194,7 +216,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Talent × a steep contract multiplier (a minimum deal is worth ~3× a max deal), minus 12.5% for franchise-tagged players (deflated salary, can't be traded freely), scaled so the league's best asset is 100.</p>
+            <p className="text-muted-foreground">Talent × a steep contract multiplier (a cheap deal is worth up to ~2× a max deal), minus 12.5% for franchise-tagged players (deflated salary, can't be traded freely), then curved so the best asset is 100 and strong starters land in the 60s–80s.</p>
           </div>
         </div>
 
