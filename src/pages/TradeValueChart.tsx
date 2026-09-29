@@ -45,6 +45,7 @@ type Row = {
   talent: number;
   salary: number;
   avgCost: number;
+  surplus: number;
   value: number;
 };
 
@@ -241,6 +242,7 @@ const TradeValueChart = () => {
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 'avgCost', label: 'Wtd $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
+    { key: 'surplus', label: 'Surplus $', sortable: true, align: 'center', render: (v) => `${Number(v) >= 0 ? '+' : '−'}$${Math.abs(Number(v))}` },
   ];
 
   return (
@@ -268,7 +270,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Talent × a steep contract multiplier (a cheap deal is worth up to ~2× a max deal), minus 12.5% for franchise-tagged players (deflated salary, can't be traded freely), then curved so the best asset is 100 and strong starters land in the 60s–80s.</p>
+            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s PPG above a replacement-level starter is priced at what the league actually pays per point, minus his weighted salary = <b>Surplus $</b>. Value is 65% cap surplus, 20% dynasty pedigree (growth only), 15% raw production, minus 12.5% for franchise tags. A $1 player at 9 PPG beats a $150 player at 11.</p>
           </div>
         </div>
 
