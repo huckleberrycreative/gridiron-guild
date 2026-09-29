@@ -15,6 +15,13 @@
       "when": 1789738905575,
       "tag": "0001_create_private_user_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790686803052,
+      "tag": "0002_player_live_stats",
+      "breakpoints": true
     }
   ]
 }

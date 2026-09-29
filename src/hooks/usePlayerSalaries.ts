@@ -15,6 +15,9 @@ export interface PlayerSalaryWithDetails {
   salary2027?: string;
   salary2028?: string;
   salary2029?: string;
+  actualPpg: number | null;
+  gamesPlayed: number;
+  espnProjPpg: number | null;
   injuryStatus: string;
   injuryWeeksOut: number;
 }
@@ -44,6 +47,9 @@ export function usePlayerSalaries() {
         fantasyTeam: s.team?.name || 'Free Agent',
         teamId: s.team_id,
         franchiseTag: s.franchise_tag || false,
+        actualPpg: s.actual_ppg != null ? Number(s.actual_ppg) : null,
+        gamesPlayed: s.games_played ?? 0,
+        espnProjPpg: s.espn_proj_ppg != null ? Number(s.espn_proj_ppg) : null,
         practiceSquad: s.practice_squad || false,
         rookieDraftRound: s.rookie_draft_round || undefined,
         injuryStatus: (s as any).injury_status || 'healthy',

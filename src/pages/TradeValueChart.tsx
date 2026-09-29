@@ -37,6 +37,7 @@ type Row = {
   team: string;
   ppg: number;
   vor: number | null;
+  actual: number | null;
   rosRank: number | null;
   dynastyRank: number | null;
   talent: number;
@@ -94,11 +95,21 @@ const TradeValueChart = () => {
         const dyn = ranks.dyn.get(key);
         const rook = ranks.rook.get(key);
         const ros = ranks.ros.get(key);
-        const ppg = ranks.proj.get(key) ?? 0;
+        // PPG anchored to real output: blend preseason projection (FantasyPros + ESPN)
+        // with actual 2026 PPG; actual weight grows each game (faster for rookies).
+        const pre = ranks.proj.get(key);
+        const espn = p.espnProjPpg && p.espnProjPpg > 0 ? p.espnProjPpg : undefined;
+        const base = pre && espn ? (pre + espn) / 2 : pre ?? espn ?? 0;
+        const g = p.gamesPlayed || 0;
+        const hasActual = p.actualPpg != null && g > 0;
+        const wActual = hasActual ? g / (g + (rook ? 2 : 3)) : 0;
+        const ppg = hasActual ? base * (1 - wActual) + (p.actualPpg as number) * wActual : base;
+        // Rookies outperforming their projection get a future-growth bump
+        const rookieBump = rook && hasActual ? Math.max(0, Math.min(15, ((p.actualPpg as number) - base) * 3 * wActual * 2)) : 0;
 
         // Future value: dynasty rank; unlisted rookies approximated from rookie rank
         const dynastyRank = dyn?.overall ?? (rook ? 20 + rook.overall * 4 : null);
-        const dynScore = dynastyRank ? rankScore(dynastyRank, 450) : 0;
+        const dynScore = Math.min(100, (dynastyRank ? rankScore(dynastyRank, 450) : 0) + rookieBump);
         // Present value: rest-of-season rank, blended with projected PPG
         const rosScore = ros ? rankScore(ros.overall, 400) : 0;
         const ppgScore = Math.min(100, (ppg / 22) * 100);
@@ -140,6 +151,7 @@ const TradeValueChart = () => {
           position: p.position,
           team: p.fantasyTeam,
           ppg,
+          actual: hasActual ? (p.actualPpg as number) : null,
           vor: ppg > 0 ? ppg - avg : null,
           rosRank: ros?.overall ?? null,
           dynastyRank: dyn?.overall ?? null,
@@ -183,7 +195,8 @@ const TradeValueChart = () => {
       },
     },
     { key: 'talent', label: 'Talent', sortable: true, align: 'center' },
-    { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
+    { key: 'ppg', label: 'PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
+    { key: 'actual', label: '2026 PPG', sortable: true, align: 'center', render: (v) => (v == null ? '—' : Number(v).toFixed(1)) },
     { key: 'vor', label: 'VOR', sortable: true, align: 'center', render: (v) => (v == null ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`) },
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
