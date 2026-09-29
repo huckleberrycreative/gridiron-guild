@@ -43,6 +43,13 @@
       "when": 1790702516274,
       "tag": "0005_restrict_page_content_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790702566279,
+      "tag": "0006_restrict_image_bucket_writes_admin",
+      "breakpoints": true
     }
   ]
 }
