@@ -77,7 +77,8 @@ const TeamCaptains = () => {
   const captainPts = (week: number, pid: string | null | undefined) => {
     if (!pid) return null;
     const s = scores.get(`${week}:${pid}`);
-    return s == null ? null : s * CAPTAIN_MULT;
+    // A player who gets hurt and subbed out doesn't have negative points applied — floor at 0.
+    return s == null ? null : Math.max(0, s) * CAPTAIN_MULT;
   };
 
   // Summary over locked picks with scores
