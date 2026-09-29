@@ -350,10 +350,17 @@ const TradeValueChart = () => {
               {label}
             </button>
           ))}
-          <label className="ml-auto flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={showFA} onChange={(e) => setShowFA(e.target.checked)} />
-            Include free agents
-          </label>
+          <button
+            onClick={() => setOnlyFA((v) => !v)}
+            title="Show only players on waivers"
+            aria-pressed={onlyFA}
+            className={cn(
+              'ml-auto rounded-md border px-3 py-1.5 text-sm font-semibold',
+              onlyFA ? 'border-accent bg-accent text-accent-foreground' : 'border-border bg-card'
+            )}
+          >
+            {onlyFA ? 'Showing waivers only' : 'Isolate FAs'}
+          </button>
         </div>
 
         {isLoading || !ranks ? (
