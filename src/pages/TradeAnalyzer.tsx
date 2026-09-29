@@ -123,11 +123,20 @@ const TradeAnalyzer = () => {
 
   // How much a team should care about this season: playoff odds from the
   // Power Ranks simulation (0 = out of it, 1 = firmly in the hunt).
-  const contentionFor = (teamId: string) => {
+  // Where each team actually sits: standings place, Power Rank, and the
+  // Monte Carlo odds of finishing top 4 from current points + current roster.
+  const situationFor = (teamId: string) => {
     const row = powerRows.find((r) => r.team.id === teamId);
-    if (!row) return 0.5;
-    return Math.min(1, Math.max(0, row.odds.top5 / 100));
+    if (!row) return { mode: 'bubble' as const, contention: 0.5, playoff: 50, champ: 0, standRank: 0, prRank: 0, points: 0 };
+    const standRank = [...powerRows].sort((a, b) => b.team.totalPoints - a.team.totalPoints).findIndex((r) => r.team.id === teamId) + 1;
+    const prRank = powerRows.findIndex((r) => r.team.id === teamId) + 1;
+    const playoff = row.odds.top4;
+    // Top-4 odds dominate; a sniff of 5th (purgatory) keeps a team half-interested.
+    const contention = Math.min(1, Math.max(0, (row.odds.top4 * 0.8 + row.odds.top5 * 0.2) / 100));
+    const mode = playoff >= 60 ? ('contender' as const) : playoff <= 25 ? ('rebuild' as const) : ('bubble' as const);
+    return { mode, contention, playoff, champ: row.odds.champ, standRank, prRank, points: row.team.totalPoints };
   };
+  const contentionFor = (teamId: string) => situationFor(teamId).contention;
 
 
   useEffect(() => {
@@ -252,7 +261,7 @@ const TradeAnalyzer = () => {
       // Contenders are graded on this season; teams out of the race are graded
       // on the long-term roster.
       const contention = contentionFor(teamId);
-      const wWinNow = 0.35 + 0.5 * contention;
+      const wWinNow = 0.1 + 0.8 * contention;
       const overall =
         (parts.winNow * wWinNow + parts.dynasty * (1 - wWinNow)) * 0.72 +
         parts.depth * 0.14 +
@@ -285,7 +294,10 @@ const TradeAnalyzer = () => {
       // Headline grade is a % change, same scale as the Power Ranks-based grade.
       // Trade value gap maps onto that scale (a 100% value gap ≈ 15%).
       const fitScore = overall;
-      const score = Math.round((overall * 0.5 + valueScore * 0.15 * 0.5) * 10) / 10;
+      // Long-term trade value matters more to teams whose season is slipping away.
+      const valueWeight = 0.6 + 0.8 * (1 - contention);
+      const score = Math.round((overall * 0.5 + valueScore * 0.15 * 0.5 * valueWeight) * 10) / 10;
+      const situation = situationFor(teamId);
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
         lost.reduce((s, p) => s + p.healthyPpg, 0);
@@ -295,6 +307,7 @@ const TradeAnalyzer = () => {
         winNowPpw,
         dynastyPpw,
         contention,
+        situation,
         salaryDelta,
         futureDelta,
         counts,
@@ -417,51 +430,79 @@ const TradeAnalyzer = () => {
   type Result = NonNullable<typeof analysis>['A'];
   const names = (xs: Asset[]) => (xs.length ? xs.map((p) => p.name).join(', ') : 'nothing');
 
+  const ord = (n: number) => { const t = n % 100; const suf = t >= 11 && t <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'; return `${n}${suf}`; };
+
   const cases = (r: Result) => {
     const bestIn = [...r.gained].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
     const bestOut = [...r.lost].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
     const injuredIn = r.gained.find((p) => p.out);
-    const injuredOut = r.lost.find((p) => p.out);
-    const buying = r.valueIn > r.valueOut;
+    const age = (p?: Asset) => (p ? tv.get(p.id)?.age ?? null : null);
+    const youngIn = r.gained.filter((p) => (age(p) ?? 99) <= 25 && valueOf(p.id) >= 55);
+    const s = r.situation;
+    const odds = Math.round(s.playoff);
+    const where = `${ord(s.standRank)} in the standings with ${Math.round(s.points)} points, ${ord(s.prRank)} on the Power Ranks, ${odds}% playoff odds in our simulation`;
     const valueDiff = Math.abs(Math.round(r.valueIn) - Math.round(r.valueOut));
+    const buying = r.valueIn > r.valueOut;
+    const lineupUp = r.winNowPpw > 0.3;
+    const lineupDown = r.winNowPpw < -0.3;
 
-    const bull = buying
-      ? bestIn && bestOut
-        ? `Trading ${bestOut.name} for ${bestIn.name} is the kind of buy-low everyone talks themselves out of — you're pocketing ${valueDiff} points of value and daring the league to notice.`
-        : `The value ledger swings ${valueDiff} points your way, and those are the trades champions are built on.`
-      : r.winNowPpw > 0.3
-        ? `This is a win-now swing — your lineup adds roughly ${r.winNowPpw.toFixed(1)} points a week down the stretch, and points in November are trophies in December.`
-        : r.salaryDelta < 0
-          ? `You come out ahead twice: a live body off waivers and $${Math.abs(r.salaryDelta)} of cap space back in your pocket for the deadline.`
-          : bestIn
-            ? `${bestIn.name} is a cheap lottery ticket on a contender's roster — the kind of stash that quietly wins October.`
-            : `Clearing a clogged roster spot counts as progress, even if the return is a rounding error.`;
-
-    const bear = !buying && r.valueOut > r.valueIn
-      ? bestOut
-        ? `You're shipping ${bestOut.name} (${valueOf(bestOut.id)}) and receiving spare parts in return — a move you'll be watching from someone else's roster by Week 12.`
-        : `You're giving up ${valueDiff} more points of value than you're getting back, and value given up rarely finds its way home.`
-      : injuredIn
-        ? `The headliner coming back, ${injuredIn.name}, is in street clothes for about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'} — you're betting on a training room, and training rooms don't return calls.`
-        : r.winNowPpw < -0.3
-          ? `Your starting lineup sheds roughly ${Math.abs(r.winNowPpw).toFixed(1)} points a week this season — you'd be losing real games to chase hypothetical assets.`
+    let bull: string;
+    let bear: string;
+    if (s.mode === 'rebuild') {
+      bull = youngIn.length
+        ? `At ${where}, this season is a sunk cost — ${youngIn.map((p) => p.name).join(' and ')} is exactly the kind of young piece a rebuild is built around.`
+        : buying
+          ? `At ${where}, stacking future value is the job, and this deal adds ${valueDiff} points of it.`
+          : lineupDown
+            ? `At ${where}, losing a few points a week costs you almost nothing — the Toilet Bowl doesn't care.`
+            : `At ${where}, any move that doesn't cost you future assets is a free swing.`;
+      bear = lineupUp && !buying
+        ? `You'd be paying future value for ${r.winNowPpw.toFixed(1)} points a week on a team the simulation gives ${odds}% odds — that's decorating a house you're about to sell.`
+        : bestOut && valueOf(bestOut.id) >= 60 && (age(bestOut) ?? 99) <= 26
+          ? `${bestOut.name} is young enough to still be here when you're good again — rebuilds shouldn't ship out the foundation.`
+          : injuredIn
+            ? `${injuredIn.name} is out about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, though for a team playing for 2027 that matters less than it looks.`
+            : `A ${odds}% team can still get hot — if you believe the roster is better than the standings, selling now locks in the bad start.`;
+    } else if (s.mode === 'contender') {
+      bull = lineupUp
+        ? `At ${where}, the only thing that matters is December — and this adds ${r.winNowPpw.toFixed(1)} points a week to your starting lineup.`
+        : buying
+          ? `You're a contender (${where}) and still walking away with ${valueDiff} more points of value — rare to get richer and stay dangerous.`
+          : `A ${odds}% playoff team can afford to spend a little future to smooth out the present.`;
+      bear = lineupDown
+        ? `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week in the middle of a title push — contenders don't sell starters for prospects.`
+        : injuredIn
+          ? `${injuredIn.name} is in street clothes for about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, and you're trying to win now, not in November.`
           : r.salaryDelta > 0
-            ? `$${r.salaryDelta} of fresh salary lands on your books, and that's cap you won't have when the injury bug hits.`
-            : injuredOut
-              ? `The one silver lining is unloading ${injuredOut.name}'s injury — but "less hurt" is a low bar to trade at.`
-              : `This deal rearranges deck chairs: nobody gets hurt, nobody gets better, and you've spent a trade chip to stand still.`;
+            ? `$${r.salaryDelta} more salary lands on a contender's books — cap you'll wish you had when the injury bug hits.`
+            : `A lead in the standings isn't a trophy; if this doesn't make the lineup better, it's just risk.`;
+    } else {
+      bull = lineupUp
+        ? `At ${where}, you're a coin flip, and ${r.winNowPpw.toFixed(1)} more points a week is exactly what tips a coin flip.`
+        : buying
+          ? `Sitting on the bubble (${where}), banking ${valueDiff} points of value keeps both doors open — buy later or sell later.`
+          : `On the bubble at ${odds}% odds, flexibility is worth something, and this keeps your options open.`;
+      bear = lineupDown
+        ? `A bubble team losing ${Math.abs(r.winNowPpw).toFixed(1)} points a week is effectively choosing to rebuild — make sure that's the plan.`
+        : !buying && bestOut
+          ? `You're paying ${bestOut.name} to maybe move from ${odds}% to a slightly better coin flip — half-measures are how teams finish 5th.`
+          : injuredIn
+            ? `${injuredIn.name} misses about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, and bubble teams can't spot anyone games.`
+            : `Neither buyer nor seller — this doesn't clearly push you in either direction.`;
+    }
 
+    const plan = s.mode === 'rebuild' ? 'a rebuilding team' : s.mode === 'contender' ? 'a contender' : 'a bubble team';
     const base = Math.abs(r.score) <= 2
       ? r.score >= 0
-        ? `Shake hands — it's fair with a whisper of an edge your way, and fair deals with a lean are how good rosters stay good.`
-        : `Slightly against you, but inside the noise — say yes only if it patches a genuine hole on your roster.`
+        ? `Fair, with a slight lean your way for ${plan} — shake hands if it fills a real need.`
+        : `Slightly against you for ${plan}, but inside the noise — only if it fixes a genuine hole.`
       : r.score > 0
         ? r.score > 5
-          ? `Do it before the other side rereads the fine print — this one runs heavily in your favor and everyone will know it by Friday.`
-          : `Do it — the edge is real, repeatable, and the sort of margin that compounds across a season.`
+          ? `Do it — for ${plan} at ${odds}% odds, this is exactly the direction you should be moving, and it isn't close.`
+          : `Do it — it fits where ${plan} should be headed.`
         : r.score < -5
-          ? `Hard pass — you'd be funding someone else's title run; unless a pick or a sweetener comes back, let this one die in the DMs.`
-          : `Pass for now — you're on the wrong side of the ledger, so counter before you sign anything.`;
+          ? `Hard pass — this points ${plan} the wrong way; counter or let it die in the DMs.`
+          : `Pass for now — for ${plan} this is the wrong trade; counter before you sign.`;
 
     return { bull, bear, base };
   };
@@ -474,6 +515,9 @@ const TradeAnalyzer = () => {
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="min-w-0">
             <h3 className="font-display font-bold uppercase tracking-wide text-sm truncate">{label}</h3>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {r.situation.mode === 'rebuild' ? 'Rebuilding' : r.situation.mode === 'contender' ? 'Contending' : 'On the bubble'} · {Math.round(r.situation.playoff)}% playoff odds
+            </p>
             <p className="text-xs text-muted-foreground truncate">Gets: {names(r.gained)}</p>
             {r.drops.length > 0 && (
               <p className="text-xs text-destructive truncate">Must cut to make room: {names(r.drops)}</p>
