@@ -337,6 +337,7 @@ export type Database = {
           actual_ppg: number | null
           contract_year: string | null
           created_at: string
+          espn_lineup_slot: number | null
           espn_proj_ppg: number | null
           franchise_tag: boolean
           games_played: number
@@ -362,6 +363,7 @@ export type Database = {
           actual_ppg?: number | null
           contract_year?: string | null
           created_at?: string
+          espn_lineup_slot?: number | null
           espn_proj_ppg?: number | null
           franchise_tag?: boolean
           games_played?: number
@@ -387,6 +389,7 @@ export type Database = {
           actual_ppg?: number | null
           contract_year?: string | null
           created_at?: string
+          espn_lineup_slot?: number | null
           espn_proj_ppg?: number | null
           franchise_tag?: boolean
           games_played?: number
