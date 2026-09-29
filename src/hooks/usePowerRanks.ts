@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
 
@@ -257,8 +257,8 @@ export function usePowerRankRows() {
     })();
   }, []);
 
-  const rows = useMemo(() => {
-    if (!standings.length) return [];
+  const input = useMemo(() => {
+    if (!standings.length) return { weeksPlayed: 0, list: [] as { team: (typeof standings)[number]; roster: Asset[] }[] };
 
     const byTeam = new Map<string, PlayerSalaryWithDetails[]>();
     salaries.forEach((s) => {
@@ -278,7 +278,9 @@ export function usePowerRankRows() {
       )
     );
 
-    const base = standings.map((team) => {
+    return {
+      weeksPlayed,
+      list: standings.map((team) => {
       const seen = new Set<string>();
       const roster: Asset[] = (byTeam.get(team.id) ?? [])
         .filter((s) => {
@@ -310,7 +312,14 @@ export function usePowerRankRows() {
             out: isOut,
           };
         });
+      return { team, roster };
+      }),
+    };
+  }, [salaries, standings, proj]);
 
+  const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number) => {
+    if (!list.length) return [];
+    const base = list.map(({ team, roster }) => {
       const available = roster.filter((p) => !p.out);
       const injured = roster.filter(
         (p) => p.out || (p.injuryStatus && p.injuryStatus !== 'healthy')
@@ -390,9 +399,23 @@ export function usePowerRankRows() {
     return scored
       .map((b) => ({ ...b, odds: odds[b.team.id], weeksPlayed }))
       .sort((a, b) => b.score - a.score || b.starterPpw - a.starterPpw);
-  }, [salaries, standings, proj]);
+  }, []);
+
+  const rows = useMemo(() => compute(input.list, input.weeksPlayed), [compute, input]);
+
+  /** Re-run Power Ranks with one team's roster changed (drop ids, add assets). */
+  const whatIf = useCallback(
+    (teamId: string, dropIds: Set<string>, adds: Asset[]) =>
+      compute(
+        input.list.map((t) =>
+          t.team.id === teamId ? { ...t, roster: [...t.roster.filter((p) => !dropIds.has(p.id)), ...adds] } : t
+        ),
+        input.weeksPlayed
+      ),
+    [compute, input]
+  );
 
   const loading = salariesLoading || standingsLoading || !projLoaded;
 
-  return { rows, loading, weeksPlayed: rows[0]?.weeksPlayed ?? 0 };
+  return { rows, loading, weeksPlayed: rows[0]?.weeksPlayed ?? 0, whatIf, proj };
 }
