@@ -335,7 +335,13 @@ const TradeAnalyzer = () => {
           .filter((p) => p.position === bestIn.position)
           .sort((a, b) => b.healthyPpg - a.healthyPpg);
         const cur = samePos[0] ?? null;
-        const hurt = samePos.find((p) => p.out) ?? null;
+        // Only a real injury hole if the injured player was a genuine starter:
+        // top of his position group on this roster and scoring like one.
+        const startSlots: Record<string, number> = { QB: 1, RB: 2, WR: 3, TE: 1 };
+        const hurt =
+          samePos
+            .slice(0, startSlots[bestIn.position] ?? 1)
+            .find((p) => p.out && p.healthyPpg >= Math.max(8, bestIn.healthyPpg * 0.9)) ?? null;
         const bump = cur ? bestIn.healthyPpg - cur.healthyPpg : bestIn.healthyPpg;
         if (!cur || bestIn.healthyPpg >= cur.healthyPpg * 0.9 || hurt) {
           starterIn = { p: bestIn, over: cur, hurt, bump };
