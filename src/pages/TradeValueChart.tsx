@@ -27,8 +27,10 @@ const loadRanks = async (url: string, nameCol: number, posCol: number) => {
 };
 
 // 1st overall ≈ 100, ~400th ≈ 0, log-scaled so the elite tier separates
+// Power curve: elite ranks still separate, but a mid-tier starter (e.g. #84 overall)
+// scores ~64 instead of being crushed to ~27 by a log curve.
 const rankScore = (rank: number, depth = 400) =>
-  rank > 0 ? Math.max(0, 100 * (1 - Math.log(rank) / Math.log(depth))) : 0;
+  rank > 0 ? Math.max(0, 100 * (1 - Math.pow((rank - 1) / (depth - 1), 0.5))) : 0;
 
 type Row = {
   id: string;
@@ -148,7 +150,7 @@ const TradeValueChart = () => {
         // Contract multiplier: a near-min deal is worth ~3x a max deal at equal talent.
         // Steep curve so $100 of savings outweighs a small PPG gap.
         // Cheapness only amplifies real talent — a $1 depth piece isn't a star.
-        const contractMult = 0.7 + Math.pow(1 - costShare, 1.2) * Math.pow(Math.min(1, talent / 60), 2) * 0.8;
+        const contractMult = 0.7 + Math.pow(1 - costShare, 1.2) * Math.pow(Math.min(1, talent / 90), 3) * 0.8;
         // Franchise-tagged: salary is artificially deflated and can't be traded without penalty
         const ftMult = p.franchiseTag ? 0.875 : 1;
         const raw = talent * contractMult * ftMult;
