@@ -301,6 +301,28 @@ const TradeAnalyzer = () => {
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
         lost.reduce((s, p) => s + p.healthyPpg, 0);
+      // Roster context: does the best incoming player actually start here,
+      // and is he covering an injury hole?
+      const remaining = before.filter(
+        (p) => !p.practiceSquad && !lost.some((l) => l.id === p.id)
+      );
+      const bestIn = [...gained]
+        .filter((p) => !p.practiceSquad)
+        .sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
+      let starterIn: { p: Asset; over: Asset | null; hurt: Asset | null; bump: number } | null = null;
+      if (bestIn) {
+        const samePos = remaining
+          .filter((p) => p.position === bestIn.position)
+          .sort((a, b) => b.healthyPpg - a.healthyPpg);
+        const cur = samePos[0] ?? null;
+        const hurt = samePos.find((p) => p.out) ?? null;
+        const bump = cur ? bestIn.healthyPpg - cur.healthyPpg : bestIn.healthyPpg;
+        if (!cur || bestIn.healthyPpg >= cur.healthyPpg * 0.9 || hurt) {
+          starterIn = { p: bestIn, over: cur, hurt, bump };
+        }
+      }
+      const eliteOut =
+        [...lost].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0] ?? null;
       return {
         parts,
         overall,
