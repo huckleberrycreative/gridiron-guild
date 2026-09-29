@@ -184,6 +184,7 @@ const TeamCaptains = () => {
                           {w}
                           {locked && <Lock size={11} className="text-muted-foreground" />}
                         </span>
+                        {(() => { const a = weekAvg(w); return a != null ? <span className="block text-[10px] font-semibold text-win">avg {fmt(a)}</span> : null; })()}
                       </td>
                       {teams.map((t) => {
                         const pid = valueAt(w, t.id);
