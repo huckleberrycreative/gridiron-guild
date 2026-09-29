@@ -239,12 +239,12 @@ const TeamCaptains = () => {
                         const { counts, qbUsed } = usage(t.id, w);
                         const options = roster.filter((p) => p.teamId === t.id).sort((a, b) => a.position.localeCompare(b.position) || a.name.localeCompare(b.name));
                         return (
-                          <td key={t.id} className="p-1 align-middle">
+                          <td key={t.id} className="p-1 text-center align-middle">
                             <div className="flex items-center gap-1">
                               <select
                                 value={pid}
                                 onChange={(e) => setDrafts((d) => ({ ...d, [`${w}:${t.id}`]: e.target.value }))}
-                                className="h-7 w-full min-w-0 truncate rounded border border-input bg-background px-1 text-xs"
+                                className="h-7 w-full min-w-0 truncate rounded border border-input bg-background px-1 text-center text-xs"
                               >
                                 <option value="">—</option>
                                 {options.map((p) => {
