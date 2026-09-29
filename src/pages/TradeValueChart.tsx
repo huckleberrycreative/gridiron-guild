@@ -263,6 +263,20 @@ const TradeValueChart = () => {
     { key: 'age', label: 'Age', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
     { key: 'vor', label: 'VOR', sortable: true, align: 'center', render: (v) => (v == null ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`) },
+    {
+      key: 'surplus',
+      label: 'Surplus $',
+      sortable: true,
+      align: 'center',
+      render: (v) => {
+        const n = Number(v);
+        return (
+          <span className={cn('font-semibold', n > 0 ? 'text-emerald-700' : n < 0 ? 'text-red-700' : 'text-muted-foreground')}>
+            {n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n))}
+          </span>
+        );
+      },
+    },
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 'avgCost', label: 'Wtd $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
@@ -288,8 +302,8 @@ const TradeValueChart = () => {
             <p className="text-muted-foreground">Season-long projection anchored to the preseason outlook (which reflects multi-year history), adjusted for the first weeks of 2026: overachievers get a bump — rookies and young players the fastest — while slow starts from proven veterans are forgiven early. Real output takes over as the season progresses.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-semibold text-primary">VOR &amp; Cost</p>
-            <p className="text-muted-foreground">VOR is value over replacement: how many points per game a player beats a replacement-level starter at his position. Wtd $ is the weighted average of 2027–2029 salaries — 62.5% next year, 25% in 2028, 12.5% in 2029 — so natural progression isn't penalized.</p>
+            <p className="font-semibold text-primary">VOR, Surplus &amp; Cost</p>
+            <p className="text-muted-foreground">VOR is value over replacement: how many points per game a player beats a replacement-level starter at his position. Surplus $ turns that into money — his VOR priced at what the league actually pays per point, minus his weighted salary — so a positive number means he gives you more production than he costs. Wtd $ is the weighted average of 2027–2029 salaries — 62.5% next year, 25% in 2028, 12.5% in 2029 — so natural progression isn't penalized.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
