@@ -29,6 +29,7 @@ import RivalryWeek from "./pages/RivalryWeek";
 import RookieDraft from "./pages/RookieDraft";
 import OfficialRosters2026 from "./pages/OfficialRosters2026";
 import TradeAnalyzer from "./pages/TradeAnalyzer";
+import WaiverWire from "./pages/WaiverWire";
 import PowerRanks from "./pages/PowerRanks";
 import TradeValueChart from "./pages/TradeValueChart";
 import NotFound from "./pages/NotFound";
