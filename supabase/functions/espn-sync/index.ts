@@ -182,12 +182,18 @@ Deno.serve(async (req) => {
       string,
       { id: string; team_id: string | null; practice_squad: boolean }
     >();
-    for (const s of salaryRows ?? [])
-      salaryByPlayer.set(s.player_id, {
-        id: s.id,
-        team_id: s.team_id,
-        practice_squad: !!s.practice_squad,
-      });
+    // Match salary rows by normalized NAME (not player id) so duplicate player
+    // records can never spawn a second salary row for the same person.
+    const nameByPlayerId = new Map<string, string>();
+    for (const p of players ?? []) nameByPlayerId.set(p.id, norm(p.full_name));
+    const salaryByName = new Map<string, { id: string; team_id: string | null; practice_squad: boolean }>();
+    for (const s of salaryRows ?? []) {
+      const row = { id: s.id, team_id: s.team_id, practice_squad: !!s.practice_squad };
+      salaryByPlayer.set(s.player_id, row);
+      const nk = nameByPlayerId.get(s.player_id);
+      const prev = nk ? salaryByName.get(nk) : undefined;
+      if (nk && (!prev || (!prev.team_id && row.team_id))) salaryByName.set(nk, row);
+    }
 
     const seenSalaryIds = new Set<string>();
     const added: string[] = [];
