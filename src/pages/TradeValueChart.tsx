@@ -95,17 +95,25 @@ const TradeValueChart = () => {
         const dyn = ranks.dyn.get(key);
         const rook = ranks.rook.get(key);
         const ros = ranks.ros.get(key);
-        // PPG anchored to real output: blend preseason projection (FantasyPros + ESPN)
-        // with actual 2026 PPG; actual weight grows each game (faster for rookies).
+        // PPG anchored to the projection (FantasyPros + ESPN), blended with actual
+        // 2026 output asymmetrically: players beating their projection get credit
+        // quickly, while slow starts are forgiven early — a proven stud having a
+        // quiet September stays near his projection, but a young riser outplaying
+        // his draft stock isn't punished. Both sides converge to real output as
+        // the season goes on.
         const pre = ranks.proj.get(key);
         const espn = p.espnProjPpg && p.espnProjPpg > 0 ? p.espnProjPpg : undefined;
         const base = pre && espn ? (pre + espn) / 2 : pre ?? espn ?? 0;
         const g = p.gamesPlayed || 0;
         const hasActual = p.actualPpg != null && g > 0;
-        const wActual = hasActual ? g / (g + (rook ? 2 : 3)) : 0;
-        const ppg = hasActual ? base * (1 - wActual) + (p.actualPpg as number) * wActual : base;
-        // Rookies outperforming their projection get a future-growth bump
-        const rookieBump = rook && hasActual ? Math.max(0, Math.min(15, ((p.actualPpg as number) - base) * 3 * wActual * 2)) : 0;
+        const actual = hasActual ? (p.actualPpg as number) : base;
+        const wUp = g / (g + (rook ? 2 : 3)); // hot starts count fast (fastest for rookies)
+        const wDown = g / (g + 8); // slow starts are forgiven early
+        const ppg = hasActual
+          ? base + Math.max(0, actual - base) * wUp - Math.max(0, base - actual) * wDown
+          : base;
+        // Young players (rookies) outplaying their projection also get a future-growth bump
+        const rookieBump = rook && hasActual ? Math.max(0, Math.min(15, (actual - base) * 3 * wUp * 2)) : 0;
 
         // Future value: dynasty rank; unlisted rookies approximated from rookie rank
         const dynastyRank = dyn?.overall ?? (rook ? 20 + rook.overall * 4 : null);
