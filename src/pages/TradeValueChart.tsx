@@ -175,14 +175,23 @@ const TradeValueChart = () => {
       const v = raw.filter((r) => r.teamId && r.position === ps && r.ppg > 0).map((r) => r.ppg).sort((a, b) => a - b);
       repl[ps] = v.length ? v[Math.floor(v.length * 0.25)] : 5;
     });
-    // Market price of one PPG above replacement, from how the league spends its cap
+    // Market price of one PPG above replacement, computed PER POSITION from how the
+    // league spends its cap on that position (QB points are cheap per point league-wide,
+    // so a single league-wide price made every QB look worthless).
     const rostered = raw.filter((r) => r.teamId);
-    const spent = rostered.reduce((a, r) => a + Math.max(0, r.avgCost - 1), 0);
-    const pts = rostered.reduce((a, r) => a + Math.max(0, r.ppg - repl[r.position]), 0);
-    const dpp = pts > 0 ? spent / pts : 20;
+    const dppPos: Record<string, number> = {};
+    const posTop: Record<string, number> = {};
+    Object.keys(POS_MAX).forEach((ps) => {
+      const g = rostered.filter((r) => r.position === ps);
+      const spent = g.reduce((a, r) => a + Math.max(0, r.avgCost - 1), 0);
+      const pts = g.reduce((a, r) => a + Math.max(0, r.ppg - repl[ps]), 0);
+      dppPos[ps] = pts > 0 ? spent / pts : 20;
+      const sorted = g.map((r) => r.ppg).sort((a, b) => b - a);
+      posTop[ps] = sorted[Math.min(2, sorted.length - 1)] || 1; // ~3rd best at position
+    });
     const withSurplus = raw.map((r) => {
       const over = Math.max(0, r.ppg - repl[r.position]);
-      const surplus = over * dpp - r.avgCost; // $ of production beyond what he costs
+      const surplus = over * dppPos[r.position] - r.avgCost; // $ of production beyond what he costs
       return { ...r, surplus };
     });
     const sVals = withSurplus.filter((r) => r.teamId).map((r) => r.surplus);
@@ -191,8 +200,8 @@ const TradeValueChart = () => {
     const withRaw = withSurplus.map((r) => {
       const surplusScore = Math.max(0, ((r.surplus - sMin) / (sMax - sMin)) * 100);
       // Cap surplus drives value (65%); pure dynasty pedigree is only a growth kicker (20%);
-      // current production quality (15%) keeps elite producers from falling too far.
-      const prodScore = Math.min(100, (r.ppg / 22) * 100);
+      // production relative to the elite at his position (15%) keeps top producers up.
+      const prodScore = Math.min(100, (r.ppg / posTop[r.position]) * 100);
       const score = surplusScore * 0.65 + r.dynScore * 0.2 + prodScore * 0.15;
       return { ...r, raw: score * (r.ft ? 0.875 : 1) };
     });
