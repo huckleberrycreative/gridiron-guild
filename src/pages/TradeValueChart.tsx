@@ -36,6 +36,7 @@ type Row = {
   position: string;
   team: string;
   ppg: number;
+  vor: number | null;
   rosRank: number | null;
   dynastyRank: number | null;
   talent: number;
@@ -138,6 +139,7 @@ const TradeValueChart = () => {
           position: p.position,
           team: p.fantasyTeam,
           ppg,
+          vor: ppg > 0 ? ppg - avg : null,
           rosRank: ros?.overall ?? null,
           dynastyRank: dyn?.overall ?? null,
           talent,
@@ -150,7 +152,7 @@ const TradeValueChart = () => {
     const top = Math.max(1, ...raw.map((r) => r.raw));
     return raw
       .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.position === pos))
-      .map((r) => ({ ...r, value: Math.round((r.raw / top) * 100), talent: Math.round(r.talent) }))
+      .map((r) => ({ ...r, value: Math.round(Math.sqrt(Math.max(0, r.raw) / top) * 100), talent: Math.round(r.talent) }))
       .sort((a, b) => b.value - a.value)
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }, [players, ranks, showFA, pos]);
@@ -181,6 +183,7 @@ const TradeValueChart = () => {
     },
     { key: 'talent', label: 'Talent', sortable: true, align: 'center' },
     { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
+    { key: 'vor', label: 'VOR', sortable: true, align: 'center', render: (v) => (v == null ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`) },
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
@@ -204,7 +207,7 @@ const TradeValueChart = () => {
         <div className="mb-6 grid gap-4 md:grid-cols-3 text-sm">
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Talent (0–100)</p>
-            <p className="text-muted-foreground">60% dynasty ranking (future), 40% rest-of-season ranking blended with projected PPG (now).</p>
+            <p className="text-muted-foreground">45% dynasty ranking (future), 25% rest-of-season ranking + projected PPG (now), 30% value over replacement — how far above the league average at his position he scores, as a percentage.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Cost</p>
@@ -212,7 +215,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Talent × a steep contract multiplier (a minimum deal is worth ~3× a max deal), minus 12.5% for franchise-tagged players (deflated salary, can't be traded freely), scaled so the league's best asset is 100.</p>
+            <p className="text-muted-foreground">Talent × a steep contract multiplier (a minimum deal is worth ~3× a max deal), minus 12.5% for franchise-tagged players (deflated salary, can't be traded freely), then curved so the best asset is 100 and strong starters land in the 60s–80s.</p>
           </div>
         </div>
 
