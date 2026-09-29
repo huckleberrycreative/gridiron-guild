@@ -209,7 +209,7 @@ const TradeValueChart = () => {
       const surplusScore = Math.max(0, ((r.surplus - sMin) / (sMax - sMin)) * 100);
       const prodScore = Math.min(100, (r.ppg / gTop[r.group]) * 100);
       const score = surplusScore * 0.65 + r.dynScore * 0.2 + prodScore * 0.15;
-      return { ...r, raw: score * (r.ft ? 0.875 : 1) * r.ageMult };
+      return { ...r, raw: score * r.ageMult };
     });
     const bounds: Record<string, [number, number]> = {};
     GROUPS.forEach((g) => {
@@ -225,9 +225,10 @@ const TradeValueChart = () => {
       .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.group === pos))
       .map((r) => {
         const [bottom, top] = bounds[r.group];
+        const baseValue = Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.6) * 100)));
         return {
           ...r,
-          value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.6) * 100))),
+          value: r.ft ? Math.max(0, baseValue - 5) : baseValue,
           talent: Math.round(r.talent),
           surplus: Math.round(r.surplus),
         };
@@ -238,7 +239,14 @@ const TradeValueChart = () => {
 
   const columns: Column<Row & { rank: number }>[] = [
     { key: 'rank', label: '#', sortable: true, align: 'center' },
-    { key: 'name', label: 'Player', sortable: true, render: (v) => <span className="block min-w-[12rem] whitespace-nowrap font-semibold">{String(v)}</span> },
+    { key: 'name', label: 'Player', sortable: true, render: (v, row) => (
+      <span className="flex items-center gap-1.5 whitespace-nowrap font-semibold min-w-[12rem]">
+        {String(v)}
+        {(row as { ft?: boolean }).ft && (
+          <span title="Franchise tag" className="inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-red-700 text-[10px] font-bold leading-none text-white">F</span>
+        )}
+      </span>
+    ) },
     { key: 'position', label: 'Pos', sortable: true, align: 'center' },
     { key: 'team', label: 'Team', sortable: true },
     {
