@@ -90,10 +90,22 @@ const TradeValueChart = () => {
         const now = ros ? rosScore * 0.7 + ppgScore * 0.3 : ppgScore * 0.8;
         const talent = dynScore * 0.6 + now * 0.4;
 
-        // Cost: average of next three contract years vs. positional max
-        const years = [p.salary2027, p.salary2028, p.salary2029].map(toNum).filter((n) => n > 0);
+        // Cost: weighted average of next three contract years vs. positional max.
+        // 2027 dominates (62.5%) since everyone shares the same progression;
+        // 2028 is 25%, 2029 is 12.5%. Missing years redistribute to present ones.
+        const s27 = toNum(p.salary2027);
+        const s28 = toNum(p.salary2028);
+        const s29 = toNum(p.salary2029);
         const fallback = toNum(p.salary2026) || 1;
-        const avgCost = years.length ? years.reduce((a, b) => a + b, 0) / years.length : fallback;
+        const parts: [number, number][] = [
+          [s27, 0.625],
+          [s28, 0.25],
+          [s29, 0.125],
+        ].filter(([n]) => n > 0) as [number, number][];
+        const wSum = parts.reduce((a, [, w]) => a + w, 0);
+        const avgCost = parts.length
+          ? parts.reduce((a, [n, w]) => a + n * w, 0) / wSum
+          : fallback;
         const costShare = Math.min(1, avgCost / POS_MAX[p.position]);
         // Talent drives value; cheap contracts multiply it by up to ~1.55x vs. a max deal
         const raw = talent * (1.15 - 0.55 * costShare) + (talent > 40 ? (1 - costShare) * 8 : 0);
@@ -150,7 +162,7 @@ const TradeValueChart = () => {
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
-    { key: 'avgCost', label: 'Avg $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
+    { key: 'avgCost', label: 'Wtd $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
   ];
 
   return (
@@ -174,7 +186,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Cost</p>
-            <p className="text-muted-foreground">Average of 2027–2029 salaries as a share of the positional max (QB $180, RB $257, WR $203, TE $167).</p>
+            <p className="text-muted-foreground">Weighted average of 2027–2029 salaries — 62.5% next year, 25% in 2028, 12.5% in 2029 — as a share of the positional max (QB $180, RB $257, WR $203, TE $167). Natural progression isn't penalized.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
