@@ -526,6 +526,15 @@ const TradeAnalyzer = () => {
             : `Neither buyer nor seller — this doesn't clearly push you in either direction.`;
     }
 
+    // Roster-specific bear cases override the generic ones.
+    if (sellingStarForDepth && eo) {
+      bear = `You're giving up ${eo.name}, a legitimate top ${eo.position}, for depth — it might help this week, but it's the kind of deal you regret in December.`;
+    } else if (buying && st && st.over && st.bump < 1.5 && !st.hurt) {
+      bear = `You're paying real future value for a guy scoring only ${Math.max(0, st.bump).toFixed(1)} more points a week than ${st.over.name} — that's a marginal upgrade at a premium price.`;
+    } else if (buying && st?.hurt) {
+      bear = `${st.p.name} fills the ${st.hurt.name} hole, but you're paying full price for a rental — when ${st.hurt.name} is back, where does everyone fit?`;
+    }
+
     const plan = s.mode === 'rebuild' ? 'a rebuilding team' : s.mode === 'contender' ? 'a contender' : 'a bubble team';
     const base = Math.abs(r.score) <= 2
       ? r.score >= 0
