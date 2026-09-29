@@ -58,7 +58,7 @@ const TeamCaptains = () => {
   const playerById = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
   const pickAt = (week: number, teamId: string) => picks.find((p) => p.week === week && p.teamId === teamId);
   const valueAt = (week: number, teamId: string) => drafts[`${week}:${teamId}`] ?? pickAt(week, teamId)?.playerId ?? '';
-  const weekLocked = (week: number) => teams.length > 0 && teams.every((t) => pickAt(week, t.id)?.locked);
+  const weekLocked = (week: number) => picks.some((p) => p.week === week && p.locked);
 
   // Uses by a team in every week except the one being edited
   const usage = (teamId: string, exceptWeek: number) => {
@@ -101,12 +101,13 @@ const TeamCaptains = () => {
 
   const submitWeek = async (week: number) => {
     const missing = teams.filter((t) => !valueAt(week, t.id));
-    if (missing.length) {
-      toast({ title: `Week ${week} incomplete`, description: `Missing: ${missing.map((t) => shortName(t.name)).join(', ')}`, variant: 'destructive' });
+    if (missing.length === teams.length) {
+      toast({ title: `No picks for Week ${week}`, variant: 'destructive' });
       return;
     }
+    if (missing.length && !window.confirm(`No captain for: ${missing.map((t) => shortName(t.name)).join(', ')}. Lock anyway?`)) return;
     setSaving(week);
-    const rows = teams.map((t) => ({ season_year: SEASON_YEAR, week, team_id: t.id, player_id: valueAt(week, t.id), locked: true }));
+    const rows = teams.filter((t) => valueAt(week, t.id)).map((t) => ({ season_year: SEASON_YEAR, week, team_id: t.id, player_id: valueAt(week, t.id), locked: true }));
     const { error } = await supabase.from('captain_picks').upsert(rows, { onConflict: 'season_year,week,team_id' });
     setSaving(null);
     if (error) return toast({ title: 'Could not save', description: error.message, variant: 'destructive' });
