@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { usePlayerSalaries } from '@/hooks/usePlayerSalaries';
+import { usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { normalize, toNum, NFL_WEEKS } from '@/hooks/usePowerRanks';
 
 const POS_MAX: Record<string, number> = { QB: 180, RB: 257, WR: 203, TE: 167 };
@@ -47,8 +47,13 @@ export type TradeValueRow = {
 };
 
 /** Shared Trade Value Chart model — used by the chart and the Trade Analyzer. */
-export function useTradeValues() {
-  const { data: players = [], isLoading } = usePlayerSalaries();
+export function useTradeValues(extra?: PlayerSalaryWithDetails[]) {
+  const { data: dbPlayers = [], isLoading } = usePlayerSalaries();
+  const players = useMemo(() => {
+    if (!extra?.length) return dbPlayers;
+    const known = new Set(dbPlayers.map((p) => normalize(`${p.firstName} ${p.lastName}`.trim())));
+    return [...dbPlayers, ...extra.filter((p) => !known.has(normalize(`${p.firstName} ${p.lastName}`.trim())))];
+  }, [dbPlayers, extra]);
   const [ranks, setRanks] = useState<{
     dyn: Map<string, Rank>;
     rook: Map<string, Rank>;
@@ -231,5 +236,6 @@ export function useTradeValues() {
   }, [players, ranks]);
 
   const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
-  return { rows, byId, isLoading: isLoading || !ranks };
+  const byName = useMemo(() => new Map(rows.map((r) => [normalize(r.name), r])), [rows]);
+  return { rows, byId, byName, isLoading: isLoading || !ranks };
 }
