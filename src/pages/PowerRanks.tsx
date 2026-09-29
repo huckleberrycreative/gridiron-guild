@@ -89,8 +89,8 @@ const PowerRanks = () => {
                 </li>
 
                 <li>
-                  <strong>Standings:</strong> accumulated weekly points scale in as the season runs,
-                  reaching 40% of the grade by Week {REG_SEASON_WEEKS}.
+                  <strong>Standings:</strong> accumulated weekly points grow every week, from 30% of
+                  the grade after Week 1 to 75% by Week {REG_SEASON_WEEKS}.
                 </li>
                 <li>
                   <strong>Odds:</strong> {SIMS.toLocaleString()} simulated seasons using the
