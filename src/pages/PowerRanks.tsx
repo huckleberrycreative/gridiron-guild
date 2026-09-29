@@ -7,6 +7,7 @@ import {
   type PowerRankRow,
 } from '@/hooks/usePowerRanks';
 import { cn } from '@/lib/utils';
+import { useTradeValues } from '@/hooks/useTradeValues';
 import { Loader2, TrendingUp, Shield, Activity } from 'lucide-react';
 
 const pct = (v: number) => (v >= 99.5 ? '>99%' : v < 0.5 && v > 0 ? '<1%' : `${Math.round(v)}%`);
@@ -104,82 +105,80 @@ const PowerRanks = () => {
 };
 
 export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[]; compact?: boolean }) {
+  const { byId: tv } = useTradeValues();
+  const avg = (list: { id: string }[]) => {
+    const vals = list.map((p) => tv.get(p.id)?.value).filter((v): v is number => v != null);
+    return vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1) : '—';
+  };
+  const th = 'px-2 py-3 text-center font-semibold leading-tight';
+  const td = 'px-2 py-3 text-center tabular-nums';
   return (
-    <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-      <table className="w-full min-w-[900px] text-sm">
+    <div className="rounded-lg border border-neutral-200 bg-white">
+      <table className="w-full table-fixed text-sm">
         <thead>
           <tr className="bg-[#1a2b4d] text-white">
-            <th className="px-3 py-3 text-left font-semibold">#</th>
-            <th className="px-3 py-3 text-left font-semibold">Team</th>
-            <th className="px-3 py-3 text-right font-semibold">Grade</th>
-            <th className="px-3 py-3 text-right font-semibold">Starter PPW</th>
-            {!compact && <th className="px-3 py-3 text-right font-semibold">Depth</th>}
-            <th className="px-3 py-3 text-right font-semibold">Top 2 Seed</th>
-            {!compact && <th className="px-3 py-3 text-right font-semibold">Top 4 Seed</th>}
-            {!compact && <th className="px-3 py-3 text-right font-semibold">Top 5 Seed</th>}
-            <th className="px-3 py-3 text-right font-semibold">Championship</th>
+            <th className="w-12 px-2 py-3 text-left font-semibold">#</th>
+            <th className="w-[22%] px-2 py-3 text-left font-semibold">Team</th>
+            <th className={th}>Grade</th>
+            <th className={th}>Starter PPW</th>
+            {!compact && <th className={th}>Starter Avg TV</th>}
+            {!compact && <th className={th}>Bench Avg TV</th>}
+            {!compact && <th className={th}>Roster Avg TV</th>}
+            <th className={th}>Playoff Odds (Top 5)</th>
+            <th className={th}>Top 2 Seed</th>
+            <th className={th}>Champ Odds</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
-            <motion.tr
-              key={r.team.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className={cn(
-                'border-t border-neutral-200',
-                i % 2 === 1 && 'bg-neutral-50'
-              )}
-            >
-              <td className="px-3 py-3">
-                <span
-                  className={cn(
-                    'inline-flex h-8 w-8 items-center justify-center rounded-full font-serif font-bold',
-                    i < 4
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : i === 4
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-neutral-100 text-neutral-600'
-                  )}
-                >
-                  {i + 1}
-                </span>
-              </td>
-              <td className="px-3 py-3">
-                <div className="font-serif text-base font-semibold text-[#1a2b4d]">
-                  {r.team.name}
-                </div>
-                <div className="text-xs text-neutral-500">{r.team.owner}</div>
-                {!compact && r.injured.length > 0 && (
-                  <div className="mt-1 text-[11px] text-[#bf2121]">
-                    OUT: {r.injured.map((p) => `${p.name}${p.weeksOut ? ` (${p.weeksOut}w)` : ''}`).join(', ')}
-                  </div>
-                )}
-              </td>
-
-              <td className="px-3 py-3 text-right">
-                <span className="font-serif text-2xl font-bold text-[#bf2121]">
-                  {r.score}
-                </span>
-              </td>
-              <td className="px-3 py-3 text-right tabular-nums">
-                {r.starterPpw.toFixed(1)}
-              </td>
-              {!compact && (
-                <td className="px-3 py-3 text-right tabular-nums">
-                  {Math.round(r.retained * 100)}%
-                  <div className="text-[11px] text-neutral-400">{r.benchCount} bench</div>
+          {rows.map((r, i) => {
+            const starterIds = new Set(r.starters.map((s) => s.id));
+            const bench = r.roster.filter((p) => !starterIds.has(p.id));
+            return (
+              <motion.tr
+                key={r.team.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className={cn('border-t border-neutral-200', i % 2 === 1 && 'bg-neutral-50')}
+              >
+                <td className="px-2 py-3">
+                  <span
+                    className={cn(
+                      'inline-flex h-8 w-8 items-center justify-center rounded-full font-serif font-bold',
+                      i < 4
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : i === 4
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-neutral-100 text-neutral-600'
+                    )}
+                  >
+                    {i + 1}
+                  </span>
                 </td>
-              )}
-              <td className="px-3 py-3 text-right tabular-nums">{pct(r.odds.top2)}</td>
-              {!compact && <td className="px-3 py-3 text-right tabular-nums">{pct(r.odds.top4)}</td>}
-              {!compact && <td className="px-3 py-3 text-right tabular-nums">{pct(r.odds.top5)}</td>}
-              <td className="px-3 py-3 text-right font-semibold tabular-nums text-[#1a2b4d]">
-                {pct(r.odds.champ)}
-              </td>
-            </motion.tr>
-          ))}
+                <td className="px-2 py-3">
+                  <div className="truncate font-serif text-base font-semibold text-[#1a2b4d]">
+                    {r.team.name}
+                  </div>
+                  <div className="truncate text-xs text-neutral-500">{r.team.owner}</div>
+                  {!compact && r.injured.length > 0 && (
+                    <div className="mt-1 truncate text-[11px] text-[#bf2121]" title={r.injured.map((p) => p.name).join(', ')}>
+                      OUT: {r.injured.map((p) => `${p.name}${p.weeksOut ? ` (${p.weeksOut}w)` : ''}`).join(', ')}
+                    </div>
+                  )}
+                </td>
+                <td className="px-2 py-3 text-center">
+                  <span className="font-serif text-2xl font-bold text-[#bf2121]">{r.score}</span>
+                </td>
+                <td className={td}>{r.starterPpw.toFixed(1)}</td>
+                {!compact && <td className={td}>{avg(r.starters)}</td>}
+                {!compact && <td className={td}>{avg(bench)}</td>}
+                {!compact && <td className={td}>{avg(r.roster)}</td>}
+                <td className={td}>{pct(r.odds.top5)}</td>
+                <td className={td}>{pct(r.odds.top2)}</td>
+                <td className={cn(td, 'font-semibold text-[#1a2b4d]')}>{pct(r.odds.champ)}</td>
+              </motion.tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
