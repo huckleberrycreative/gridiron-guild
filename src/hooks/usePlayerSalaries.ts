@@ -17,7 +17,7 @@ export interface PlayerSalaryWithDetails {
   salary2029?: string;
   actualPpg: number | null;
   gamesPlayed: number;
-  espnLineupSlot: number | null;
+  espnLineupSlot?: number | null;
   espnProjPpg: number | null;
   injuryStatus: string;
   injuryWeeksOut: number;
