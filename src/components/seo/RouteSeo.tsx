@@ -20,6 +20,10 @@ const routeMeta: Record<string, RouteMeta> = {
     description:
       "Current Men's League standings with weekly points, playoff positioning, and each governor's season-long ranking.",
   },
+  '/trade-value-chart': {
+    title: "Trade Value Chart — Men's League Fantasy Football",
+    description: "Every Men's League player valued 0-100 by projected production, dynasty outlook, and salary cost.",
+  },
   '/power-ranks': {
     title: "Power Ranks — Men's League Fantasy Football",
     description:
