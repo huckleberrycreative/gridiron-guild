@@ -90,10 +90,22 @@ const TradeValueChart = () => {
         const now = ros ? rosScore * 0.7 + ppgScore * 0.3 : ppgScore * 0.8;
         const talent = dynScore * 0.6 + now * 0.4;
 
-        // Cost: average of next three contract years vs. positional max
-        const years = [p.salary2027, p.salary2028, p.salary2029].map(toNum).filter((n) => n > 0);
+        // Cost: weighted average of next three contract years vs. positional max.
+        // 2027 dominates (62.5%) since everyone shares the same progression;
+        // 2028 is 25%, 2029 is 12.5%. Missing years redistribute to present ones.
+        const s27 = toNum(p.salary2027);
+        const s28 = toNum(p.salary2028);
+        const s29 = toNum(p.salary2029);
         const fallback = toNum(p.salary2026) || 1;
-        const avgCost = years.length ? years.reduce((a, b) => a + b, 0) / years.length : fallback;
+        const parts: [number, number][] = [
+          [s27, 0.625],
+          [s28, 0.25],
+          [s29, 0.125],
+        ].filter(([n]) => n > 0) as [number, number][];
+        const wSum = parts.reduce((a, [, w]) => a + w, 0);
+        const avgCost = parts.length
+          ? parts.reduce((a, [n, w]) => a + n * w, 0) / wSum
+          : fallback;
         const costShare = Math.min(1, avgCost / POS_MAX[p.position]);
         // Talent drives value; cheap contracts multiply it by up to ~1.55x vs. a max deal
         const raw = talent * (1.15 - 0.55 * costShare) + (talent > 40 ? (1 - costShare) * 8 : 0);
