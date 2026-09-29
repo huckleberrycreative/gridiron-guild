@@ -1,251 +1,253 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
-import { SortableTable, Column } from '@/components/SortableTable';
-import { teamCaptainPicks, TeamCaptainPick, teams } from '@/data/leagueData';
+import { TeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Send, Crown, Calendar } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { SEASON_YEAR, REGULAR_SEASON_WEEKS } from '@/hooks/useWeeklyScores';
+import { useToast } from '@/hooks/use-toast';
+import { Lock, Unlock, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type Team = { id: string; name: string };
+type RosterPlayer = { id: string; name: string; position: string; teamId: string };
+type Pick = { id: string; week: number; teamId: string; playerId: string | null; locked: boolean };
+
+const CAPTAIN_MULT = 0.25;
+const shortName = (n: string) => n.replace(/^The /, '').split(' ').slice(-1)[0];
+const median = (a: number[]) => {
+  if (!a.length) return 0;
+  const s = [...a].sort((x, y) => x - y);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+
 const TeamCaptains = () => {
-  const [localPicks, setLocalPicks] = useState<TeamCaptainPick[]>(teamCaptainPicks);
-  const [newPick, setNewPick] = useState({
-    fantasyTeam: '',
-    week: '',
-    captainName: '',
+  const { isAdmin } = useAuth();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [drafts, setDrafts] = useState<Record<string, string>>({}); // `${week}:${teamId}` -> playerId
+  const [saving, setSaving] = useState<number | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ['captains', SEASON_YEAR],
+    queryFn: async () => {
+      const [salRes, pickRes, scoreRes, teamRes] = await Promise.all([
+        supabase.from('player_salaries').select('team_id, player_id, players(full_name, position)').not('team_id', 'is', null),
+        supabase.from('captain_picks').select('id, week, team_id, player_id, locked').eq('season_year', SEASON_YEAR),
+        supabase.from('player_week_scores').select('week, player_id, points').eq('season_year', SEASON_YEAR),
+        supabase.from('teams').select('id, name').order('name'),
+      ]);
+      const roster: RosterPlayer[] = (salRes.data || []).map((r: any) => ({
+        id: r.player_id, teamId: r.team_id, name: r.players?.full_name ?? '?', position: r.players?.position ?? '',
+      }));
+      const withRoster = new Set(roster.map((r) => r.teamId));
+      const teams: Team[] = (teamRes.data || []).filter((t) => withRoster.has(t.id));
+      const picks: Pick[] = (pickRes.data || []).map((p: any) => ({ id: p.id, week: p.week, teamId: p.team_id, playerId: p.player_id, locked: p.locked }));
+      const scores = new Map<string, number>();
+      (scoreRes.data || []).forEach((s: any) => scores.set(`${s.week}:${s.player_id}`, Number(s.points)));
+      return { roster, teams, picks, scores };
+    },
   });
-  const [weekFilter, setWeekFilter] = useState<string>('all');
 
-  // Get unique weeks from picks
-  const weeks = [...new Set(localPicks.map((p) => p.week))].sort((a, b) => b - a);
+  const teams = data?.teams ?? [];
+  const roster = data?.roster ?? [];
+  const picks = data?.picks ?? [];
+  const scores = data?.scores ?? new Map<string, number>();
+  const playerById = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
+  const pickAt = (week: number, teamId: string) => picks.find((p) => p.week === week && p.teamId === teamId);
+  const valueAt = (week: number, teamId: string) => drafts[`${week}:${teamId}`] ?? pickAt(week, teamId)?.playerId ?? '';
+  const weekLocked = (week: number) => teams.length > 0 && teams.every((t) => pickAt(week, t.id)?.locked);
 
-  // Filter picks by week
-  const filteredPicks = weekFilter === 'all'
-    ? localPicks
-    : localPicks.filter((p) => p.week === parseInt(weekFilter));
-
-  // Sort by week (descending) then by team name
-  const sortedPicks = [...filteredPicks].sort((a, b) => {
-    if (a.week !== b.week) return b.week - a.week;
-    return a.fantasyTeam.localeCompare(b.fantasyTeam);
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPick.fantasyTeam && newPick.week && newPick.captainName.trim()) {
-      const pick: TeamCaptainPick = {
-        id: Date.now().toString(),
-        fantasyTeam: newPick.fantasyTeam,
-        week: parseInt(newPick.week),
-        season: 2026,
-        captainName: newPick.captainName,
-        submittedAt: new Date().toISOString().split('T')[0],
-      };
-      setLocalPicks([pick, ...localPicks]);
-      setNewPick({ fantasyTeam: '', week: '', captainName: '' });
+  // Uses by a team in every week except the one being edited
+  const usage = (teamId: string, exceptWeek: number) => {
+    const counts = new Map<string, number>();
+    let qbUsed = false;
+    for (let w = 1; w <= REGULAR_SEASON_WEEKS; w++) {
+      if (w === exceptWeek) continue;
+      const pid = valueAt(w, teamId);
+      if (!pid) continue;
+      counts.set(pid, (counts.get(pid) ?? 0) + 1);
+      if (playerById.get(pid)?.position === 'QB') qbUsed = true;
     }
+    return { counts, qbUsed };
   };
 
-  const columns: Column<TeamCaptainPick>[] = [
-    {
-      key: 'week',
-      label: 'Week',
-      sortable: true,
-      align: 'center',
-      render: (value) => (
-        <span className="inline-flex items-center justify-center w-8 h-8 bg-primary/10 text-primary font-display font-bold text-sm rounded-full">
-          {value as number}
-        </span>
-      ),
-    },
-    {
-      key: 'fantasyTeam',
-      label: 'Fantasy Team',
-      sortable: true,
-      render: (value) => <span className="font-semibold">{value as string}</span>,
-    },
-    {
-      key: 'captainName',
-      label: 'Team Captain',
-      sortable: true,
-      render: (value) => (
-        <div className="flex items-center gap-2">
-          <Crown size={14} className="text-gold" />
-          <span className="font-medium text-accent">{value as string}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'submittedAt',
-      label: 'Submitted',
-      sortable: true,
-      align: 'right',
-      render: (value) => (
-        <span className="text-sm text-muted-foreground">
-          {new Date(value as string).toLocaleDateString()}
-        </span>
-      ),
-    },
-  ];
+  const captainPts = (week: number, pid: string | null | undefined) => {
+    if (!pid) return null;
+    const s = scores.get(`${week}:${pid}`);
+    return s == null ? null : s * CAPTAIN_MULT;
+  };
+
+  // Summary over locked picks with scores
+  const summary = useMemo(() => {
+    const all: number[] = [];
+    const byTeam = new Map<string, number[]>();
+    picks.filter((p) => p.locked).forEach((p) => {
+      const c = captainPts(p.week, p.playerId);
+      if (c == null) return;
+      all.push(c);
+      byTeam.set(p.teamId, [...(byTeam.get(p.teamId) ?? []), c]);
+    });
+    const avg = all.length ? all.reduce((a, b) => a + b, 0) / all.length : 0;
+    const teamAvgs = teams
+      .map((t) => { const a = byTeam.get(t.id) ?? []; return { team: t, avg: a.length ? a.reduce((x, y) => x + y, 0) / a.length : null }; })
+      .filter((t): t is { team: Team; avg: number } => t.avg != null)
+      .sort((a, b) => b.avg - a.avg);
+    return { avg, med: median(all), top: teamAvgs[0], bottom: teamAvgs[teamAvgs.length - 1], n: all.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picks, scores, teams]);
+
+  const submitWeek = async (week: number) => {
+    const missing = teams.filter((t) => !valueAt(week, t.id));
+    if (missing.length) {
+      toast({ title: `Week ${week} incomplete`, description: `Missing: ${missing.map((t) => shortName(t.name)).join(', ')}`, variant: 'destructive' });
+      return;
+    }
+    setSaving(week);
+    const rows = teams.map((t) => ({ season_year: SEASON_YEAR, week, team_id: t.id, player_id: valueAt(week, t.id), locked: true }));
+    const { error } = await supabase.from('captain_picks').upsert(rows, { onConflict: 'season_year,week,team_id' });
+    setSaving(null);
+    if (error) return toast({ title: 'Could not save', description: error.message, variant: 'destructive' });
+    setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => !k.startsWith(`${week}:`))));
+    qc.invalidateQueries({ queryKey: ['captains'] });
+    toast({ title: `Week ${week} locked` });
+  };
+
+  const unlockWeek = async (week: number) => {
+    const { error } = await supabase.from('captain_picks').update({ locked: false }).eq('season_year', SEASON_YEAR).eq('week', week);
+    if (error) return toast({ title: 'Could not unlock', description: error.message, variant: 'destructive' });
+    qc.invalidateQueries({ queryKey: ['captains'] });
+  };
+
+  const weeks = Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => i + 1);
+  const fmt = (n: number) => n.toFixed(2);
 
   return (
     <Layout>
-      <section className="py-12 md:py-16">
+      <section className="py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">TEAM CAPTAINS</h1>
-            <p className="text-muted-foreground">
-              Submit your weekly captain selection and view all captain picks.
-            </p>
-          </motion.div>
-
-          {/* Submission Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-8"
-          >
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
-                <Crown size={20} className="text-gold" />
-                Submit Captain Pick
-              </h2>
-              <form onSubmit={handleSubmit} className="grid sm:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Fantasy Team *</label>
-                  <Select
-                    value={newPick.fantasyTeam}
-                    onValueChange={(value) => setNewPick({ ...newPick, fantasyTeam: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams.map((team) => (
-                        <SelectItem key={team.id} value={team.name}>
-                          {team.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Week *</label>
-                  <Select
-                    value={newPick.week}
-                    onValueChange={(value) => setNewPick({ ...newPick, week: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select week" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 14 }, (_, i) => i + 1).map((week) => (
-                        <SelectItem key={week} value={week.toString()}>
-                          Week {week}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Team Captain *</label>
-                  <Input
-                    value={newPick.captainName}
-                    onChange={(e) => setNewPick({ ...newPick, captainName: e.target.value })}
-                    placeholder="Player name"
-                    required
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button type="submit" variant="accent" className="w-full gap-2">
-                    <Send size={16} />
-                    Submit
-                  </Button>
-                </div>
-              </form>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h1 className="font-display text-3xl md:text-4xl font-bold">TEAM CAPTAINS</h1>
+              <p className="text-sm text-muted-foreground">
+                Captain points = 0.25 × that player's score for the week. A player can captain twice; any QB only once.
+              </p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Week Filter */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="mb-6"
-          >
-            <div className="flex items-center gap-3">
-              <Calendar size={18} className="text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">Filter by week:</span>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setWeekFilter('all')}
-                  className={cn(
-                    'px-3 py-1.5 rounded-md text-sm font-display font-semibold transition-all duration-200',
-                    weekFilter === 'all'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  )}
-                >
-                  All Weeks
-                </button>
-                {weeks.map((week) => (
-                  <button
-                    key={week}
-                    onClick={() => setWeekFilter(week.toString())}
-                    className={cn(
-                      'px-3 py-1.5 rounded-md text-sm font-display font-semibold transition-all duration-200',
-                      weekFilter === week.toString()
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    )}
-                  >
-                    Week {week}
-                  </button>
-                ))}
+          {/* Summary */}
+          <div className="mb-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: 'Avg captain score', value: summary.n ? fmt(summary.avg) : '—' },
+              { label: 'Median captain score', value: summary.n ? fmt(summary.med) : '—' },
+              { label: 'Top team', value: summary.top ? `${shortName(summary.top.team.name)} +${fmt(summary.top.avg - summary.avg)}` : '—', tone: 'text-primary' },
+              { label: 'Bottom team', value: summary.bottom ? `${shortName(summary.bottom.team.name)} ${fmt(summary.bottom.avg - summary.avg)}` : '—', tone: 'text-accent' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-md border border-border bg-card px-3 py-2">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
+                <div className={cn('font-display text-lg font-bold', s.tone)}>{s.value}</div>
               </div>
-            </div>
-          </motion.div>
+            ))}
+          </div>
 
-          {/* Captain Picks Table */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <SortableTable
-              data={sortedPicks}
-              columns={columns}
-              defaultSortKey="week"
-              className="shadow-md"
-            />
-          </motion.div>
-
-          {/* Legend */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground"
-          >
-            <div className="flex items-center gap-2">
-              <Crown size={16} className="text-gold" />
-              <span>Team Captain receives 1.5x points</span>
-            </div>
-          </motion.div>
+          {/* Grid */}
+          <div className="rounded-md border border-border bg-card">
+            <table className="w-full table-fixed text-xs">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="w-16 p-2 text-left font-display">Week</th>
+                  {teams.map((t) => (
+                    <th key={t.id} className="p-1.5" title={t.name}>
+                      <div className="flex flex-col items-center gap-1">
+                        <TeamLogo teamName={t.name} size="lg" />
+                        <span className="truncate w-full text-[10px] font-semibold text-muted-foreground">{shortName(t.name)}</span>
+                      </div>
+                    </th>
+                  ))}
+                  {isAdmin && <th className="w-20 p-2" />}
+                </tr>
+              </thead>
+              <tbody>
+                {weeks.map((w) => {
+                  const locked = weekLocked(w);
+                  return (
+                    <tr key={w} className={cn('border-b border-border last:border-0', locked && 'bg-muted/30')}>
+                      <td className="p-2 font-display font-bold">
+                        <span className="inline-flex items-center gap-1">
+                          {w}
+                          {locked && <Lock size={11} className="text-muted-foreground" />}
+                        </span>
+                      </td>
+                      {teams.map((t) => {
+                        const pid = valueAt(w, t.id);
+                        const player = pid ? playerById.get(pid) : undefined;
+                        const pts = captainPts(w, pid);
+                        const editable = isAdmin && !locked;
+                        if (!editable) {
+                          return (
+                            <td key={t.id} className="p-1.5 align-middle">
+                              {player ? (
+                                <div className="flex items-baseline justify-between gap-1">
+                                  <span className="truncate font-medium" title={player.name}>{player.name}</span>
+                                  <span className="shrink-0 text-[10px] text-muted-foreground">{pts != null ? fmt(pts) : '—'}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </td>
+                          );
+                        }
+                        const { counts, qbUsed } = usage(t.id, w);
+                        const options = roster.filter((p) => p.teamId === t.id).sort((a, b) => a.position.localeCompare(b.position) || a.name.localeCompare(b.name));
+                        return (
+                          <td key={t.id} className="p-1 align-middle">
+                            <div className="flex items-center gap-1">
+                              <select
+                                value={pid}
+                                onChange={(e) => setDrafts((d) => ({ ...d, [`${w}:${t.id}`]: e.target.value }))}
+                                className="h-7 w-full min-w-0 truncate rounded border border-input bg-background px-1 text-xs"
+                              >
+                                <option value="">—</option>
+                                {options.map((p) => {
+                                  const used = counts.get(p.id) ?? 0;
+                                  const blocked = used >= 2 || (p.position === 'QB' && qbUsed);
+                                  return (
+                                    <option key={p.id} value={p.id} disabled={blocked}>
+                                      {p.position} {p.name}{blocked ? ' 🔒' : used === 1 ? ' (1)' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              {pts != null && <span className="shrink-0 text-[10px] text-muted-foreground">{fmt(pts)}</span>}
+                            </div>
+                          </td>
+                        );
+                      })}
+                      {isAdmin && (
+                        <td className="p-1 text-center">
+                          {locked ? (
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => unlockWeek(w)}>
+                              <Unlock size={12} /> Unlock
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="accent" className="h-7 px-2 text-xs" disabled={saving === w} onClick={() => submitWeek(w)}>
+                              Submit
+                            </Button>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Crown size={12} className="text-gold" /> Scores fill in automatically after "Refresh from ESPN." 🔒 = used twice, or a QB was already captained.
+            {!isAdmin && ' Sign in as commissioner to make picks.'}
+          </p>
         </div>
       </section>
     </Layout>

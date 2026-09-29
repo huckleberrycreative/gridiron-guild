@@ -369,6 +369,15 @@ Deno.serve(async (req) => {
           .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, stats_updated_at: nowIso })
           .eq('id', sal.id);
         statsUpdated++;
+        const weekRows = weekly
+          .filter((s) => s.scoringPeriodId)
+          .map((s) => ({ season_year: SEASON, week: s.scoringPeriodId, player_id: pid, points: s.appliedTotal ?? 0 }));
+        if (weekRows.length) {
+          const { error: wErr } = await admin
+            .from('player_week_scores')
+            .upsert(weekRows, { onConflict: 'season_year,week,player_id' });
+          if (wErr) console.error('player_week_scores upsert', wErr);
+        }
       }
     }
 

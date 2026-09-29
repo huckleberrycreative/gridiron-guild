@@ -65,6 +65,54 @@ export type Database = {
         }
         Relationships: []
       }
+      captain_picks: {
+        Row: {
+          created_at: string
+          id: string
+          locked: boolean
+          player_id: string | null
+          season_year: number
+          team_id: string
+          updated_at: string
+          week: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locked?: boolean
+          player_id?: string | null
+          season_year: number
+          team_id: string
+          updated_at?: string
+          week: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locked?: boolean
+          player_id?: string | null
+          season_year?: number
+          team_id?: string
+          updated_at?: string
+          week?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "captain_picks_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "captain_picks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaches: {
         Row: {
           championships: number
@@ -372,6 +420,44 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_week_scores: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          points: number
+          season_year: number
+          updated_at: string
+          week: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          points?: number
+          season_year: number
+          updated_at?: string
+          week: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          points?: number
+          season_year?: number
+          updated_at?: string
+          week?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_week_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
