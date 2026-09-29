@@ -17,6 +17,7 @@ export interface PlayerSalaryWithDetails {
   salary2029?: string;
   actualPpg: number | null;
   gamesPlayed: number;
+  espnLineupSlot: number | null;
   espnProjPpg: number | null;
   injuryStatus: string;
   injuryWeeksOut: number;
@@ -49,6 +50,7 @@ export function usePlayerSalaries() {
         franchiseTag: s.franchise_tag || false,
         actualPpg: s.actual_ppg != null ? Number(s.actual_ppg) : null,
         gamesPlayed: s.games_played ?? 0,
+        espnLineupSlot: (s as any).espn_lineup_slot ?? null,
         espnProjPpg: s.espn_proj_ppg != null ? Number(s.espn_proj_ppg) : null,
         practiceSquad: s.practice_squad || false,
         rookieDraftRound: s.rookie_draft_round || undefined,
