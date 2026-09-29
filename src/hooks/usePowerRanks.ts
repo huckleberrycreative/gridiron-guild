@@ -322,9 +322,7 @@ export function usePowerRankRows() {
     if (!list.length) return [];
     const base = list.map(({ team, roster }) => {
       const available = roster.filter((p) => !p.out);
-      const injured = roster.filter(
-        (p) => p.out || (p.injuryStatus && p.injuryStatus !== 'healthy')
-      );
+      const injured = roster.filter((p) => p.out);
       const starters = bestLineup(available);
       const starterPpw = starters.reduce((s, p) => s + p.ppg, 0);
       const { retained, replacementPpg } = depthResilience(available);
