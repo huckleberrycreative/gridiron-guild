@@ -85,6 +85,7 @@ export type PowerRankRow = {
   starters: Asset[];
   injured: Asset[];
   starterPpw: number;
+  lineupPpw?: number | null;
   retained: number;
   replacementPpg: number;
   benchCount: number;
