@@ -162,7 +162,7 @@ const TradeValueChart = () => {
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
-    { key: 'avgCost', label: 'Avg $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
+    { key: 'avgCost', label: 'Wtd $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
   ];
 
   return (
@@ -186,7 +186,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Cost</p>
-            <p className="text-muted-foreground">Average of 2027–2029 salaries as a share of the positional max (QB $180, RB $257, WR $203, TE $167).</p>
+            <p className="text-muted-foreground">Weighted average of 2027–2029 salaries — 62.5% next year, 25% in 2028, 12.5% in 2029 — as a share of the positional max (QB $180, RB $257, WR $203, TE $167). Natural progression isn't penalized.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
