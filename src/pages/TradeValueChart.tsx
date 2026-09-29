@@ -243,7 +243,7 @@ const TradeValueChart = () => {
       <span className="flex items-center gap-1.5 whitespace-nowrap font-semibold min-w-[12rem]">
         {String(v)}
         {(row as { ft?: boolean }).ft && (
-          <span title="Franchise tag" className="inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-red-700 text-[10px] font-bold leading-none text-white">F</span>
+          <span title="Franchise tag" className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded bg-red-700 text-[10px] font-bold leading-none text-white">F</span>
         )}
       </span>
     ) },
@@ -315,7 +315,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s production above replacement is priced at what the league actually pays per point, then compared to his weighted salary. Value is 65% that cap math, 20% dynasty pedigree (growth only), 15% raw production, minus 12.5% for franchise tags and a penalty for age past positional prime. Every player is scored only against his own group — QBs, RBs, and Pass Catchers (WRs + TEs together) — so the best in each group is near 100.</p>
+            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s production above replacement is priced at what the league actually pays per point, then compared to his weighted salary. Value is 65% that cap math, 20% dynasty pedigree (growth only), 15% raw production, minus 5 points for franchise tags and a penalty for age past positional prime. Every player is scored only against his own group — QBs, RBs, and Pass Catchers (WRs + TEs together) — so the best in each group is near 100.</p>
           </div>
         </div>
 
