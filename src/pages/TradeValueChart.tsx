@@ -169,6 +169,8 @@ const TradeValueChart = () => {
           salary: toNum(p.salary2027) || fallback,
           avgCost,
           ft: p.franchiseTag,
+          ageMult,
+          age: age ?? null,
           teamId: p.teamId,
         };
       });
@@ -207,12 +209,17 @@ const TradeValueChart = () => {
       const surplusScore = Math.max(0, ((r.surplus - sMin) / (sMax - sMin)) * 100);
       const prodScore = Math.min(100, (r.ppg / gTop[r.group]) * 100);
       const score = surplusScore * 0.65 + r.dynScore * 0.2 + prodScore * 0.15;
-      return { ...r, raw: score * (r.ft ? 0.875 : 1) };
+      return { ...r, raw: score * (r.ft ? 0.875 : 1) * r.ageMult };
     });
     const bounds: Record<string, [number, number]> = {};
     GROUPS.forEach((g) => {
       const v = withRaw.filter((r) => r.teamId && r.group === g).map((r) => r.raw);
-      bounds[g] = [v.length ? Math.min(...v) : 0, Math.max(1, ...v)];
+      // Anchor the top of each group to the average of its top 3 so one outlier
+      // doesn't compress everyone else; the #1 still caps at 100.
+      const d = [...v].sort((a, b) => b - a);
+      const top3 = d.slice(0, 3);
+      const anchor = top3.length ? top3.reduce((a, b) => a + b, 0) / top3.length : 1;
+      bounds[g] = [v.length ? Math.min(...v) : 0, Math.max(1, anchor)];
     });
     return withRaw
       .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.group === pos))
@@ -220,7 +227,7 @@ const TradeValueChart = () => {
         const [bottom, top] = bounds[r.group];
         return {
           ...r,
-          value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.8) * 100))),
+          value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.6) * 100))),
           talent: Math.round(r.talent),
           surplus: Math.round(r.surplus),
         };
