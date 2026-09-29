@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { SEASON_YEAR, REGULAR_SEASON_WEEKS } from '@/hooks/useWeeklyScores';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Unlock, Crown } from 'lucide-react';
+import { Lock, Unlock, Crown, Gauge, Scale, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Team = { id: string; name: string };
@@ -81,24 +81,35 @@ const TeamCaptains = () => {
     return s == null ? null : Math.max(0, s) * CAPTAIN_MULT;
   };
 
-  // Summary over locked picks with scores
-  const summary = useMemo(() => {
-    const all: number[] = [];
+  // Season captain average per team, from locked picks that have scores
+  const teamAvgs = useMemo(() => {
     const byTeam = new Map<string, number[]>();
     picks.filter((p) => p.locked).forEach((p) => {
       const c = captainPts(p.week, p.playerId);
       if (c == null) return;
-      all.push(c);
       byTeam.set(p.teamId, [...(byTeam.get(p.teamId) ?? []), c]);
     });
+    const out = new Map<string, { avg: number; n: number }>();
+    byTeam.forEach((a, id) => out.set(id, { avg: a.reduce((x, y) => x + y, 0) / a.length, n: a.length }));
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picks, scores]);
+
+  // League summary over locked picks with scores
+  const summary = useMemo(() => {
+    const all: number[] = [];
+    picks.filter((p) => p.locked).forEach((p) => {
+      const c = captainPts(p.week, p.playerId);
+      if (c != null) all.push(c);
+    });
     const avg = all.length ? all.reduce((a, b) => a + b, 0) / all.length : 0;
-    const teamAvgs = teams
-      .map((t) => { const a = byTeam.get(t.id) ?? []; return { team: t, avg: a.length ? a.reduce((x, y) => x + y, 0) / a.length : null }; })
+    const ranked = teams
+      .map((t) => ({ team: t, avg: teamAvgs.get(t.id)?.avg }))
       .filter((t): t is { team: Team; avg: number } => t.avg != null)
       .sort((a, b) => b.avg - a.avg);
-    return { avg, med: median(all), top: teamAvgs[0], bottom: teamAvgs[teamAvgs.length - 1], n: all.length };
+    return { avg, med: median(all), top: ranked[0], bottom: ranked[ranked.length - 1], n: all.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [picks, scores, teams]);
+  }, [picks, scores, teams, teamAvgs]);
 
   const submitWeek = async (week: number) => {
     const missing = teams.filter((t) => !valueAt(week, t.id));
