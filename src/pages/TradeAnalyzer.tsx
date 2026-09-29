@@ -100,6 +100,20 @@ const capEfficiency = (roster: Asset[]) => {
   return production / Math.max(50, spend / 100);
 };
 
+// Handcuffs: backup RB -> the NFL starter he'd replace. A handcuff is worth far
+// more to the fantasy team that rosters that starter (insurance) than elsewhere.
+const HANDCUFFS: Record<string, string> = {
+  'emmett johnson': 'kenneth walker',
+};
+const nm = (x: string) => x.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+(jr|sr|ii|iii|iv)$/, '').trim();
+const handcuffStarter = (p: { name: string; position: string }, roster: { name: string }[]) => {
+  if (p.position !== 'RB') return null;
+  const target = HANDCUFFS[nm(p.name)];
+  if (!target) return null;
+  return roster.find((r) => nm(r.name) === target) ?? null;
+};
+const HANDCUFF_BONUS = 20;
+
 const TradeAnalyzer = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
@@ -283,13 +297,19 @@ const TradeAnalyzer = () => {
       }
       // Trade Value Chart: best asset counts fully, extras count less, so
       // three nickels don't automatically beat a quarter.
-      const pkg = (xs: Asset[]) =>
+      const cuffVal = (p: Asset, owner: Asset[]) =>
+        handcuffStarter(p, owner) ? Math.min(100, valueOf(p.id) + HANDCUFF_BONUS) : valueOf(p.id);
+      const pkg = (xs: Asset[], owner: Asset[]) =>
         xs
-          .map((p) => valueOf(p.id))
+          .map((p) => cuffVal(p, owner))
           .sort((x, y) => y - x)
           .reduce((s, v, i) => s + v * Math.pow(0.6, i), 0);
-      const valueIn = pkg(gained);
-      const valueOut = pkg([...lost, ...drops]);
+      const valueIn = pkg(gained, after);
+      const valueOut = pkg([...lost, ...drops], before);
+      const handcuffs = [
+        ...gained.map((p) => ({ p, starter: handcuffStarter(p, after), incoming: true })),
+        ...[...lost, ...drops].map((p) => ({ p, starter: handcuffStarter(p, before), incoming: false })),
+      ].filter((x): x is { p: Asset; starter: Asset; incoming: boolean } => !!x.starter);
       const valueScore = ((valueIn - valueOut) / Math.max(valueIn, valueOut, 1)) * 100;
       // Headline grade is a % change, same scale as the Power Ranks-based grade.
       // Trade value gap maps onto that scale (a 100% value gap ≈ 15%).
@@ -344,6 +364,7 @@ const TradeAnalyzer = () => {
         score,
         starterIn,
         eliteOut,
+        handcuffs,
       };
     };
 
@@ -691,6 +712,14 @@ const TradeAnalyzer = () => {
               `Hold off — there's a version of this worth doing, but it isn't this one.`,
             ], 37);
 
+    const cuffIn = r.handcuffs.find((c) => c.incoming);
+    const cuffOut = r.handcuffs.find((c) => !c.incoming);
+    if (cuffIn) {
+      bull = `${cuffIn.p.name} is premium insurance here — if ${cuffIn.starter.name} goes down, you keep his workload in-house instead of watching it walk to a rival. ` + bull;
+    }
+    if (cuffOut) {
+      bear = `${cuffOut.p.name} is worth more to you than anyone else — he's the insurance policy on ${cuffOut.starter.name}, and one bad ankle turns this into a disaster. ` + bear;
+    }
     return { bull, bear, base };
   };
 
@@ -786,6 +815,7 @@ const TradeAnalyzer = () => {
                   <li><b className="text-foreground">Half Trade Value</b> — the number next to each name, from the Trade Value Chart. Your best player in the deal counts fully; extras count less.</li>
                   <li><b className="text-foreground">Half Power Rank impact</b> — does your starting lineup actually get better, this year and long term, counting injuries, depth and salary.</li>
                   <li>Taking back more players than you send? Your lowest-value players get cut to make room, and they count as value you give up.</li>
+                  <li><b className="text-foreground">Handcuffs</b> — a backup RB is worth +20 Trade Value to the team that rosters his NFL starter (e.g. Emmett Johnson behind Kenneth Walker for the Fanatics), and only his normal value elsewhere.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
                   <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
                 </ul>
