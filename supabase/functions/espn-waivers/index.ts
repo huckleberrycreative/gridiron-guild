@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
           injuryStatus: INJURY_MAP[p.injuryStatus ?? 'ACTIVE'] ?? 'healthy',
           percentOwned: p.ownership?.percentOwned ?? 0,
           status: e.status,
-          projPpg: seasonProj?.appliedTotal ? seasonProj.appliedTotal / 17 : null,
+          projPpg: seasonProj?.appliedTotal ? seasonProj.appliedTotal / Math.max(1, 18 - week) : null,
           weekProj: weekProj?.appliedTotal ?? null,
           avgPpg: seasonAct?.appliedAverage ?? (games ? (seasonAct?.appliedTotal ?? 0) / games : null),
           games,
