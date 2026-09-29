@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
+import { useTradeValues } from '@/hooks/useTradeValues';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                          */
@@ -230,6 +231,7 @@ export function usePowerRankRows() {
   const { data: standings = [], isLoading: standingsLoading } = useActiveSeasonStandings();
   const [proj, setProj] = useState<Record<string, number>>({});
   const [projLoaded, setProjLoaded] = useState(false);
+  const { byId: tvById } = useTradeValues();
 
   useEffect(() => {
     (async () => {
@@ -300,7 +302,9 @@ export function usePowerRankRows() {
           const status = s.injuryStatus ?? 'healthy';
           const weeksOut = s.injuryWeeksOut ?? 0;
           const isOut = OUT_STATUSES.includes(status) && weeksOut > 0;
-          const raw = projected ?? salaryImpliedPpg(s.position, salary);
+          // Blended PPG from the Trade Value Chart (preseason projection + real 2026 output).
+          const blended = tvById.get(s.id)?.ppg;
+          const raw = blended && blended > 0 ? blended : projected ?? salaryImpliedPpg(s.position, salary);
           return {
             id: s.id,
             name,
@@ -315,7 +319,7 @@ export function usePowerRankRows() {
       return { team, roster };
       }),
     };
-  }, [salaries, standings, proj]);
+  }, [salaries, standings, proj, tvById]);
 
   const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number) => {
     if (!list.length) return [];
