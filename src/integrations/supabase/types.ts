@@ -286,9 +286,12 @@ export type Database = {
       player_salaries: {
         Row: {
           acquired_via_waivers: boolean
+          actual_ppg: number | null
           contract_year: string | null
           created_at: string
+          espn_proj_ppg: number | null
           franchise_tag: boolean
+          games_played: number
           id: string
           injury_note: string | null
           injury_status: string
@@ -302,14 +305,18 @@ export type Database = {
           salary_2027: string | null
           salary_2028: string | null
           salary_2029: string | null
+          stats_updated_at: string | null
           team_id: string | null
           updated_at: string
         }
         Insert: {
           acquired_via_waivers?: boolean
+          actual_ppg?: number | null
           contract_year?: string | null
           created_at?: string
+          espn_proj_ppg?: number | null
           franchise_tag?: boolean
+          games_played?: number
           id?: string
           injury_note?: string | null
           injury_status?: string
@@ -323,14 +330,18 @@ export type Database = {
           salary_2027?: string | null
           salary_2028?: string | null
           salary_2029?: string | null
+          stats_updated_at?: string | null
           team_id?: string | null
           updated_at?: string
         }
         Update: {
           acquired_via_waivers?: boolean
+          actual_ppg?: number | null
           contract_year?: string | null
           created_at?: string
+          espn_proj_ppg?: number | null
           franchise_tag?: boolean
+          games_played?: number
           id?: string
           injury_note?: string | null
           injury_status?: string
@@ -344,6 +355,7 @@ export type Database = {
           salary_2027?: string | null
           salary_2028?: string | null
           salary_2029?: string | null
+          stats_updated_at?: string | null
           team_id?: string | null
           updated_at?: string
         }
