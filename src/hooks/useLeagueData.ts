@@ -11,6 +11,7 @@ export interface TeamWithStandings {
   pointsFor: number;
   wins: number;
   losses: number;
+  ties: number;
   avgPPW: number;
 }
 
@@ -97,7 +98,7 @@ export function useActiveSeasonStandings() {
 
         const totals = new Map<
           string,
-          { points: number; pf: number; wins: number; losses: number; weeks: number }
+          { points: number; pf: number; wins: number; losses: number; ties: number; weeks: number }
         >();
 
         Array.from(byWeek.entries())
@@ -111,11 +112,13 @@ export function useActiveSeasonStandings() {
                   ? LEGACY_WEEK1_FINISH_POINTS[index] ?? 1
                   : pointsForFinish(index, fieldSize);
               const cur =
-                totals.get(row.teamId) || { points: 0, pf: 0, wins: 0, losses: 0, weeks: 0 };
+                totals.get(row.teamId) || { points: 0, pf: 0, wins: 0, losses: 0, ties: 0, weeks: 0 };
               cur.points += pts;
               cur.pf += row.score;
               cur.weeks += 1;
-              if (index < Math.ceil(fieldSize / 2)) cur.wins += 1;
+              // 10+ pts = W, exactly 8 = TIE, under 8 = L
+              if (pts >= 10) cur.wins += 1;
+              else if (pts === 8) cur.ties += 1;
               else cur.losses += 1;
               totals.set(row.teamId, cur);
             });
@@ -131,6 +134,7 @@ export function useActiveSeasonStandings() {
             pointsFor: t.pf,
             wins: t.wins,
             losses: t.losses,
+            ties: t.ties,
             avgPPW: t.weeks > 0 ? t.pf / t.weeks : 0,
           }))
           .sort((a, b) => b.totalPoints - a.totalPoints || b.pointsFor - a.pointsFor)
@@ -151,6 +155,7 @@ export function useActiveSeasonStandings() {
           pointsFor: s.total_points_for || 0,
           wins: s.wins || 0,
           losses: s.losses || 0,
+          ties: 0,
           avgPPW: weeksPlayed > 0 ? (s.total_points_for || 0) / weeksPlayed : 0,
         };
       });
@@ -189,6 +194,7 @@ export function useSeasonStandings(seasonId: string | undefined) {
           pointsFor: s.total_points_for || 0,
           wins: s.wins || 0,
           losses: s.losses || 0,
+          ties: 0,
           // Compute PPW live: total points divided by weeks played
           avgPPW: weeksPlayed > 0 ? (s.total_points_for || 0) / weeksPlayed : 0,
         };
