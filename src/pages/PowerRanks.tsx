@@ -202,7 +202,7 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
         case 'grade':
           return e.r.score;
         case 'starterPpw':
-          return e.r.starterPpw;
+          return e.r.team.avgPPW;
         case 'starterTv':
           return e.starterTv;
         case 'benchTv':
@@ -318,7 +318,7 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
                 <td className="px-2 py-3 text-center">
                   <span className="font-serif text-2xl font-bold text-[#bf2121]">{r.score}</span>
                 </td>
-                <td className={td}>{r.starterPpw.toFixed(1)}</td>
+                <td className={td}>{r.team.avgPPW.toFixed(1)}</td>
                 {!compact && <td className={td}>{fmt(e.starterTv)}</td>}
                 {!compact && <td className={td}>{fmt(e.benchTv)}</td>}
                 {!compact && <td className={td}>{fmt(e.rosterTv)}</td>}
