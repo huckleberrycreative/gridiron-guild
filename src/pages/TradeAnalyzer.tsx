@@ -471,7 +471,7 @@ const TradeAnalyzer = () => {
     const lineupDown = r.winNowPpw < -0.3;
 
     // Deterministic variety: same trade reads the same, different trades read differently.
-    const seedStr = `${r.team.id}|${r.gained.map((p) => p.id).sort().join(',')}|${r.lost.map((p) => p.id).sort().join(',')}`;
+    const seedStr = `${s.standRank}-${s.prRank}-${Math.round(s.points)}|${r.gained.map((p) => p.id).sort().join(',')}|${r.lost.map((p) => p.id).sort().join(',')}`;
     let h = 0;
     for (let i = 0; i < seedStr.length; i++) h = (h * 31 + seedStr.charCodeAt(i)) >>> 0;
     const pick = (variants: string[], salt: number) => variants[(h + salt * 7919) % variants.length];
