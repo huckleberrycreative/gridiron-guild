@@ -27,8 +27,10 @@ const loadRanks = async (url: string, nameCol: number, posCol: number) => {
 };
 
 // 1st overall ≈ 100, ~400th ≈ 0, log-scaled so the elite tier separates
+// Power curve: elite ranks still separate, but a mid-tier starter (e.g. #84 overall)
+// scores ~64 instead of being crushed to ~27 by a log curve.
 const rankScore = (rank: number, depth = 400) =>
-  rank > 0 ? Math.max(0, 100 * (1 - Math.log(rank) / Math.log(depth))) : 0;
+  rank > 0 ? Math.max(0, 100 * (1 - Math.pow((rank - 1) / (depth - 1), 0.6))) : 0;
 
 type Row = {
   id: string;
