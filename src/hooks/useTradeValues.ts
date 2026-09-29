@@ -227,7 +227,6 @@ export function useTradeValues() {
           surplus: Math.round(r.surplus),
         };
       })
-      .sort((a, b) => b.value - a.value)
       .sort((a, b) => b.value - a.value);
   }, [players, ranks]);
 
