@@ -123,7 +123,11 @@ const TeamCaptains = () => {
   };
 
   const weeks = Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => i + 1);
-  const fmt = (n: number) => n.toFixed(2);
+  const fmt = (n: number) => (Math.abs(n) < 0.05 ? 0 : n).toFixed(1);
+  const weekAvg = (week: number) => {
+    const pts = teams.map((t) => captainPts(week, valueAt(week, t.id))).filter((p): p is number => p != null);
+    return pts.length ? pts.reduce((a, b) => a + b, 0) / pts.length : null;
+  };
 
   return (
     <Layout>
@@ -180,6 +184,7 @@ const TeamCaptains = () => {
                           {w}
                           {locked && <Lock size={11} className="text-muted-foreground" />}
                         </span>
+                        {(() => { const a = weekAvg(w); return a != null ? <span className="block text-[10px] font-semibold text-win">avg {fmt(a)}</span> : null; })()}
                       </td>
                       {teams.map((t) => {
                         const pid = valueAt(w, t.id);
