@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { SEASON_YEAR, REGULAR_SEASON_WEEKS } from '@/hooks/useWeeklyScores';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Unlock, Crown } from 'lucide-react';
+import { Lock, Unlock, Crown, Gauge, Scale, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Team = { id: string; name: string };
@@ -81,24 +81,35 @@ const TeamCaptains = () => {
     return s == null ? null : Math.max(0, s) * CAPTAIN_MULT;
   };
 
-  // Summary over locked picks with scores
-  const summary = useMemo(() => {
-    const all: number[] = [];
+  // Season captain average per team, from locked picks that have scores
+  const teamAvgs = useMemo(() => {
     const byTeam = new Map<string, number[]>();
     picks.filter((p) => p.locked).forEach((p) => {
       const c = captainPts(p.week, p.playerId);
       if (c == null) return;
-      all.push(c);
       byTeam.set(p.teamId, [...(byTeam.get(p.teamId) ?? []), c]);
     });
+    const out = new Map<string, { avg: number; n: number }>();
+    byTeam.forEach((a, id) => out.set(id, { avg: a.reduce((x, y) => x + y, 0) / a.length, n: a.length }));
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picks, scores]);
+
+  // League summary over locked picks with scores
+  const summary = useMemo(() => {
+    const all: number[] = [];
+    picks.filter((p) => p.locked).forEach((p) => {
+      const c = captainPts(p.week, p.playerId);
+      if (c != null) all.push(c);
+    });
     const avg = all.length ? all.reduce((a, b) => a + b, 0) / all.length : 0;
-    const teamAvgs = teams
-      .map((t) => { const a = byTeam.get(t.id) ?? []; return { team: t, avg: a.length ? a.reduce((x, y) => x + y, 0) / a.length : null }; })
+    const ranked = teams
+      .map((t) => ({ team: t, avg: teamAvgs.get(t.id)?.avg }))
       .filter((t): t is { team: Team; avg: number } => t.avg != null)
       .sort((a, b) => b.avg - a.avg);
-    return { avg, med: median(all), top: teamAvgs[0], bottom: teamAvgs[teamAvgs.length - 1], n: all.length };
+    return { avg, med: median(all), top: ranked[0], bottom: ranked[ranked.length - 1], n: all.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [picks, scores, teams]);
+  }, [picks, scores, teams, teamAvgs]);
 
   const submitWeek = async (week: number) => {
     const missing = teams.filter((t) => !valueAt(week, t.id));
@@ -144,18 +155,30 @@ const TeamCaptains = () => {
           </div>
 
           {/* Summary */}
-          <div className="mb-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              { label: 'Avg captain score', value: summary.n ? summary.avg.toFixed(1) : '—' },
-              { label: 'Median captain score', value: summary.n ? summary.med.toFixed(1) : '—' },
-              { label: 'Top team', value: summary.top ? `${shortName(summary.top.team.name)} +${(summary.top.avg - summary.avg).toFixed(1)}` : '—', tone: 'text-primary' },
-              { label: 'Bottom team', value: summary.bottom ? `${shortName(summary.bottom.team.name)} ${(summary.bottom.avg - summary.avg).toFixed(1)}` : '—', tone: 'text-accent' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-md border border-border bg-card px-3 py-2">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
-                <div className={cn('font-display text-lg font-bold', s.tone)}>{s.value}</div>
-              </div>
-            ))}
+              { icon: Gauge, label: 'League average', value: summary.n ? fmt(summary.avg) : '—', sub: summary.n ? `across ${summary.n} captains` : 'no scores yet', tile: 'bg-primary/10 text-primary', bar: 'bg-primary' },
+              { icon: Scale, label: 'Median captain', value: summary.n ? fmt(summary.med) : '—', sub: 'half above, half below', tile: 'bg-gold/15 text-gold', bar: 'bg-gold' },
+              { icon: TrendingUp, label: 'Top team', value: summary.top ? shortName(summary.top.team.name) : '—', sub: summary.top ? `+${fmt(summary.top.avg - summary.avg)} vs average` : '—', tile: 'bg-win/10 text-win', bar: 'bg-win' },
+              { icon: TrendingDown, label: 'Bottom team', value: summary.bottom ? shortName(summary.bottom.team.name) : '—', sub: summary.bottom ? `${fmt(summary.bottom.avg - summary.avg)} vs average` : '—', tile: 'bg-loss/10 text-loss', bar: 'bg-loss' },
+            ].map((c) => {
+              const Icon = c.icon;
+              return (
+                <div key={c.label} className="relative overflow-hidden rounded-lg border border-border bg-card shadow-md transition-shadow hover:shadow-lg">
+                  <span className={cn('absolute inset-x-0 top-0 h-[3px]', c.bar)} />
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-md', c.tile)}>
+                      <Icon size={18} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{c.label}</div>
+                      <div className="truncate font-display text-xl font-bold leading-snug">{c.value}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">{c.sub}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Grid */}
@@ -163,15 +186,19 @@ const TeamCaptains = () => {
             <table className="w-full table-fixed text-xs">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
-                  <th className="w-16 p-2 text-left font-display">Week</th>
-                  {teams.map((t) => (
-                    <th key={t.id} className="p-1.5" title={t.name}>
-                      <div className="flex flex-col items-center gap-1">
-                        <TeamLogo teamName={t.name} size="lg" />
-                        <span className="truncate w-full text-[10px] font-semibold text-muted-foreground">{shortName(t.name)}</span>
-                      </div>
-                    </th>
-                  ))}
+                  <th className="w-16 p-2 text-center font-display">Week</th>
+                  {teams.map((t) => {
+                    const ta = teamAvgs.get(t.id);
+                    return (
+                      <th key={t.id} className="p-1.5 text-center align-bottom" title={t.name}>
+                        <div className="flex flex-col items-center gap-1">
+                          <TeamLogo teamName={t.name} size="lg" />
+                          <span className="w-full truncate text-[10px] font-semibold text-muted-foreground">{shortName(t.name)}</span>
+                          <span className="text-[10px] font-semibold text-win">avg {ta ? fmt(ta.avg) : '—'}</span>
+                        </div>
+                      </th>
+                    );
+                  })}
                   {isAdmin && <th className="w-20 p-2" />}
                 </tr>
               </thead>
@@ -180,7 +207,7 @@ const TeamCaptains = () => {
                   const locked = weekLocked(w);
                   return (
                     <tr key={w} className={cn('border-b border-border last:border-0', locked && 'bg-muted/30')}>
-                      <td className="p-2 font-display font-bold">
+                      <td className="p-2 text-center font-display font-bold">
                         <span className="inline-flex items-center gap-1">
                           {w}
                           {locked && <Lock size={11} className="text-muted-foreground" />}
@@ -197,10 +224,10 @@ const TeamCaptains = () => {
                            const timesUsed = pid ? (counts.get(pid) ?? 0) + 1 : 0;
                            const playerLocked = !!player && (timesUsed >= 2 || player.position === 'QB');
                            return (
-                             <td key={t.id} className="p-1.5 align-middle">
-                               {player ? (
-                                 <div className="flex items-baseline justify-between gap-1">
-                                   <span className={cn('truncate font-medium', playerLocked && 'text-red-600')} title={playerLocked ? `${player.name} — locked, can't be used again` : player.name}>{player.name}</span>
+                              <td key={t.id} className="p-1.5 text-center align-middle">
+                                {player ? (
+                                  <div className="flex items-baseline justify-center gap-1">
+                                    <span className={cn('min-w-0 truncate font-medium', playerLocked && 'text-red-600')} title={playerLocked ? `${player.name} — locked, can't be used again` : player.name}>{player.name}</span>
                                   <span className="shrink-0 text-[10px] text-muted-foreground">{pts != null ? fmt(pts) : '—'}</span>
                                 </div>
                               ) : (
@@ -212,12 +239,12 @@ const TeamCaptains = () => {
                         const { counts, qbUsed } = usage(t.id, w);
                         const options = roster.filter((p) => p.teamId === t.id).sort((a, b) => a.position.localeCompare(b.position) || a.name.localeCompare(b.name));
                         return (
-                          <td key={t.id} className="p-1 align-middle">
+                          <td key={t.id} className="p-1 text-center align-middle">
                             <div className="flex items-center gap-1">
                               <select
                                 value={pid}
                                 onChange={(e) => setDrafts((d) => ({ ...d, [`${w}:${t.id}`]: e.target.value }))}
-                                className="h-7 w-full min-w-0 truncate rounded border border-input bg-background px-1 text-xs"
+                                className="h-7 w-full min-w-0 truncate rounded border border-input bg-background px-1 text-center text-xs"
                               >
                                 <option value="">—</option>
                                 {options.map((p) => {
