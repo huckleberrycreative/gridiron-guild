@@ -270,8 +270,10 @@ const TradeAnalyzer = () => {
       const valueIn = pkg(gained);
       const valueOut = pkg(lost);
       const valueScore = ((valueIn - valueOut) / Math.max(valueIn, valueOut, 1)) * 100;
-      const fitScore = Math.max(-100, Math.min(100, overall * 5));
-      const score = Math.round(valueScore * 0.6 + fitScore * 0.4);
+      // Headline grade is a % change, same scale as the Power Ranks-based grade.
+      // Trade value gap maps onto that scale (a 100% value gap ≈ 15%).
+      const fitScore = overall;
+      const score = Math.round((overall * 0.5 + valueScore * 0.15 * 0.5) * 10) / 10;
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
         lost.reduce((s, p) => s + p.healthyPpg, 0);
@@ -424,9 +426,13 @@ const TradeAnalyzer = () => {
           : r.salaryDelta > 0
             ? `You take on $${r.salaryDelta} more in salary, which squeezes your cap.`
             : `The upside is modest — you're not changing your team much.`;
-    const base = r.score >= 0
-      ? `Do it — this deal nets you ${r.score >= 25 ? 'a clear' : 'a small'} win.`
-      : `Pass — ${r.score <= -25 ? 'you lose too much' : 'it slightly hurts you'} unless you can get a little more back.`;
+    const base = Math.abs(r.score) <= 2
+      ? r.score >= 0
+        ? `Do it — it's a fair deal that tilts slightly your way.`
+        : `Fair deal, slightly against you — fine to do if it fills a need.`
+      : r.score > 0
+        ? `Do it — this deal ${r.score > 5 ? 'is lopsided in your favor' : 'clearly helps you'}.`
+        : `Pass — ${r.score < -5 ? 'this is lopsided against you' : 'you give up too much'} unless you can get more back.`;
     return { bull, bear, base };
   };
 
@@ -442,7 +448,12 @@ const TradeAnalyzer = () => {
           </div>
           <div className={cn('flex items-center gap-1 shrink-0', up ? 'text-emerald-600' : 'text-destructive')}>
             {up ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-            <span className="font-mono text-3xl font-extrabold tabular-nums">{up ? '+' : ''}{r.score}</span>
+            <div className="text-right">
+              <span className="font-mono text-3xl font-extrabold tabular-nums">{up ? '+' : ''}{r.score.toFixed(1)}%</span>
+              <div className="text-[10px] font-bold uppercase tracking-wider">
+                {Math.abs(r.score) <= 2 ? 'Fair' : Math.abs(r.score) <= 5 ? (up ? 'Favors you' : 'Against you') : 'Lopsided'}
+              </div>
+            </div>
           </div>
         </div>
         <ul className="space-y-1.5 text-sm mb-3">
@@ -508,10 +519,10 @@ const TradeAnalyzer = () => {
               <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
                 <h2 className="font-display uppercase tracking-wider text-xs font-bold text-foreground mb-2">How the grade works</h2>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li><b className="text-foreground">60% Trade Value</b> — the number next to each name, from the Trade Value Chart. Your best player in the deal counts fully; extras count less.</li>
-                  <li><b className="text-foreground">40% Roster fit</b> — does your starting lineup actually get better, this year and long term, counting injuries, depth and salary.</li>
+                  <li><b className="text-foreground">Half Trade Value</b> — the number next to each name, from the Trade Value Chart. Your best player in the deal counts fully; extras count less.</li>
+                  <li><b className="text-foreground">Half Power Rank impact</b> — does your starting lineup actually get better, this year and long term, counting injuries, depth and salary.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
-                  <li>The grade runs from −100 to +100. Positive means do it.</li>
+                  <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
                 </ul>
               </div>
             </>
