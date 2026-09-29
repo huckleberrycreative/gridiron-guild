@@ -90,7 +90,7 @@ const Standings = () => {
     },
     {
       key: 'wins',
-      label: 'W-L',
+      label: 'W-L-T',
       sortable: true,
       align: 'center',
       render: (_, row) => (
@@ -98,6 +98,7 @@ const Standings = () => {
           <span className="text-win">{row.wins}</span>
           <span className="text-muted-foreground">-</span>
           <span className="text-loss">{row.losses}</span>
+          <span className="text-muted-foreground">-{row.ties}</span>
         </span>
       ),
     },

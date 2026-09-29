@@ -78,6 +78,7 @@ export default function WeeklyScores() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weekly-scores-admin', SEASON_YEAR] });
       queryClient.invalidateQueries({ queryKey: ['weekly-scores', SEASON_YEAR] });
+      queryClient.invalidateQueries({ queryKey: ['active-season-standings'] });
     },
     onError: (e: any) =>
       toast({ title: 'Error', description: e.message, variant: 'destructive' }),

@@ -346,7 +346,7 @@ const StandingsRow = ({ rank, team, variant }: StandingsRowProps) => {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{team.name}</p>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="font-mono">{team.wins}-{team.losses}</span>
+          <span className="font-mono">{team.wins}-{team.losses}-{team.ties}</span>
           <span>•</span>
           <span className="font-mono">{team.avgPPW.toFixed(1)} PPW</span>
         </div>
