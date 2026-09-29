@@ -95,17 +95,25 @@ const TradeValueChart = () => {
         const dyn = ranks.dyn.get(key);
         const rook = ranks.rook.get(key);
         const ros = ranks.ros.get(key);
-        // PPG anchored to real output: blend preseason projection (FantasyPros + ESPN)
-        // with actual 2026 PPG; actual weight grows each game (faster for rookies).
+        // PPG anchored to the projection (FantasyPros + ESPN), blended with actual
+        // 2026 output asymmetrically: players beating their projection get credit
+        // quickly, while slow starts are forgiven early — a proven stud having a
+        // quiet September stays near his projection, but a young riser outplaying
+        // his draft stock isn't punished. Both sides converge to real output as
+        // the season goes on.
         const pre = ranks.proj.get(key);
         const espn = p.espnProjPpg && p.espnProjPpg > 0 ? p.espnProjPpg : undefined;
         const base = pre && espn ? (pre + espn) / 2 : pre ?? espn ?? 0;
         const g = p.gamesPlayed || 0;
         const hasActual = p.actualPpg != null && g > 0;
-        const wActual = hasActual ? g / (g + (rook ? 2 : 3)) : 0;
-        const ppg = hasActual ? base * (1 - wActual) + (p.actualPpg as number) * wActual : base;
-        // Rookies outperforming their projection get a future-growth bump
-        const rookieBump = rook && hasActual ? Math.max(0, Math.min(15, ((p.actualPpg as number) - base) * 3 * wActual * 2)) : 0;
+        const actual = hasActual ? (p.actualPpg as number) : base;
+        const wUp = g / (g + (rook ? 2 : 3)); // hot starts count fast (fastest for rookies)
+        const wDown = g / (g + 8); // slow starts are forgiven early
+        const ppg = hasActual
+          ? base + Math.max(0, actual - base) * wUp - Math.max(0, base - actual) * wDown
+          : base;
+        // Young players (rookies) outplaying their projection also get a future-growth bump
+        const rookieBump = rook && hasActual ? Math.max(0, Math.min(15, (actual - base) * 3 * wUp * 2)) : 0;
 
         // Future value: dynasty rank; unlisted rookies approximated from rookie rank
         const dynastyRank = dyn?.overall ?? (rook ? 20 + rook.overall * 4 : null);
@@ -140,7 +148,7 @@ const TradeValueChart = () => {
         // Contract multiplier: a near-min deal is worth ~3x a max deal at equal talent.
         // Steep curve so $100 of savings outweighs a small PPG gap.
         // Cheapness only amplifies real talent — a $1 depth piece isn't a star.
-        const contractMult = 0.7 + Math.pow(1 - costShare, 1.2) * Math.min(1, talent / 60) * 0.8;
+        const contractMult = 0.7 + Math.pow(1 - costShare, 1.2) * Math.pow(Math.min(1, talent / 60), 2) * 0.8;
         // Franchise-tagged: salary is artificially deflated and can't be traded without penalty
         const ftMult = p.franchiseTag ? 0.875 : 1;
         const raw = talent * contractMult * ftMult;
@@ -221,7 +229,7 @@ const TradeValueChart = () => {
         <div className="mb-6 grid gap-4 md:grid-cols-3 text-sm">
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Talent (0–100)</p>
-            <p className="text-muted-foreground">45% dynasty ranking (future), 25% rest-of-season ranking + projected PPG (now), 30% value over replacement — how far above the league average at his position he scores, as a percentage.</p>
+            <p className="text-muted-foreground">45% dynasty ranking (future), 25% rest-of-season ranking + projected PPG (now), 30% value over replacement. PPG is anchored to the preseason projection: hot starts get credit quickly (especially rookies), while slow starts from proven players are forgiven early. Real output takes over as the season progresses.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Cost</p>
