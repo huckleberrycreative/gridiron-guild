@@ -430,7 +430,7 @@ const TradeAnalyzer = () => {
   type Result = NonNullable<typeof analysis>['A'];
   const names = (xs: Asset[]) => (xs.length ? xs.map((p) => p.name).join(', ') : 'nothing');
 
-  const ord = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][n % 100 >> 3 ^ 1 && n % 10 < 4 ? n % 10 : 0] ?? 'th'}`;
+  const ord = (n: number) => { const t = n % 100; const suf = t >= 11 && t <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'; return `${n}${suf}`; };
 
   const cases = (r: Result) => {
     const bestIn = [...r.gained].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
