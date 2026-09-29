@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
-import { useTradeValues } from '@/hooks/useTradeValues';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                          */
@@ -231,7 +230,6 @@ export function usePowerRankRows() {
   const { data: standings = [], isLoading: standingsLoading } = useActiveSeasonStandings();
   const [proj, setProj] = useState<Record<string, number>>({});
   const [projLoaded, setProjLoaded] = useState(false);
-  const { byId: tvById } = useTradeValues();
 
   useEffect(() => {
     (async () => {
@@ -302,9 +300,7 @@ export function usePowerRankRows() {
           const status = s.injuryStatus ?? 'healthy';
           const weeksOut = s.injuryWeeksOut ?? 0;
           const isOut = OUT_STATUSES.includes(status) && weeksOut > 0;
-          // Blended PPG from the Trade Value Chart (preseason projection + real 2026 output).
-          const blended = tvById.get(s.id)?.ppg;
-          const raw = blended && blended > 0 ? blended : projected ?? salaryImpliedPpg(s.position, salary);
+          const raw = projected ?? salaryImpliedPpg(s.position, salary);
           return {
             id: s.id,
             name,
@@ -319,7 +315,7 @@ export function usePowerRankRows() {
       return { team, roster };
       }),
     };
-  }, [salaries, standings, proj, tvById]);
+  }, [salaries, standings, proj]);
 
   const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number) => {
     if (!list.length) return [];
@@ -405,7 +401,20 @@ export function usePowerRankRows() {
       .sort((a, b) => b.score - a.score || b.starterPpw - a.starterPpw);
   }, []);
 
-  const rows = useMemo(() => compute(input.list, input.weeksPlayed), [compute, input]);
+  // Current ESPN starting lineup's season average (slots 20 = bench, 21 = IR).
+  const lineupPpw = useMemo(() => {
+    const m: Record<string, number> = {};
+    salaries.forEach((s) => {
+      if (!s.teamId || s.espnLineupSlot == null || s.espnLineupSlot === 20 || s.espnLineupSlot === 21) return;
+      m[s.teamId] = (m[s.teamId] ?? 0) + (s.actualPpg ?? 0);
+    });
+    return m;
+  }, [salaries]);
+
+  const rows = useMemo(
+    () => compute(input.list, input.weeksPlayed).map((r) => ({ ...r, lineupPpw: lineupPpw[r.team.id] ?? null })),
+    [compute, input, lineupPpw]
+  );
 
   /** Re-run Power Ranks with one team's roster changed (drop ids, add assets). */
   const whatIf = useCallback(
