@@ -106,35 +106,182 @@ const PowerRanks = () => {
   );
 };
 
+type SortKey =
+  | 'rank'
+  | 'team'
+  | 'grade'
+  | 'starterPpw'
+  | 'starterTv'
+  | 'benchTv'
+  | 'rosterTv'
+  | 'top5'
+  | 'top2'
+  | 'champ';
+
+type SortDir = 'asc' | 'desc';
+
+const SortHeader = ({
+  label,
+  sortKey,
+  sort,
+  onToggle,
+  className,
+  align = 'center',
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: { key: SortKey; dir: SortDir };
+  onToggle: (key: SortKey) => void;
+  className?: string;
+  align?: 'left' | 'center';
+}) => {
+  const active = sort.key === sortKey;
+  return (
+    <th
+      scope="col"
+      aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={cn('px-2 py-3', align === 'left' ? 'text-left' : 'text-center', className)}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(sortKey)}
+        title={`Sort by ${label}`}
+        className={cn(
+          'inline-flex items-center gap-1 font-semibold leading-tight transition-colors',
+          align === 'center' && 'mx-auto',
+          active ? 'text-white' : 'text-white/70 hover:text-white'
+        )}
+      >
+        <span>{label}</span>
+        {active ? (
+          sort.dir === 'asc' ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+    </th>
+  );
+};
+
 export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[]; compact?: boolean }) {
   const { byId: tv } = useTradeValues();
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'rank', dir: 'asc' });
+
   const avg = (list: { id: string }[]) => {
     const vals = list.map((p) => tv.get(p.id)?.value).filter((v): v is number => v != null);
-    return vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1) : '—';
+    return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
   };
-  const th = 'px-2 py-3 text-center font-semibold leading-tight';
+  const fmt = (n: number | null) => (n == null ? '—' : n.toFixed(1));
+
+  const enriched = useMemo(
+    () =>
+      rows.map((r, i) => {
+        const starterIds = new Set(r.starters.map((s) => s.id));
+        return {
+          r,
+          rank: i + 1,
+          starterTv: avg(r.starters),
+          benchTv: avg(r.roster.filter((p) => !starterIds.has(p.id))),
+          rosterTv: avg(r.roster),
+        };
+      }),
+    [rows, tv]
+  );
+
+  const sorted = useMemo(() => {
+    const value = (e: (typeof enriched)[number]): string | number | null => {
+      switch (sort.key) {
+        case 'rank':
+          return e.rank;
+        case 'team':
+          return e.r.team.name;
+        case 'grade':
+          return e.r.score;
+        case 'starterPpw':
+          return e.r.starterPpw;
+        case 'starterTv':
+          return e.starterTv;
+        case 'benchTv':
+          return e.benchTv;
+        case 'rosterTv':
+          return e.rosterTv;
+        case 'top5':
+          return e.r.odds.top5;
+        case 'top2':
+          return e.r.odds.top2;
+        case 'champ':
+          return e.r.odds.champ;
+      }
+    };
+    return [...enriched].sort((a, b) => {
+      const av = value(a);
+      const bv = value(b);
+      if (typeof av === 'string' && typeof bv === 'string') {
+        return sort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
+      const an = av == null ? -Infinity : (av as number);
+      const bn = bv == null ? -Infinity : (bv as number);
+      return sort.dir === 'asc' ? an - bn : bn - an;
+    });
+  }, [enriched, sort]);
+
+  const toggle = (key: SortKey) =>
+    setSort((s) =>
+      s.key === key
+        ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: key === 'rank' || key === 'team' ? 'asc' : 'desc' }
+    );
+
   const td = 'px-2 py-3 text-center tabular-nums';
   return (
     <div className="rounded-lg border border-neutral-200 bg-white">
+      <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-3 py-2">
+        <span className="text-[11px] uppercase tracking-wider text-neutral-400">
+          Click any column to sort
+        </span>
+        <span className="text-[11px] text-neutral-400">
+          Sorted by{' '}
+          <span className="font-semibold text-[#1a2b4d]">
+            {{
+              rank: 'Power Rank',
+              team: 'Team',
+              grade: 'Grade',
+              starterPpw: 'Starter PPW',
+              starterTv: 'Starter Avg TV',
+              benchTv: 'Bench Avg TV',
+              rosterTv: 'Roster Avg TV',
+              top5: 'Playoff Odds',
+              top2: 'Top 2 Seed',
+              champ: 'Champ Odds',
+            }[sort.key]}
+          </span>{' '}
+          {sort.dir === 'asc' ? '↑' : '↓'}
+        </span>
+      </div>
       <table className="w-full table-fixed text-sm">
         <thead>
           <tr className="bg-[#1a2b4d] text-white">
-            <th className="w-12 px-2 py-3 text-left font-semibold">#</th>
-            <th className="w-[22%] px-2 py-3 text-left font-semibold">Team</th>
-            <th className={th}>Grade</th>
-            <th className={th}>Starter PPW</th>
-            {!compact && <th className={th}>Starter Avg TV</th>}
-            {!compact && <th className={th}>Bench Avg TV</th>}
-            {!compact && <th className={th}>Roster Avg TV</th>}
-            <th className={th}>Playoff Odds (Top 5)</th>
-            <th className={th}>Top 2 Seed</th>
-            <th className={th}>Champ Odds</th>
+            <SortHeader label="#" sortKey="rank" sort={sort} onToggle={toggle} align="left" className="w-12" />
+            <SortHeader label="Team" sortKey="team" sort={sort} onToggle={toggle} align="left" className="w-[22%]" />
+            <SortHeader label="Grade" sortKey="grade" sort={sort} onToggle={toggle} />
+            <SortHeader label="Starter PPW" sortKey="starterPpw" sort={sort} onToggle={toggle} />
+            {!compact && (
+              <SortHeader label="Starter Avg TV" sortKey="starterTv" sort={sort} onToggle={toggle} />
+            )}
+            {!compact && <SortHeader label="Bench Avg TV" sortKey="benchTv" sort={sort} onToggle={toggle} />}
+            {!compact && <SortHeader label="Roster Avg TV" sortKey="rosterTv" sort={sort} onToggle={toggle} />}
+            <SortHeader label="Playoff Odds" sortKey="top5" sort={sort} onToggle={toggle} />
+            <SortHeader label="Top 2 Seed" sortKey="top2" sort={sort} onToggle={toggle} />
+            <SortHeader label="Champ Odds" sortKey="champ" sort={sort} onToggle={toggle} />
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => {
-            const starterIds = new Set(r.starters.map((s) => s.id));
-            const bench = r.roster.filter((p) => !starterIds.has(p.id));
+          {sorted.map((e, i) => {
+            const r = e.r;
             return (
               <motion.tr
                 key={r.team.id}
@@ -147,14 +294,14 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
                   <span
                     className={cn(
                       'inline-flex h-8 w-8 items-center justify-center rounded-full font-serif font-bold',
-                      i < 4
+                      e.rank <= 4
                         ? 'bg-emerald-100 text-emerald-800'
-                        : i === 4
+                        : e.rank === 5
                           ? 'bg-amber-100 text-amber-800'
                           : 'bg-neutral-100 text-neutral-600'
                     )}
                   >
-                    {i + 1}
+                    {e.rank}
                   </span>
                 </td>
                 <td className="px-2 py-3">
@@ -172,9 +319,9 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
                   <span className="font-serif text-2xl font-bold text-[#bf2121]">{r.score}</span>
                 </td>
                 <td className={td}>{r.starterPpw.toFixed(1)}</td>
-                {!compact && <td className={td}>{avg(r.starters)}</td>}
-                {!compact && <td className={td}>{avg(bench)}</td>}
-                {!compact && <td className={td}>{avg(r.roster)}</td>}
+                {!compact && <td className={td}>{fmt(e.starterTv)}</td>}
+                {!compact && <td className={td}>{fmt(e.benchTv)}</td>}
+                {!compact && <td className={td}>{fmt(e.rosterTv)}</td>}
                 <td className={td}>{pct(r.odds.top5)}</td>
                 <td className={td}>{pct(r.odds.top2)}</td>
                 <td className={cn(td, 'font-semibold text-[#1a2b4d]')}>{pct(r.odds.champ)}</td>
