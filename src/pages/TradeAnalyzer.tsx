@@ -470,9 +470,20 @@ const TradeAnalyzer = () => {
     const lineupUp = r.winNowPpw > 0.3;
     const lineupDown = r.winNowPpw < -0.3;
 
+    const st = r.starterIn;
+    const eo = r.eliteOut;
+    const sellingStarForDepth =
+      !!eo && valueOf(eo.id) >= 65 && r.gained.length > r.lost.length;
+
     let bull: string;
     let bear: string;
-    if (s.mode === 'rebuild') {
+
+    // Roster-specific reads take priority over generic standings talk.
+    if (st?.hurt) {
+      bull = `${st.p.name} isn't a stash — he starts tomorrow, and with ${st.hurt.name} sidelined you need him to.`;
+    } else if (st && st.bump > 1.5) {
+      bull = `${st.p.name} walks straight in as your best ${st.p.position} — about ${st.bump.toFixed(1)} more points a week from that slot.`;
+    } else if (s.mode === 'rebuild') {
       bull = youngIn.length
         ? `At ${where}, this season is a sunk cost — ${youngIn.map((p) => p.name).join(' and ')} is exactly the kind of young piece a rebuild is built around.`
         : buying
