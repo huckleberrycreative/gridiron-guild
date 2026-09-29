@@ -88,6 +88,7 @@ const App = () => (
               <Route path="/rookie-draft" element={<RookieDraft />} />
               <Route path="/official-rosters-2026" element={<OfficialRosters2026 />} />
               <Route path="/trade-analyzer" element={<TradeAnalyzer />} />
+              <Route path="/waiver-wire" element={<WaiverWire />} />
               <Route path="/power-ranks" element={<PowerRanks />} />
               <Route path="/trade-value-chart" element={<TradeValueChart />} />
 
