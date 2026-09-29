@@ -123,11 +123,20 @@ const TradeAnalyzer = () => {
 
   // How much a team should care about this season: playoff odds from the
   // Power Ranks simulation (0 = out of it, 1 = firmly in the hunt).
-  const contentionFor = (teamId: string) => {
+  // Where each team actually sits: standings place, Power Rank, and the
+  // Monte Carlo odds of finishing top 4 from current points + current roster.
+  const situationFor = (teamId: string) => {
     const row = powerRows.find((r) => r.team.id === teamId);
-    if (!row) return 0.5;
-    return Math.min(1, Math.max(0, row.odds.top5 / 100));
+    if (!row) return { mode: 'bubble' as const, contention: 0.5, playoff: 50, champ: 0, standRank: 0, prRank: 0, points: 0 };
+    const standRank = [...powerRows].sort((a, b) => b.team.totalPoints - a.team.totalPoints).findIndex((r) => r.team.id === teamId) + 1;
+    const prRank = powerRows.findIndex((r) => r.team.id === teamId) + 1;
+    const playoff = row.odds.top4;
+    // Top-4 odds dominate; a sniff of 5th (purgatory) keeps a team half-interested.
+    const contention = Math.min(1, Math.max(0, (row.odds.top4 * 0.8 + row.odds.top5 * 0.2) / 100));
+    const mode = playoff >= 60 ? ('contender' as const) : playoff <= 25 ? ('rebuild' as const) : ('bubble' as const);
+    return { mode, contention, playoff, champ: row.odds.champ, standRank, prRank, points: row.team.totalPoints };
   };
+  const contentionFor = (teamId: string) => situationFor(teamId).contention;
 
 
   useEffect(() => {
@@ -252,7 +261,7 @@ const TradeAnalyzer = () => {
       // Contenders are graded on this season; teams out of the race are graded
       // on the long-term roster.
       const contention = contentionFor(teamId);
-      const wWinNow = 0.35 + 0.5 * contention;
+      const wWinNow = 0.1 + 0.8 * contention;
       const overall =
         (parts.winNow * wWinNow + parts.dynasty * (1 - wWinNow)) * 0.72 +
         parts.depth * 0.14 +
@@ -285,7 +294,10 @@ const TradeAnalyzer = () => {
       // Headline grade is a % change, same scale as the Power Ranks-based grade.
       // Trade value gap maps onto that scale (a 100% value gap ≈ 15%).
       const fitScore = overall;
-      const score = Math.round((overall * 0.5 + valueScore * 0.15 * 0.5) * 10) / 10;
+      // Long-term trade value matters more to teams whose season is slipping away.
+      const valueWeight = 0.6 + 0.8 * (1 - contention);
+      const score = Math.round((overall * 0.5 + valueScore * 0.15 * 0.5 * valueWeight) * 10) / 10;
+      const situation = situationFor(teamId);
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
         lost.reduce((s, p) => s + p.healthyPpg, 0);
@@ -295,6 +307,7 @@ const TradeAnalyzer = () => {
         winNowPpw,
         dynastyPpw,
         contention,
+        situation,
         salaryDelta,
         futureDelta,
         counts,
