@@ -219,10 +219,18 @@ const TeamCaptains = () => {
                         const player = pid ? playerById.get(pid) : undefined;
                         const pts = captainPts(w, pid);
                         const editable = isAdmin && !locked;
-                         if (!editable) {
-                           const { counts } = usage(t.id, w);
-                           const timesUsed = pid ? (counts.get(pid) ?? 0) + 1 : 0;
-                           const playerLocked = !!player && (timesUsed >= 2 || player.position === 'QB');
+                          if (!editable) {
+                            // Red only once the lock actually applies: the SECOND time a player
+                            // appears (count earlier weeks only), or any QB after a QB was used.
+                            let priorUses = 0;
+                            let qbUsedEarlier = false;
+                            for (let pw = 1; pw < w; pw++) {
+                              const ppid = valueAt(pw, t.id);
+                              if (!ppid) continue;
+                              if (ppid === pid) priorUses++;
+                              if (playerById.get(ppid)?.position === 'QB') qbUsedEarlier = true;
+                            }
+                            const playerLocked = !!player && (priorUses >= 1 || (player.position === 'QB' && qbUsedEarlier));
                            return (
                               <td key={t.id} className="p-1.5 text-center align-middle">
                                 {player ? (
