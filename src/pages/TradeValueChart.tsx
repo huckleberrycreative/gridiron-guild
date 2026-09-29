@@ -107,8 +107,12 @@ const TradeValueChart = () => {
           ? parts.reduce((a, [n, w]) => a + n * w, 0) / wSum
           : fallback;
         const costShare = Math.min(1, avgCost / POS_MAX[p.position]);
-        // Talent drives value; cheap contracts multiply it by up to ~1.55x vs. a max deal
-        const raw = talent * (1.15 - 0.55 * costShare) + (talent > 40 ? (1 - costShare) * 8 : 0);
+        // Contract multiplier: a near-min deal is worth ~3x a max deal at equal talent.
+        // Steep curve so $100 of savings outweighs a small PPG gap.
+        const contractMult = 0.5 + Math.pow(1 - costShare, 1.2);
+        // Franchise-tagged: salary is artificially deflated and can't be traded without penalty
+        const ftMult = p.franchiseTag ? 0.875 : 1;
+        const raw = talent * contractMult * ftMult;
 
         return {
           id: p.id,
@@ -190,7 +194,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Talent × a contract multiplier (cheap deals up to ~1.5× a max deal), scaled so the league's best asset is 100.</p>
+            <p className="text-muted-foreground">Talent × a steep contract multiplier (a minimum deal is worth ~3× a max deal), minus 12.5% for franchise-tagged players (deflated salary, can't be traded freely), scaled so the league's best asset is 100.</p>
           </div>
         </div>
 
