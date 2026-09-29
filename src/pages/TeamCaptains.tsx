@@ -186,12 +186,15 @@ const TeamCaptains = () => {
                         const player = pid ? playerById.get(pid) : undefined;
                         const pts = captainPts(w, pid);
                         const editable = isAdmin && !locked;
-                        if (!editable) {
-                          return (
-                            <td key={t.id} className="p-1.5 align-middle">
-                              {player ? (
-                                <div className="flex items-baseline justify-between gap-1">
-                                  <span className="truncate font-medium" title={player.name}>{player.name}</span>
+                         if (!editable) {
+                           const { counts } = usage(t.id, w);
+                           const timesUsed = pid ? (counts.get(pid) ?? 0) + 1 : 0;
+                           const playerLocked = !!player && (timesUsed >= 2 || player.position === 'QB');
+                           return (
+                             <td key={t.id} className="p-1.5 align-middle">
+                               {player ? (
+                                 <div className="flex items-baseline justify-between gap-1">
+                                   <span className={cn('truncate font-medium', playerLocked && 'text-red-600')} title={playerLocked ? `${player.name} — locked, can't be used again` : player.name}>{player.name}</span>
                                   <span className="shrink-0 text-[10px] text-muted-foreground">{pts != null ? fmt(pts) : '—'}</span>
                                 </div>
                               ) : (
@@ -246,7 +249,7 @@ const TeamCaptains = () => {
             </table>
           </div>
           <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Crown size={12} className="text-gold" /> Scores fill in automatically after "Refresh from ESPN." 🔒 = used twice, or a QB was already captained.
+            <Crown size={12} className="text-gold" /> Scores fill in automatically after "Refresh from ESPN." Red name = locked (used twice, or a QB was already captained).
             {!isAdmin && ' Sign in as commissioner to make picks.'}
           </p>
         </div>
