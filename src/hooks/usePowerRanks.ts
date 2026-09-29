@@ -65,7 +65,7 @@ export type Asset = {
 export const OUT_STATUSES = ['out', 'ir'];
 export const INJURY_MULTIPLIER: Record<string, number> = {
   healthy: 1,
-  questionable: 0.8,
+  questionable: 1,
   doubtful: 0.4,
   out: 0,
   ir: 0,
@@ -322,9 +322,7 @@ export function usePowerRankRows() {
     if (!list.length) return [];
     const base = list.map(({ team, roster }) => {
       const available = roster.filter((p) => !p.out);
-      const injured = roster.filter(
-        (p) => p.out || (p.injuryStatus && p.injuryStatus !== 'healthy')
-      );
+      const injured = roster.filter((p) => p.out);
       const starters = bestLineup(available);
       const starterPpw = starters.reduce((s, p) => s + p.ppg, 0);
       const { retained, replacementPpg } = depthResilience(available);
