@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
@@ -302,3 +301,225 @@ const TradeAnalyzer = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosters, selA, selB, teamA, teamB, powerRows, weeksLeft, tv]);
+
+  const isLoading = teamsLoading || salariesLoading;
+  const teamName = (id: string) => teams.find((t) => t.id === id)?.name ?? 'Team';
+
+  const toggle = (side: 'A' | 'B', id: string) => {
+    const setter = side === 'A' ? setSelA : setSelB;
+    setter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const valueTone = (v: number) =>
+    v >= 80 ? 'bg-emerald-600 text-white' : v >= 60 ? 'bg-emerald-100 text-emerald-800' : v >= 40 ? 'bg-muted text-foreground' : 'bg-muted/60 text-muted-foreground';
+
+  const renderColumn = (side: 'A' | 'B') => {
+    const value = side === 'A' ? teamA : teamB;
+    const setValue = side === 'A' ? setTeamA : setTeamB;
+    const setSel = side === 'A' ? setSelA : setSelB;
+    const sel = side === 'A' ? selA : selB;
+    const roster = side === 'A' ? rosters.A : rosters.B;
+    const other = side === 'A' ? teamB : teamA;
+
+    return (
+      <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="border-b border-border bg-muted/50 px-3 py-2">
+          <div className="flex flex-wrap gap-1">
+            {teams.map((t) => {
+              const logo = getTeamLogo(t.name);
+              const on = t.id === value;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={t.id === other}
+                  title={t.name}
+                  onClick={() => {
+                    setValue(t.id);
+                    setSel(new Set());
+                  }}
+                  className={cn(
+                    'h-9 w-9 rounded-md border flex items-center justify-center transition',
+                    on ? 'border-primary ring-2 ring-primary bg-background' : 'border-transparent hover:bg-background',
+                    t.id === other && 'opacity-25 cursor-not-allowed'
+                  )}
+                >
+                  {logo ? <img src={logo} alt={t.name} className="h-7 w-7 object-contain" /> : <span className="text-[10px] font-bold">{t.name.slice(0, 3)}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between gap-2">
+            <h2 className="font-display font-bold uppercase tracking-wide text-sm truncate">{teamName(value)}</h2>
+            <span className="text-xs text-muted-foreground shrink-0">{sel.size} selected</span>
+          </div>
+        </div>
+
+        <ul className="divide-y divide-border/40 max-h-[420px] overflow-y-auto">
+          {roster.map((p) => {
+            const active = sel.has(p.id);
+            const v = valueOf(p.id);
+            return (
+              <li key={p.id}>
+                <label
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1 text-sm cursor-pointer transition-colors',
+                    active ? 'bg-primary/10' : 'hover:bg-muted/50'
+                  )}
+                >
+                  <Checkbox checked={active} onCheckedChange={() => toggle(side, p.id)} />
+                  <span className={cn('inline-flex w-7 justify-center rounded text-[10px] font-bold border shrink-0', positionColors[p.position])}>
+                    {p.position}
+                  </span>
+                  <span className="font-medium truncate">{p.name}</span>
+                  <span title="Trade value (0–100)" className={cn('rounded px-1.5 text-[11px] font-bold tabular-nums shrink-0', valueTone(v))}>
+                    {v}
+                  </span>
+                  {p.franchiseTag && <span title="Franchise tag" className="rounded bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">F</span>}
+                  {p.practiceSquad && <span className="text-[10px] uppercase text-muted-foreground">PS</span>}
+                  {p.injuryStatus !== 'healthy' && (
+                    <span className={cn('rounded px-1 text-[9px] font-bold uppercase border', p.out ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200')}>
+                      {injuryLabel[p.injuryStatus] ?? p.injuryStatus}
+                      {p.out && p.weeksOut ? ` ${p.weeksOut}w` : ''}
+                    </span>
+                  )}
+                  <span className="ml-auto font-mono text-[11px] text-muted-foreground w-12 text-right shrink-0">{p.ppg.toFixed(1)}</span>
+                  <span className="font-mono text-[11px] text-muted-foreground w-10 text-right shrink-0">${p.effectiveSalary}</span>
+                </label>
+              </li>
+            );
+          })}
+          {roster.length === 0 && <li className="px-4 py-6 text-sm text-muted-foreground text-center">No rostered players.</li>}
+        </ul>
+      </div>
+    );
+  };
+
+  type Result = NonNullable<typeof analysis>['A'];
+  const names = (xs: Asset[]) => (xs.length ? xs.map((p) => p.name).join(', ') : 'nothing');
+
+  const cases = (r: Result) => {
+    const bestIn = [...r.gained].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
+    const bestOut = [...r.lost].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
+    const injuredIn = r.gained.find((p) => p.out);
+    const bull = r.valueIn > r.valueOut
+      ? `You get more trade value back (${Math.round(r.valueIn)} vs ${Math.round(r.valueOut)})${bestIn ? `, led by ${bestIn.name} (${valueOf(bestIn.id)})` : ''}.`
+      : r.winNowPpw > 0.3
+        ? `Your lineup scores about ${r.winNowPpw.toFixed(1)} more points a week the rest of this season.`
+        : r.salaryDelta < 0
+          ? `You free up $${Math.abs(r.salaryDelta)} of cap space to use elsewhere.`
+          : bestIn
+            ? `${bestIn.name} fills a spot on your roster and has room to grow.`
+            : `You clear a roster spot with no one coming back.`;
+    const bear = r.valueOut > r.valueIn
+      ? `You give up more trade value than you get${bestOut ? `, especially ${bestOut.name} (${valueOf(bestOut.id)})` : ''}.`
+      : injuredIn
+        ? `${injuredIn.name} is hurt and could miss about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}.`
+        : r.winNowPpw < -0.3
+          ? `Your lineup gets about ${Math.abs(r.winNowPpw).toFixed(1)} points a week weaker this season.`
+          : r.salaryDelta > 0
+            ? `You take on $${r.salaryDelta} more in salary, which squeezes your cap.`
+            : `The upside is modest — you're not changing your team much.`;
+    const base = r.score >= 0
+      ? `Do it — this deal nets you ${r.score >= 25 ? 'a clear' : 'a small'} win.`
+      : `Pass — ${r.score <= -25 ? 'you lose too much' : 'it slightly hurts you'} unless you can get a little more back.`;
+    return { bull, bear, base };
+  };
+
+  const renderVerdict = (label: string, r: Result) => {
+    const up = r.score >= 0;
+    const c = cases(r);
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <h3 className="font-display font-bold uppercase tracking-wide text-sm truncate">{label}</h3>
+            <p className="text-xs text-muted-foreground truncate">Gets: {names(r.gained)}</p>
+          </div>
+          <div className={cn('flex items-center gap-1 shrink-0', up ? 'text-emerald-600' : 'text-destructive')}>
+            {up ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+            <span className="font-mono text-3xl font-extrabold tabular-nums">{up ? '+' : ''}{r.score}</span>
+          </div>
+        </div>
+        <ul className="space-y-1.5 text-sm mb-3">
+          <li><span className="font-bold text-emerald-600">Bull:</span> {c.bull}</li>
+          <li><span className="font-bold text-destructive">Bear:</span> {c.bear}</li>
+          <li><span className="font-bold text-foreground">Base:</span> {c.base}</li>
+        </ul>
+        <div className="grid grid-cols-4 gap-1.5 text-center">
+          {[
+            { k: 'Trade value', v: `${Math.round(r.valueIn)} in / ${Math.round(r.valueOut)} out`, good: r.valueIn >= r.valueOut },
+            { k: 'This season', v: `${r.winNowPpw >= 0 ? '+' : ''}${r.winNowPpw.toFixed(1)} pts/wk`, good: r.winNowPpw >= 0 },
+            { k: 'Long term', v: `${r.dynastyPpw >= 0 ? '+' : ''}${r.dynastyPpw.toFixed(1)} pts/wk`, good: r.dynastyPpw >= 0 },
+            { k: 'Salary', v: `${r.salaryDelta > 0 ? '+' : r.salaryDelta < 0 ? '−' : ''}$${Math.abs(r.salaryDelta)}`, good: r.salaryDelta <= 0 },
+          ].map((m) => (
+            <div key={m.k} className="rounded-md bg-muted/50 border border-border/60 px-1 py-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.k}</div>
+              <div className={cn('font-mono text-xs font-bold', m.good ? 'text-emerald-600' : 'text-destructive')}>{m.v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Layout>
+      <section className="py-8 md:py-10">
+        <div className="container mx-auto px-4">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h1 className="font-display text-3xl md:text-4xl font-bold">TRADE ANALYZER</h1>
+              <p className="text-sm text-muted-foreground">Pick two teams, check the players moving, and the grade updates instantly.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => { setSelA(new Set()); setSelB(new Set()); }}>
+              <X className="h-4 w-4 mr-1" /> Clear
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[30vh]">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="mb-5">
+                {analysis ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {renderVerdict(teamName(teamA), analysis.A)}
+                    {renderVerdict(teamName(teamB), analysis.B)}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border py-5 text-sm text-muted-foreground">
+                    <ArrowLeftRight className="h-4 w-4 text-primary" /> Check at least one player below to see the grade.
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {renderColumn('A')}
+                {renderColumn('B')}
+              </div>
+
+              <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                <h2 className="font-display uppercase tracking-wider text-xs font-bold text-foreground mb-2">How the grade works</h2>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><b className="text-foreground">60% Trade Value</b> — the number next to each name, from the Trade Value Chart. Your best player in the deal counts fully; extras count less.</li>
+                  <li><b className="text-foreground">40% Roster fit</b> — does your starting lineup actually get better, this year and long term, counting injuries, depth and salary.</li>
+                  <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
+                  <li>The grade runs from −100 to +100. Positive means do it.</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    </Layout>
+  );
+};
+
+export default TradeAnalyzer;
