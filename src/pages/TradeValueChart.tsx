@@ -306,16 +306,37 @@ const TradeValueChart = () => {
       <div className="container mx-auto px-4 py-10">
         <div className="mb-6 grid gap-4 md:grid-cols-3 text-sm">
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-semibold text-primary">Proj PPG</p>
-            <p className="text-muted-foreground">Season-long projection anchored to the preseason outlook (which reflects multi-year history), adjusted for the first weeks of 2026: overachievers get a bump — rookies and young players the fastest — while slow starts from proven veterans are forgiven early. Real output takes over as the season progresses.</p>
+            <p className="mb-1 font-semibold text-primary">Proj PPG — what he&apos;ll average</p>
+            <p className="text-muted-foreground">
+              His expected points per game for the full season. We start with what the experts picked him for, then
+              nudge it up if he&apos;s been scoring better than expected. A slow start by a proven veteran doesn&apos;t
+              hurt him much yet.
+            </p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-semibold text-primary">VOR, Surplus &amp; Cost</p>
-            <p className="text-muted-foreground">VOR is value over replacement: how many points per game a player beats a replacement-level starter at his position. Surplus $ turns that into money — his VOR priced at what the league actually pays per point, minus his weighted salary — so a positive number means he gives you more production than he costs. Wtd $ is the weighted average of 2027–2029 salaries — 62.5% next year, 25% in 2028, 12.5% in 2029 — so natural progression isn't penalized.</p>
+            <p className="mb-1 font-semibold text-primary">VOR, Surplus &amp; Cost — is he worth it?</p>
+            <ul className="space-y-1.5 text-muted-foreground">
+              <li>
+                <span className="font-semibold text-foreground">VOR</span> — points per game more than a throwaway
+                starter would give you.
+              </li>
+              <li>
+                <span className="font-semibold text-foreground">Surplus $</span> — what those extra points are worth,
+                minus his salary. Green is a bargain, red is overpaying.
+              </li>
+              <li>
+                <span className="font-semibold text-foreground">Wtd $</span> — his average yearly cost over the next
+                three seasons, counting 2027 the most.
+              </li>
+            </ul>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s production above replacement is priced at what the league actually pays per point, then compared to his weighted salary. Value is 65% that cap math, 20% dynasty pedigree (growth only), 15% raw production, minus 5 points for franchise tags and a penalty for age past positional prime. Every player is scored only against his own group — QBs, RBs, and Pass Catchers (WRs + TEs together) — so the best in each group is near 100.</p>
+            <p className="mb-1 font-semibold text-primary">Value — his final grade, 0 to 100</p>
+            <p className="text-muted-foreground">
+              Mostly about being cheap and productive, with a little credit for upside and raw scoring. Young and
+              affordable goes up; old, expensive or franchise-tagged goes down. QBs, RBs and Pass Catchers are each
+              graded on their own scale, so every group has a 100.
+            </p>
           </div>
         </div>
 
