@@ -526,6 +526,17 @@ const TradeAnalyzer = () => {
             : `Neither buyer nor seller — this doesn't clearly push you in either direction.`;
     }
 
+    // If a roster-specific bull short-circuited the mode chain, bear still needs a value.
+    if (!bear!) {
+      bear = lineupDown
+        ? `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week from your starting lineup — that's real ground to concede.`
+        : injuredIn
+          ? `${injuredIn.name} is out about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'} — you'd be paying now for points later.`
+          : r.salaryDelta > 0
+            ? `$${r.salaryDelta} more salary lands on your books — cap you'll wish you had when the injury bug hits.`
+            : `If the best player in the deal is already yours, this doesn't clearly make you better.`;
+    }
+
     // Roster-specific bear cases override the generic ones.
     if (sellingStarForDepth && eo) {
       bear = `You're giving up ${eo.name}, a legitimate top ${eo.position}, for depth — it might help this week, but it's the kind of deal you regret in December.`;
