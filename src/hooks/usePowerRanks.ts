@@ -300,7 +300,11 @@ export function usePowerRankRows() {
           const status = s.injuryStatus ?? 'healthy';
           const weeksOut = s.injuryWeeksOut ?? 0;
           const isOut = OUT_STATUSES.includes(status) && weeksOut > 0;
-          const raw = projected ?? salaryImpliedPpg(s.position, salary);
+          // Real 2026 scoring first (matches ESPN averages); projection only if no games yet.
+          const hasActual = s.actualPpg != null && (s.gamesPlayed ?? 0) > 0;
+          const raw = hasActual
+            ? (s.actualPpg as number)
+            : projected ?? salaryImpliedPpg(s.position, salary);
           return {
             id: s.id,
             name,
