@@ -45,6 +45,7 @@ type Row = {
   talent: number;
   salary: number;
   avgCost: number;
+  surplus: number;
   value: number;
 };
 
@@ -130,7 +131,7 @@ const TradeValueChart = () => {
         const vorScore = Math.max(0, Math.min(100, 50 + vorPct * 60));
         const talent = dynScore * 0.45 + now * 0.25 + vorScore * 0.3;
 
-        // Cost: weighted average of next three contract years vs. positional max.
+        // Cost: weighted average of next three contract years.
         // 2027 dominates (62.5%) since everyone shares the same progression;
         // 2028 is 25%, 2029 is 12.5%. Missing years redistribute to present ones.
         const s27 = toNum(p.salary2027);
@@ -146,14 +147,6 @@ const TradeValueChart = () => {
         const avgCost = parts.length
           ? parts.reduce((a, [n, w]) => a + n * w, 0) / wSum
           : fallback;
-        const costShare = Math.min(1, avgCost / POS_MAX[p.position]);
-        // Contract multiplier: a near-min deal is worth ~3x a max deal at equal talent.
-        // Steep curve so $100 of savings outweighs a small PPG gap.
-        // Cheapness only amplifies real talent — a $1 depth piece isn't a star.
-        const contractMult = 0.7 + Math.pow(1 - costShare, 1.2) * Math.pow(Math.min(1, talent / 90), 3) * 0.8;
-        // Franchise-tagged: salary is artificially deflated and can't be traded without penalty
-        const ftMult = p.franchiseTag ? 0.875 : 1;
-        const raw = talent * contractMult * ftMult;
 
         return {
           id: p.id,
@@ -166,16 +159,53 @@ const TradeValueChart = () => {
           rosRank: ros?.overall ?? null,
           dynastyRank: dyn?.overall ?? null,
           talent,
+          dynScore,
           salary: toNum(p.salary2027) || fallback,
           avgCost,
-          raw,
+          ft: p.franchiseTag,
           teamId: p.teamId,
         };
       });
-    const top = Math.max(1, ...raw.filter((r) => r.teamId).map((r) => r.raw));
-    return raw
+
+    // ---- Salary-cap surplus model ----
+    // Replacement level = 25th-percentile rostered PPG at each position (what you
+    // can get for ~$1). Points above that are what a roster actually pays for.
+    const repl: Record<string, number> = {};
+    Object.keys(POS_MAX).forEach((ps) => {
+      const v = raw.filter((r) => r.teamId && r.position === ps && r.ppg > 0).map((r) => r.ppg).sort((a, b) => a - b);
+      repl[ps] = v.length ? v[Math.floor(v.length * 0.25)] : 5;
+    });
+    // Market price of one PPG above replacement, from how the league spends its cap
+    const rostered = raw.filter((r) => r.teamId);
+    const spent = rostered.reduce((a, r) => a + Math.max(0, r.avgCost - 1), 0);
+    const pts = rostered.reduce((a, r) => a + Math.max(0, r.ppg - repl[r.position]), 0);
+    const dpp = pts > 0 ? spent / pts : 20;
+    const withSurplus = raw.map((r) => {
+      const over = Math.max(0, r.ppg - repl[r.position]);
+      const surplus = over * dpp - r.avgCost; // $ of production beyond what he costs
+      return { ...r, surplus };
+    });
+    const sVals = withSurplus.filter((r) => r.teamId).map((r) => r.surplus);
+    const sMax = Math.max(1, ...sVals);
+    const sMin = Math.min(0, ...sVals);
+    const withRaw = withSurplus.map((r) => {
+      const surplusScore = Math.max(0, ((r.surplus - sMin) / (sMax - sMin)) * 100);
+      // Cap surplus drives value (65%); pure dynasty pedigree is only a growth kicker (20%);
+      // current production quality (15%) keeps elite producers from falling too far.
+      const prodScore = Math.min(100, (r.ppg / 22) * 100);
+      const score = surplusScore * 0.65 + r.dynScore * 0.2 + prodScore * 0.15;
+      return { ...r, raw: score * (r.ft ? 0.875 : 1) };
+    });
+    const top = Math.max(1, ...withRaw.filter((r) => r.teamId).map((r) => r.raw));
+    const bottom = Math.min(...withRaw.filter((r) => r.teamId).map((r) => r.raw));
+    return withRaw
       .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.position === pos))
-      .map((r) => ({ ...r, value: Math.min(100, Math.round(Math.pow(Math.max(0, r.raw) / top, 0.7) * 100)), talent: Math.round(r.talent) }))
+      .map((r) => ({
+        ...r,
+        value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.8) * 100))),
+        talent: Math.round(r.talent),
+        surplus: Math.round(r.surplus),
+      }))
       .sort((a, b) => b.value - a.value)
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }, [players, ranks, showFA, pos]);
@@ -212,6 +242,7 @@ const TradeValueChart = () => {
     { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 'avgCost', label: 'Wtd $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
+    { key: 'surplus', label: 'Surplus $', sortable: true, align: 'center', render: (v) => `${Number(v) >= 0 ? '+' : '−'}$${Math.abs(Number(v))}` },
   ];
 
   return (
@@ -239,7 +270,7 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Talent × a steep contract multiplier (a cheap deal is worth up to ~2× a max deal), minus 12.5% for franchise-tagged players (deflated salary, can't be traded freely), then curved so the best asset is 100 and strong starters land in the 60s–80s.</p>
+            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s PPG above a replacement-level starter is priced at what the league actually pays per point, minus his weighted salary = <b>Surplus $</b>. Value is 65% cap surplus, 20% dynasty pedigree (growth only), 15% raw production, minus 12.5% for franchise tags. A $1 player at 9 PPG beats a $150 player at 11.</p>
           </div>
         </div>
 
