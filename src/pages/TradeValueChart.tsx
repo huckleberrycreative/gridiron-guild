@@ -284,16 +284,16 @@ const TradeValueChart = () => {
       <div className="container mx-auto px-4 py-10">
         <div className="mb-6 grid gap-4 md:grid-cols-3 text-sm">
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-semibold text-primary">Talent (0–100)</p>
-            <p className="text-muted-foreground">45% dynasty ranking (future), 25% rest-of-season ranking + projected PPG (now), 30% value over replacement. PPG is anchored to the preseason projection: hot starts get credit quickly (especially rookies), while slow starts from proven players are forgiven early. Real output takes over as the season progresses.</p>
+            <p className="font-semibold text-primary">Proj PPG</p>
+            <p className="text-muted-foreground">Season-long projection anchored to the preseason outlook (which reflects multi-year history), adjusted for the first weeks of 2026: overachievers get a bump — rookies and young players the fastest — while slow starts from proven veterans are forgiven early. Real output takes over as the season progresses.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-semibold text-primary">Cost</p>
-            <p className="text-muted-foreground">Weighted average of 2027–2029 salaries — 62.5% next year, 25% in 2028, 12.5% in 2029 — as a share of the positional max (QB $180, RB $257, WR $203, TE $167). Natural progression isn't penalized.</p>
+            <p className="font-semibold text-primary">VOR &amp; Cost</p>
+            <p className="text-muted-foreground">VOR is value over replacement: how many points per game a player beats a replacement-level starter at his position. Wtd $ is the weighted average of 2027–2029 salaries — 62.5% next year, 25% in 2028, 12.5% in 2029 — so natural progression isn't penalized.</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s PPG above a replacement-level starter is priced at what the league actually pays per point, minus his weighted salary = <b>Surplus $</b>. Value is 65% cap surplus, 20% dynasty pedigree (growth only), 15% raw production, minus 12.5% for franchise tags. Every player is scored only against his own group — QBs, RBs, and Pass Catchers (WRs + TEs together) — so the best in each group is near 100.</p>
+            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s production above replacement is priced at what the league actually pays per point, then compared to his weighted salary. Value is 65% that cap math, 20% dynasty pedigree (growth only), 15% raw production, minus 12.5% for franchise tags and a penalty for age past positional prime. Every player is scored only against his own group — QBs, RBs, and Pass Catchers (WRs + TEs together) — so the best in each group is near 100.</p>
           </div>
         </div>
 
