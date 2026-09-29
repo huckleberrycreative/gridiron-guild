@@ -128,7 +128,8 @@ const TradeValueChart = () => {
         const costShare = Math.min(1, avgCost / POS_MAX[p.position]);
         // Contract multiplier: a near-min deal is worth ~3x a max deal at equal talent.
         // Steep curve so $100 of savings outweighs a small PPG gap.
-        const contractMult = 0.5 + Math.pow(1 - costShare, 1.2);
+        // Cheapness only amplifies real talent — a $1 depth piece isn't a star.
+        const contractMult = 0.55 + Math.pow(1 - costShare, 1.2) * Math.min(1, talent / 60);
         // Franchise-tagged: salary is artificially deflated and can't be traded without penalty
         const ftMult = p.franchiseTag ? 0.875 : 1;
         const raw = talent * contractMult * ftMult;
@@ -149,10 +150,10 @@ const TradeValueChart = () => {
           teamId: p.teamId,
         };
       });
-    const top = Math.max(1, ...raw.map((r) => r.raw));
+    const top = Math.max(1, ...raw.filter((r) => r.teamId).map((r) => r.raw));
     return raw
       .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.position === pos))
-      .map((r) => ({ ...r, value: Math.round(Math.sqrt(Math.max(0, r.raw) / top) * 100), talent: Math.round(r.talent) }))
+      .map((r) => ({ ...r, value: Math.min(100, Math.round(Math.pow(Math.max(0, r.raw) / top, 0.7) * 100)), talent: Math.round(r.talent) }))
       .sort((a, b) => b.value - a.value)
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }, [players, ranks, showFA, pos]);
