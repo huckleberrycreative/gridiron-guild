@@ -167,54 +167,58 @@ const TradeValueChart = () => {
         };
       });
 
-    // ---- Salary-cap surplus model ----
-    // Replacement level = 25th-percentile rostered PPG at each position (what you
-    // can get for ~$1). Points above that are what a roster actually pays for.
-    const repl: Record<string, number> = {};
-    Object.keys(POS_MAX).forEach((ps) => {
-      const v = raw.filter((r) => r.teamId && r.position === ps && r.ppg > 0).map((r) => r.ppg).sort((a, b) => a - b);
-      repl[ps] = v.length ? v[Math.floor(v.length * 0.25)] : 5;
-    });
-    // Market price of one PPG above replacement, computed PER POSITION from how the
-    // league spends its cap on that position (QB points are cheap per point league-wide,
-    // so a single league-wide price made every QB look worthless).
+    // ---- Salary-cap surplus model, evaluated WITHIN each roster group ----
+    // Groups: QB, RB, and Pass Catchers (WR + TE on one spectrum). Every group is
+    // scaled on its own so the best player in each group is ~100.
+    const grp = (p: string) => (p === 'WR' || p === 'TE' ? 'PC' : p);
+    const GROUPS = ['QB', 'RB', 'PC'];
     const rostered = raw.filter((r) => r.teamId);
-    const dppPos: Record<string, number> = {};
-    const posTop: Record<string, number> = {};
-    Object.keys(POS_MAX).forEach((ps) => {
-      const g = rostered.filter((r) => r.position === ps);
-      const spent = g.reduce((a, r) => a + Math.max(0, r.avgCost - 1), 0);
-      const pts = g.reduce((a, r) => a + Math.max(0, r.ppg - repl[ps]), 0);
-      dppPos[ps] = pts > 0 ? spent / pts : 20;
-      const sorted = g.map((r) => r.ppg).sort((a, b) => b - a);
-      posTop[ps] = sorted[Math.min(2, sorted.length - 1)] || 1; // ~3rd best at position
+    const repl: Record<string, number> = {};
+    const dpp: Record<string, number> = {};
+    const gTop: Record<string, number> = {};
+    GROUPS.forEach((g) => {
+      const members = rostered.filter((r) => grp(r.position) === g);
+      const v = members.filter((r) => r.ppg > 0).map((r) => r.ppg).sort((a, b) => a - b);
+      repl[g] = v.length ? v[Math.floor(v.length * 0.25)] : 5;
+      const spent = members.reduce((a, r) => a + Math.max(0, r.avgCost - 1), 0);
+      const pts = members.reduce((a, r) => a + Math.max(0, r.ppg - repl[g]), 0);
+      dpp[g] = pts > 0 ? spent / pts : 20;
+      const desc = [...v].reverse();
+      gTop[g] = desc[Math.min(2, desc.length - 1)] || 1;
     });
     const withSurplus = raw.map((r) => {
-      const over = Math.max(0, r.ppg - repl[r.position]);
-      const surplus = over * dppPos[r.position] - r.avgCost; // $ of production beyond what he costs
-      return { ...r, surplus };
+      const g = grp(r.position);
+      const over = Math.max(0, r.ppg - repl[g]);
+      return { ...r, group: g, surplus: over * dpp[g] - r.avgCost };
     });
-    const sVals = withSurplus.filter((r) => r.teamId).map((r) => r.surplus);
-    const sMax = Math.max(1, ...sVals);
-    const sMin = Math.min(0, ...sVals);
+    const sRange: Record<string, [number, number]> = {};
+    GROUPS.forEach((g) => {
+      const s = withSurplus.filter((r) => r.teamId && r.group === g).map((r) => r.surplus);
+      sRange[g] = [Math.min(0, ...s), Math.max(1, ...s)];
+    });
     const withRaw = withSurplus.map((r) => {
+      const [sMin, sMax] = sRange[r.group];
       const surplusScore = Math.max(0, ((r.surplus - sMin) / (sMax - sMin)) * 100);
-      // Cap surplus drives value (65%); pure dynasty pedigree is only a growth kicker (20%);
-      // production relative to the elite at his position (15%) keeps top producers up.
-      const prodScore = Math.min(100, (r.ppg / posTop[r.position]) * 100);
+      const prodScore = Math.min(100, (r.ppg / gTop[r.group]) * 100);
       const score = surplusScore * 0.65 + r.dynScore * 0.2 + prodScore * 0.15;
       return { ...r, raw: score * (r.ft ? 0.875 : 1) };
     });
-    const top = Math.max(1, ...withRaw.filter((r) => r.teamId).map((r) => r.raw));
-    const bottom = Math.min(...withRaw.filter((r) => r.teamId).map((r) => r.raw));
+    const bounds: Record<string, [number, number]> = {};
+    GROUPS.forEach((g) => {
+      const v = withRaw.filter((r) => r.teamId && r.group === g).map((r) => r.raw);
+      bounds[g] = [v.length ? Math.min(...v) : 0, Math.max(1, ...v)];
+    });
     return withRaw
-      .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.position === pos))
-      .map((r) => ({
-        ...r,
-        value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.8) * 100))),
-        talent: Math.round(r.talent),
-        surplus: Math.round(r.surplus),
-      }))
+      .filter((r) => (showFA || r.teamId) && (pos === 'ALL' || r.group === pos))
+      .map((r) => {
+        const [bottom, top] = bounds[r.group];
+        return {
+          ...r,
+          value: Math.max(0, Math.min(100, Math.round(Math.pow(Math.max(0, r.raw - bottom * 0.5) / (top - bottom * 0.5), 0.8) * 100))),
+          talent: Math.round(r.talent),
+          surplus: Math.round(r.surplus),
+        };
+      })
       .sort((a, b) => b.value - a.value)
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }, [players, ranks, showFA, pos]);
@@ -279,18 +283,18 @@ const TradeValueChart = () => {
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-semibold text-primary">Value</p>
-            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s PPG above a replacement-level starter is priced at what the league actually pays per point, minus his weighted salary = <b>Surplus $</b>. Value is 65% cap surplus, 20% dynasty pedigree (growth only), 15% raw production, minus 12.5% for franchise tags. A $1 player at 9 PPG beats a $150 player at 11.</p>
+            <p className="text-muted-foreground">Built for a $1,000 cap. Each player&apos;s PPG above a replacement-level starter is priced at what the league actually pays per point, minus his weighted salary = <b>Surplus $</b>. Value is 65% cap surplus, 20% dynasty pedigree (growth only), 15% raw production, minus 12.5% for franchise tags. Every player is scored only against his own group — QBs, RBs, and Pass Catchers (WRs + TEs together) — so the best in each group is near 100.</p>
           </div>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {['ALL', 'QB', 'RB', 'WR', 'TE'].map((p) => (
+          {[['ALL', 'All'], ['QB', 'QB'], ['RB', 'RB'], ['PC', 'Pass Catchers']].map(([p, label]) => (
             <button
               key={p}
               onClick={() => setPos(p)}
               className={cn('rounded-md border px-3 py-1.5 text-sm font-semibold', pos === p ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card')}
             >
-              {p}
+              {label}
             </button>
           ))}
           <label className="ml-auto flex items-center gap-2 text-sm">
