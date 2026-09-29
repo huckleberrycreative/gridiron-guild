@@ -355,7 +355,7 @@ Deno.serve(async (req) => {
         const weekly = stats.filter(
           (s) => s.seasonId === SEASON && s.statSourceId === 0 && s.statSplitTypeId === 1 && (s.appliedTotal ?? 0) !== 0
         );
-        const games = weekly.length || (actual?.appliedAverage ? Math.round((actual.appliedTotal ?? 0) / actual.appliedAverage) : 0);
+        const games = actual?.appliedAverage ? Math.round((actual.appliedTotal ?? 0) / actual.appliedAverage) : weekly.length;
         const actualPpg = actual?.appliedAverage ?? (games ? (actual?.appliedTotal ?? 0) / games : null);
         const projPpg = proj?.appliedTotal ? proj.appliedTotal / 17 : null;
         await admin
