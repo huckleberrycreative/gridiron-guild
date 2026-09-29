@@ -238,7 +238,7 @@ const TradeValueChart = () => {
 
   const columns: Column<Row & { rank: number }>[] = [
     { key: 'rank', label: '#', sortable: true, align: 'center' },
-    { key: 'name', label: 'Player', sortable: true, render: (v) => <span className="font-semibold">{String(v)}</span> },
+    { key: 'name', label: 'Player', sortable: true, render: (v) => <span className="block min-w-[12rem] whitespace-nowrap font-semibold">{String(v)}</span> },
     { key: 'position', label: 'Pos', sortable: true, align: 'center' },
     { key: 'team', label: 'Team', sortable: true },
     {
@@ -260,15 +260,12 @@ const TradeValueChart = () => {
         );
       },
     },
-    { key: 'talent', label: 'Talent', sortable: true, align: 'center' },
-    { key: 'ppg', label: 'PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
-    { key: 'actual', label: '2026 PPG', sortable: true, align: 'center', render: (v) => (v == null ? '—' : Number(v).toFixed(1)) },
+    { key: 'age', label: 'Age', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
+    { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => (Number(v) ? Number(v).toFixed(1) : '—') },
     { key: 'vor', label: 'VOR', sortable: true, align: 'center', render: (v) => (v == null ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`) },
     { key: 'rosRank', label: 'ROS Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
-    { key: 'dynastyRank', label: 'Dynasty Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'salary', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 'avgCost', label: 'Wtd $ (27–29)', sortable: true, align: 'center', render: (v) => `$${Math.round(Number(v))}` },
-    { key: 'surplus', label: 'Surplus $', sortable: true, align: 'center', render: (v) => `${Number(v) >= 0 ? '+' : '−'}$${Math.abs(Number(v))}` },
   ];
 
   return (
