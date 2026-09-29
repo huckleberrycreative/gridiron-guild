@@ -301,6 +301,28 @@ const TradeAnalyzer = () => {
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
         lost.reduce((s, p) => s + p.healthyPpg, 0);
+      // Roster context: does the best incoming player actually start here,
+      // and is he covering an injury hole?
+      const remaining = before.filter(
+        (p) => !p.practiceSquad && !lost.some((l) => l.id === p.id)
+      );
+      const bestIn = [...gained]
+        .filter((p) => !p.practiceSquad)
+        .sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
+      let starterIn: { p: Asset; over: Asset | null; hurt: Asset | null; bump: number } | null = null;
+      if (bestIn) {
+        const samePos = remaining
+          .filter((p) => p.position === bestIn.position)
+          .sort((a, b) => b.healthyPpg - a.healthyPpg);
+        const cur = samePos[0] ?? null;
+        const hurt = samePos.find((p) => p.out) ?? null;
+        const bump = cur ? bestIn.healthyPpg - cur.healthyPpg : bestIn.healthyPpg;
+        if (!cur || bestIn.healthyPpg >= cur.healthyPpg * 0.9 || hurt) {
+          starterIn = { p: bestIn, over: cur, hurt, bump };
+        }
+      }
+      const eliteOut =
+        [...lost].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0] ?? null;
       return {
         parts,
         overall,
@@ -320,6 +342,8 @@ const TradeAnalyzer = () => {
         valueScore,
         fitScore,
         score,
+        starterIn,
+        eliteOut,
       };
     };
 
@@ -446,9 +470,20 @@ const TradeAnalyzer = () => {
     const lineupUp = r.winNowPpw > 0.3;
     const lineupDown = r.winNowPpw < -0.3;
 
+    const st = r.starterIn;
+    const eo = r.eliteOut;
+    const sellingStarForDepth =
+      !!eo && valueOf(eo.id) >= 65 && r.gained.length > r.lost.length;
+
     let bull: string;
     let bear: string;
-    if (s.mode === 'rebuild') {
+
+    // Roster-specific reads take priority over generic standings talk.
+    if (st?.hurt) {
+      bull = `${st.p.name} isn't a stash — he starts tomorrow, and with ${st.hurt.name} sidelined you need him to.`;
+    } else if (st && st.bump > 1.5) {
+      bull = `${st.p.name} walks straight in as your best ${st.p.position} — about ${st.bump.toFixed(1)} more points a week from that slot.`;
+    } else if (s.mode === 'rebuild') {
       bull = youngIn.length
         ? `At ${where}, this season is a sunk cost — ${youngIn.map((p) => p.name).join(' and ')} is exactly the kind of young piece a rebuild is built around.`
         : buying
@@ -489,6 +524,26 @@ const TradeAnalyzer = () => {
           : injuredIn
             ? `${injuredIn.name} misses about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'}, and bubble teams can't spot anyone games.`
             : `Neither buyer nor seller — this doesn't clearly push you in either direction.`;
+    }
+
+    // If a roster-specific bull short-circuited the mode chain, bear still needs a value.
+    if (!bear!) {
+      bear = lineupDown
+        ? `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week from your starting lineup — that's real ground to concede.`
+        : injuredIn
+          ? `${injuredIn.name} is out about ${injuredIn.weeksOut} more week${injuredIn.weeksOut === 1 ? '' : 's'} — you'd be paying now for points later.`
+          : r.salaryDelta > 0
+            ? `$${r.salaryDelta} more salary lands on your books — cap you'll wish you had when the injury bug hits.`
+            : `If the best player in the deal is already yours, this doesn't clearly make you better.`;
+    }
+
+    // Roster-specific bear cases override the generic ones.
+    if (sellingStarForDepth && eo) {
+      bear = `You're giving up ${eo.name}, a legitimate top ${eo.position}, for depth — it might help this week, but it's the kind of deal you regret in December.`;
+    } else if (buying && st && st.over && st.bump < 1.5 && !st.hurt) {
+      bear = `You're paying real future value for a guy scoring only ${Math.max(0, st.bump).toFixed(1)} more points a week than ${st.over.name} — that's a marginal upgrade at a premium price.`;
+    } else if (buying && st?.hurt) {
+      bear = `${st.p.name} fills the ${st.hurt.name} hole, but you're paying full price for a rental — when ${st.hurt.name} is back, where does everyone fit?`;
     }
 
     const plan = s.mode === 'rebuild' ? 'a rebuilding team' : s.mode === 'contender' ? 'a contender' : 'a bubble team';
