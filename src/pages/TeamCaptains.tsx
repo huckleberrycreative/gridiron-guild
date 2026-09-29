@@ -123,7 +123,7 @@ const TeamCaptains = () => {
   };
 
   const weeks = Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => i + 1);
-  const fmt = (n: number) => n.toFixed(1);
+  const fmt = (n: number) => (Math.abs(n) < 0.05 ? 0 : n).toFixed(1);
   const weekAvg = (week: number) => {
     const pts = teams.map((t) => captainPts(week, valueAt(week, t.id))).filter((p): p is number => p != null);
     return pts.length ? pts.reduce((a, b) => a + b, 0) / pts.length : null;
