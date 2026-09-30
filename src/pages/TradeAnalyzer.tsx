@@ -849,6 +849,7 @@ const TradeAnalyzer = () => {
                   <li><b className="text-foreground">Handcuffs</b> — a backup RB is worth +20 Trade Value to the team that rosters his NFL starter (e.g. Emmett Johnson behind Kenneth Walker for the Fanatics), and only his normal value elsewhere.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
                   <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
+                  <li><b className="text-foreground">Win-now</b> = this season only (lineup + injury depth). <b className="text-foreground">Dynasty</b> = long term (full-health roster, future salary, Trade Value scores). <b className="text-foreground">Blended</b> = the big number, weighted by where your team stands.</li>
                 </ul>
               </div>
             </>
