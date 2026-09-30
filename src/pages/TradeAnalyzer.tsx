@@ -317,6 +317,12 @@ const TradeAnalyzer = () => {
       // Long-term trade value matters more to teams whose season is slipping away.
       const valueWeight = 0.6 + 0.8 * (1 - contention);
       const score = Math.round((overall * 0.5 + valueScore * 0.15 * 0.5 * valueWeight) * 10) / 10;
+      // Separate lenses on the same % scale, ignoring the team's situation.
+      // Win-now: this season's lineup and injury depth only.
+      const winNowGrade = Math.round((parts.winNow * 0.8 + parts.depth * 0.2) * 0.6 * 10) / 10;
+      // Dynasty: full-health roster, future cap efficiency and Trade Value Chart scores.
+      const dynastyGrade =
+        Math.round(((parts.dynasty * 0.6 + parts.cap * 0.4) * 0.5 + valueScore * 0.15 * 0.5 * 1.2) * 10) / 10;
       const situation = situationFor(teamId);
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
@@ -368,6 +374,8 @@ const TradeAnalyzer = () => {
         valueScore,
         fitScore,
         score,
+        winNowGrade,
+        dynastyGrade,
         starterIn,
         eliteOut,
         handcuffs,
@@ -755,6 +763,23 @@ const TradeAnalyzer = () => {
             </div>
           </div>
         </div>
+        <div className="grid grid-cols-3 gap-1.5 text-center mb-3">
+          {[
+            { k: 'Win-now', v: r.winNowGrade },
+            { k: 'Dynasty', v: r.dynastyGrade },
+            { k: 'Blended', v: r.score },
+          ].map((g) => (
+            <div key={g.k} className="rounded-md border border-border/60 bg-muted/40 px-1 py-1.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{g.k}</div>
+              <div className={cn('font-mono text-base font-extrabold tabular-nums', g.v >= 0 ? 'text-emerald-600' : 'text-destructive')}>
+                {g.v > 0 ? '+' : ''}{g.v.toFixed(1)}%
+              </div>
+              <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                {Math.abs(g.v) <= 2 ? 'Fair' : Math.abs(g.v) <= 5 ? (g.v > 0 ? 'Favors you' : 'Against you') : 'Lopsided'}
+              </div>
+            </div>
+          ))}
+        </div>
         <ul className="space-y-1.5 text-sm mb-3">
           <li><span className="font-bold text-emerald-600">Bull:</span> {c.bull}</li>
           <li><span className="font-bold text-destructive">Bear:</span> {c.bear}</li>
@@ -824,6 +849,7 @@ const TradeAnalyzer = () => {
                   <li><b className="text-foreground">Handcuffs</b> — a backup RB is worth +20 Trade Value to the team that rosters his NFL starter (e.g. Emmett Johnson behind Kenneth Walker for the Fanatics), and only his normal value elsewhere.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
                   <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
+                  <li><b className="text-foreground">Win-now</b> = this season only (lineup + injury depth). <b className="text-foreground">Dynasty</b> = long term (full-health roster, future salary, Trade Value scores). <b className="text-foreground">Blended</b> = the big number, weighted by where your team stands.</li>
                 </ul>
               </div>
             </>
