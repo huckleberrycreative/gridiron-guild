@@ -87,6 +87,12 @@ const PowerRanks = () => {
                   the percentage of weekly output a team retains through an injury is its depth
                   score. Thin benches also carry an injury drag into the simulation.
                 </li>
+                <li>
+                  <strong>Real results &amp; bench:</strong> outside of standings, the grade blends
+                  projected lineup (34%), actual Starter PPW from your current ESPN lineup (28%),
+                  bench average Trade Value (20%) and depth (18%).
+                </li>
+
 
                 <li>
                   <strong>Standings:</strong> accumulated weekly points grow every week, from 30% of
