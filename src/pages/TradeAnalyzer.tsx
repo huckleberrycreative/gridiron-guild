@@ -125,6 +125,20 @@ const TradeAnalyzer = () => {
   const { rows: powerRows, weeksPlayed } = usePowerRankRows();
   const { byId: tv } = useTradeValues();
   const valueOf = (id: string) => tv.get(id)?.value ?? 0;
+  // Dynasty asset value for trades: half Trade Value Chart (cap-aware), half
+  // dynasty market value (exponential by dynasty rank, so a top-15 asset is
+  // worth far more than two top-75 pieces). Young players who are losing
+  // snaps (scoring well under projection) get a usage-risk haircut. Then made
+  // convex so stars dominate packages of lesser pieces.
+  const assetOf = (id: string) => {
+    const r = tv.get(id) as any;
+    if (!r) return 0;
+    const rank: number | null = r.dynastyRank ?? null;
+    const market = rank ? 100 * Math.exp(-(rank - 1) / 40) : r.value * 0.5;
+    let v = r.value * 0.5 + market * 0.5;
+    if (r.actual != null && r.ppg > 0 && r.actual < r.ppg * 0.65) v *= 0.85;
+    return 100 * Math.pow(Math.max(0, v) / 100, 1.5);
+  };
 
   // Open with the first two franchises loaded so there's nothing to pick first.
   useEffect(() => {
@@ -257,7 +271,7 @@ const TradeAnalyzer = () => {
       const drops =
         extra > 0
           ? after
-              .filter((p) => !p.practiceSquad)
+              .filter((p) => !p.practiceSquad && !gained.some((g) => g.id === p.id))
               .sort((x, y) => valueOf(x.id) - valueOf(y.id) || x.ppg - y.ppg)
               .slice(0, extra)
           : [];
@@ -298,12 +312,12 @@ const TradeAnalyzer = () => {
       // Trade Value Chart: best asset counts fully, extras count less, so
       // three nickels don't automatically beat a quarter.
       const cuffVal = (p: Asset, owner: Asset[]) =>
-        handcuffStarter(p, owner) ? Math.min(100, valueOf(p.id) + HANDCUFF_BONUS) : valueOf(p.id);
+        handcuffStarter(p, owner) ? Math.min(100, assetOf(p.id) + HANDCUFF_BONUS) : assetOf(p.id);
       const pkg = (xs: Asset[], owner: Asset[]) =>
         xs
           .map((p) => cuffVal(p, owner))
           .sort((x, y) => y - x)
-          .reduce((s, v, i) => s + v * Math.pow(0.6, i), 0);
+          .reduce((s, v, i) => s + v * Math.pow(0.5, i), 0);
       const valueIn = pkg(gained, after);
       const valueOut = pkg([...lost, ...drops], before);
       const handcuffs = [
@@ -316,13 +330,13 @@ const TradeAnalyzer = () => {
       const fitScore = overall;
       // Long-term trade value matters more to teams whose season is slipping away.
       const valueWeight = 0.6 + 0.8 * (1 - contention);
-      const score = Math.round((overall * 0.5 + valueScore * 0.15 * 0.5 * valueWeight) * 10) / 10;
+      const score = Math.round((overall * 0.5 + valueScore * 0.2 * 0.5 * valueWeight) * 10) / 10;
       // Separate lenses on the same % scale, ignoring the team's situation.
       // Win-now: this season's lineup and injury depth only.
       const winNowGrade = Math.round((parts.winNow * 0.8 + parts.depth * 0.2) * 0.6 * 10) / 10;
       // Dynasty: full-health roster, future cap efficiency and Trade Value Chart scores.
       const dynastyGrade =
-        Math.round(((parts.dynasty * 0.6 + parts.cap * 0.4) * 0.5 + valueScore * 0.15 * 0.5 * 1.2) * 10) / 10;
+        Math.round(((parts.dynasty * 0.6 + parts.cap * 0.4) * 0.5 + valueScore * 0.25 * 0.6) * 10) / 10;
       const situation = situationFor(teamId);
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
@@ -845,7 +859,7 @@ const TradeAnalyzer = () => {
                 <ul className="list-disc pl-5 space-y-1">
                   <li><b className="text-foreground">Half Trade Value</b> — the number next to each name, from the Trade Value Chart. Your best player in the deal counts fully; extras count less.</li>
                   <li><b className="text-foreground">Half Power Rank impact</b> — does your starting lineup actually get better, this year and long term, counting injuries, depth and salary.</li>
-                  <li>Taking back more players than you send? Your lowest-value players get cut to make room, and they count as value you give up.</li>
+                  <li>Taking back more players than you send? Your lowest-value players already on your roster (never incoming or practice squad players) get cut to make room, and they count as value you give up.</li>
                   <li><b className="text-foreground">Handcuffs</b> — a backup RB is worth +20 Trade Value to the team that rosters his NFL starter (e.g. Emmett Johnson behind Kenneth Walker for the Fanatics), and only his normal value elsewhere.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
                   <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
