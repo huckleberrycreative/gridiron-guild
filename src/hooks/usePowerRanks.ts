@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
+import { useTradeValues } from '@/hooks/useTradeValues';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                          */
@@ -229,6 +230,7 @@ export const simulateSeason = (teams: SimTeam[], weeksPlayed: number): Record<st
 export function usePowerRankRows() {
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const { data: standings = [], isLoading: standingsLoading } = useActiveSeasonStandings();
+  const { byId: tvById } = useTradeValues();
   const [proj, setProj] = useState<Record<string, number>>({});
   const [projLoaded, setProjLoaded] = useState(false);
 
@@ -318,7 +320,7 @@ export function usePowerRankRows() {
     };
   }, [salaries, standings, proj]);
 
-  const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number) => {
+  const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number, realPpw: Record<string, number>, tvOf: (id: string) => number | undefined) => {
     if (!list.length) return [];
     const base = list.map(({ team, roster }) => {
       const available = roster.filter((p) => !p.out);
@@ -342,6 +344,12 @@ export function usePowerRankRows() {
         retained,
         replacementPpg,
         benchCount: Math.max(0, available.length - starters.length),
+        realPpw: realPpw[team.id] ?? starterPpw,
+        benchTv: (() => {
+          const ids = new Set(starters.map((p) => p.id));
+          const vals = roster.filter((p) => !ids.has(p.id)).map((p) => tvOf(p.id)).filter((v): v is number => v != null);
+          return vals.length ? vals.reduce((a, v) => a + v, 0) / vals.length : 0;
+        })(),
       };
     });
 
@@ -358,14 +366,20 @@ export function usePowerRankRows() {
     // Standings weight ramps every week: 30% after Week 1 → 75% by Week 13
     const rampProgress = Math.min(1, Math.max(0, (weeksPlayed - 1) / (REG_SEASON_WEEKS - 1)));
     const wStand = weeksPlayed === 0 ? 0 : 0.3 + 0.45 * rampProgress;
-    const wStart = (1 - wStand) * 0.68;
-    const wDepth = (1 - wStand) * 0.32;
+    // Non-standings share: projected lineup 34%, real Starter PPW 28%, depth 18%, bench trade value 20%
+    const wStart = (1 - wStand) * 0.34;
+    const wReal = (1 - wStand) * 0.28;
+    const wDepth = (1 - wStand) * 0.18;
+    const wBench = (1 - wStand) * 0.2;
+    const nReal = span(base.map((b) => b.realPpw));
+    const nBench = span(base.map((b) => b.benchTv));
 
     const scored = base.map((b) => {
       const startN = nStart(b.starterPpw);
       const depthN = nDepth(b.replacementPpg);
       const standN = nStand(b.team.totalPoints);
-      const raw = startN * wStart + depthN * wDepth + standN * wStand;
+      const raw =
+        startN * wStart + nReal(b.realPpw) * wReal + depthN * wDepth + nBench(b.benchTv) * wBench + standN * wStand;
       return {
         ...b,
         startN,
@@ -400,6 +414,8 @@ export function usePowerRankRows() {
       .sort((a, b) => b.score - a.score || b.starterPpw - a.starterPpw);
   }, []);
 
+  const tvOf = useCallback((id: string) => tvById.get(id)?.value, [tvById]);
+
   // Current ESPN starting lineup's season average (slots 20 = bench, 21 = IR).
   const lineupPpw = useMemo(() => {
     const m: Record<string, number> = {};
@@ -411,20 +427,24 @@ export function usePowerRankRows() {
   }, [salaries]);
 
   const rows = useMemo(
-    () => compute(input.list, input.weeksPlayed).map((r) => ({ ...r, lineupPpw: lineupPpw[r.team.id] ?? null })),
-    [compute, input, lineupPpw]
+    () => compute(input.list, input.weeksPlayed, lineupPpw, tvOf).map((r) => ({ ...r, lineupPpw: lineupPpw[r.team.id] ?? null })),
+    [compute, input, lineupPpw, tvOf]
   );
 
   /** Re-run Power Ranks with one team's roster changed (drop ids, add assets). */
   const whatIf = useCallback(
-    (teamId: string, dropIds: Set<string>, adds: Asset[]) =>
-      compute(
-        input.list.map((t) =>
-          t.team.id === teamId ? { ...t, roster: [...t.roster.filter((p) => !dropIds.has(p.id)), ...adds] } : t
-        ),
-        input.weeksPlayed
-      ),
-    [compute, input]
+    (teamId: string, dropIds: Set<string>, adds: Asset[]) => {
+      const list = input.list.map((t) =>
+        t.team.id === teamId ? { ...t, roster: [...t.roster.filter((p) => !dropIds.has(p.id)), ...adds] } : t
+      );
+      const sum = (r: Asset[]) => bestLineup(r.filter((p) => !p.out)).reduce((a, p) => a + p.ppg, 0);
+      const before = input.list.find((t) => t.team.id === teamId);
+      const after = list.find((t) => t.team.id === teamId);
+      const real = { ...lineupPpw };
+      if (before && after && real[teamId] != null) real[teamId] += sum(after.roster) - sum(before.roster);
+      return compute(list, input.weeksPlayed, real, tvOf);
+    },
+    [compute, input, lineupPpw, tvOf]
   );
 
   const loading = salariesLoading || standingsLoading || !projLoaded;
