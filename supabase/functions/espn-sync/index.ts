@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
     const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const newsByName = new Map<string, string>();
     try {
-      const newsFilter = { players: { filterStatus: { value: ['FREEAGENT', 'WAIVERS', 'ONTEAM'] }, limit: 600 } };
+      const newsFilter = { players: { limit: 1500, sortPercOwned: { sortAsc: false, sortPriority: 1 } } };
       const newsRes = await fetch(
         `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?scoringPeriodId=${league?.scoringPeriodId ?? 1}&view=kona_player_info&view=news_wl`,
         {
