@@ -278,13 +278,13 @@ Deno.serve(async (req) => {
           .slice()
           .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))[0];
         const injuryNote: string | null =
-          status === 'healthy'
+          newsByName.get(key) ??
+          (status === 'healthy'
             ? null
-            : (newsByName.get(key) ??
-               latestInjury?.details?.longDetail ??
+            : (latestInjury?.details?.longDetail ??
                latestInjury?.details?.shortDetail ??
                latestInjury?.details?.detail ??
-               null);
+               null));
 
         const injuryPatch = (prevWeeks: number) => {
           const weeks =
