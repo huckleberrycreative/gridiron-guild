@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
     try {
       const newsFilter = { players: { filterStatus: { value: ['FREEAGENT', 'WAIVERS', 'ONTEAM'] }, limit: 600 } };
       const newsRes = await fetch(
-        `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?scoringPeriodId=0&view=kona_player_info&view=news_wl`,
+        `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?scoringPeriodId=${league?.scoringPeriodId ?? 1}&view=kona_player_info&view=news_wl`,
         {
           headers: {
             Cookie: `espn_s2=${s2}; SWID=${swid}`,
