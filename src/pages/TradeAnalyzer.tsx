@@ -490,6 +490,9 @@ const TradeAnalyzer = () => {
                       {p.out && p.weeksOut ? ` ${p.weeksOut}w` : ''}
                     </span>
                   )}
+                  {p.injuryStatus === 'healthy' && p.injuryNote && (
+                    <span title={p.injuryNote} className="cursor-help text-[10px] text-muted-foreground shrink-0">ⓘ</span>
+                  )}
                   <span className="ml-auto font-mono text-[11px] text-muted-foreground w-12 text-right shrink-0">{p.ppg.toFixed(1)}</span>
                   <span className="font-mono text-[11px] text-muted-foreground w-10 text-right shrink-0">${p.effectiveSalary}</span>
                 </label>

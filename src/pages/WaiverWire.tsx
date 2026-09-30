@@ -305,6 +305,9 @@ const WaiverWire = () => {
                                   {injLabel[p.injuryStatus] ?? p.injuryStatus}
                                 </span>
                               )}
+                              {p.injuryStatus === 'healthy' && p.injuryNote && (
+                                <span title={p.injuryNote} className="cursor-help text-[10px] text-muted-foreground shrink-0">ⓘ</span>
+                              )}
                               {p.status === 'WAIVERS' && <span className="text-[9px] uppercase text-muted-foreground">WV</span>}
                             </div>
                           </td>
