@@ -465,6 +465,7 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       teamsSynced: teamIdByEspn.size,
+      newsNotes: newsByName.size,
       unmatchedTeams,
       espnTeams,
       playersAdded: added,
