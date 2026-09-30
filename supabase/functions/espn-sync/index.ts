@@ -200,6 +200,42 @@ Deno.serve(async (req) => {
     const moved: string[] = [];
     let injuryUpdates = 0;
 
+    // --- player news blurbs (ESPN news_wl view) ---
+    const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const newsByName = new Map<string, string>();
+    try {
+      const newsFilter = { players: { limit: 1500, sortPercOwned: { sortAsc: false, sortPriority: 1 } } };
+      const newsRes = await fetch(
+        `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?scoringPeriodId=${league?.scoringPeriodId ?? 1}&view=kona_player_info&view=news_wl`,
+        {
+          headers: {
+            Cookie: `espn_s2=${s2}; SWID=${swid}`,
+            Accept: 'application/json',
+            'User-Agent': 'Mozilla/5.0',
+            'x-fantasy-filter': JSON.stringify(newsFilter),
+          },
+        }
+      );
+      console.log('news fetch status:', newsRes.status);
+      if (newsRes.ok) {
+        const newsData = await newsRes.json();
+        console.log('news players returned:', (newsData.players ?? []).length);
+        for (const e of newsData.players ?? []) {
+          const p = e.player;
+          if (!p?.fullName) continue;
+          // ESPN ships analysis blurbs as seasonOutlook / weekly outlooks.
+          const weeklyOutlooks = p.outlooks?.outlooksByWeek ?? {};
+          const latestWeek = Object.keys(weeklyOutlooks).map(Number).filter((n) => !isNaN(n)).sort((a, b) => b - a)[0];
+          const raw = (latestWeek != null ? weeklyOutlooks[latestWeek] : null) ?? p.seasonOutlook ?? null;
+          if (raw) newsByName.set(norm(p.fullName), stripHtml(String(raw)).slice(0, 500));
+        }
+      }
+    } catch (e) {
+      console.error('news fetch failed', e);
+    } finally {
+      console.log('news notes collected:', newsByName.size);
+    }
+
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
       if (!teamId) continue;
@@ -236,6 +272,20 @@ Deno.serve(async (req) => {
         const status = INJURY_MAP[p.injuryStatus ?? 'ACTIVE'] ?? 'healthy';
         const existingSalary = salaryByPlayer.get(playerId);
 
+        // News blurb from the news_wl fetch; fall back to injury details if present.
+        const injuries: any[] = Array.isArray(p.injuries) ? p.injuries : [];
+        const latestInjury = injuries
+          .slice()
+          .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))[0];
+        const injuryNote: string | null =
+          newsByName.get(key) ??
+          (status === 'healthy'
+            ? null
+            : (latestInjury?.details?.longDetail ??
+               latestInjury?.details?.shortDetail ??
+               latestInjury?.details?.detail ??
+               null));
+
         const injuryPatch = (prevWeeks: number) => {
           const weeks =
             status === 'healthy'
@@ -243,7 +293,7 @@ Deno.serve(async (req) => {
               : status === 'questionable' || status === 'doubtful'
                 ? 0
                 : Math.max(1, prevWeeks || (status === 'ir' ? 6 : 1));
-          return { injury_status: status, injury_weeks_out: weeks };
+          return { injury_status: status, injury_weeks_out: weeks, injury_note: injuryNote };
         };
 
         if (existingSalary) {
@@ -415,6 +465,7 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       teamsSynced: teamIdByEspn.size,
+      newsNotes: newsByName.size,
       unmatchedTeams,
       espnTeams,
       playersAdded: added,

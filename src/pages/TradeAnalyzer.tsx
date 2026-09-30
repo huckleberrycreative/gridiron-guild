@@ -49,6 +49,7 @@ type Asset = {
   injuryStatus: string;
   weeksOut: number;
   out: boolean;
+  injuryNote: string | null;
 };
 
 const lineupTotal = (roster: PRAsset[], excluded?: Set<string>) =>
@@ -220,6 +221,7 @@ const TradeAnalyzer = () => {
       injuryStatus,
       weeksOut,
       out,
+      injuryNote: s.injuryNote ?? null,
       projected: projected != null,
       franchiseTag: s.franchiseTag,
       practiceSquad: s.practiceSquad,
@@ -483,10 +485,13 @@ const TradeAnalyzer = () => {
                   {p.franchiseTag && <span title="Franchise tag" className="rounded bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">F</span>}
                   {p.practiceSquad && <span className="text-[10px] uppercase text-muted-foreground">PS</span>}
                   {p.injuryStatus !== 'healthy' && (
-                    <span className={cn('rounded px-1 text-[9px] font-bold uppercase border', p.out ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200')}>
+                    <span title={p.injuryNote ?? undefined} className={cn('rounded px-1 text-[9px] font-bold uppercase border', p.out ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200', p.injuryNote && 'cursor-help')}>
                       {injuryLabel[p.injuryStatus] ?? p.injuryStatus}
                       {p.out && p.weeksOut ? ` ${p.weeksOut}w` : ''}
                     </span>
+                  )}
+                  {p.injuryStatus === 'healthy' && p.injuryNote && (
+                    <span title={p.injuryNote} className="cursor-help text-[10px] text-muted-foreground shrink-0">ⓘ</span>
                   )}
                   <span className="ml-auto font-mono text-[11px] text-muted-foreground w-12 text-right shrink-0">{p.ppg.toFixed(1)}</span>
                   <span className="font-mono text-[11px] text-muted-foreground w-10 text-right shrink-0">${p.effectiveSalary}</span>

@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
         sortPercOwned: { sortAsc: false, sortPriority: 1 },
       },
     };
-    const res = await fetch(`${base}?scoringPeriodId=${week}&view=kona_player_info`, {
+    const res = await fetch(`${base}?scoringPeriodId=${week}&view=kona_player_info&view=news_wl`, {
       headers: { ...headers, 'x-fantasy-filter': JSON.stringify(filter) },
     });
     if (!res.ok) return json({ error: `ESPN returned an error (${res.status}).` }, 502);
@@ -80,12 +80,20 @@ Deno.serve(async (req) => {
         const games = seasonAct?.appliedAverage
           ? Math.round((seasonAct.appliedTotal ?? 0) / seasonAct.appliedAverage)
           : weeklyActuals.filter((s) => (s.appliedTotal ?? 0) !== 0).length;
+        const injuryStatus = INJURY_MAP[p.injuryStatus ?? 'ACTIVE'] ?? 'healthy';
+        // ESPN ships analysis blurbs as seasonOutlook / weekly outlooks.
+        const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        const weeklyOutlooks = p.outlooks?.outlooksByWeek ?? {};
+        const latestWeek = Object.keys(weeklyOutlooks).map(Number).filter((n) => !isNaN(n)).sort((a, b) => b - a)[0];
+        const rawNote = (latestWeek != null ? weeklyOutlooks[latestWeek] : null) ?? p.seasonOutlook ?? null;
+        const injuryNote = rawNote ? stripHtml(String(rawNote)).slice(0, 500) : null;
         return {
           espnId: p.id,
           name: p.fullName,
           position,
           proTeam: PRO_TEAMS[p.proTeamId] ?? '',
-          injuryStatus: INJURY_MAP[p.injuryStatus ?? 'ACTIVE'] ?? 'healthy',
+          injuryStatus,
+          injuryNote,
           percentOwned: p.ownership?.percentOwned ?? 0,
           status: e.status,
           projPpg: seasonProj?.appliedTotal ? seasonProj.appliedTotal / Math.max(1, 18 - week) : null,

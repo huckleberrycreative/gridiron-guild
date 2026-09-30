@@ -16,6 +16,7 @@ type EspnFA = {
   position: string;
   proTeam: string;
   injuryStatus: string;
+  injuryNote: string | null;
   percentOwned: number;
   status: string;
   projPpg: number | null;
@@ -89,6 +90,7 @@ const WaiverWire = () => {
         espnProjPpg: p.projPpg,
         injuryStatus: p.injuryStatus,
         injuryWeeksOut: OUT_STATUSES.includes(p.injuryStatus) ? 1 : 0,
+        injuryNote: p.injuryNote ?? null,
       })),
     [fas]
   );
@@ -299,9 +301,12 @@ const WaiverWire = () => {
                               <span className="font-medium">{p.name}</span>
                               <span className="text-[11px] text-muted-foreground">{p.proTeam}</span>
                               {p.injuryStatus !== 'healthy' && (
-                                <span className={cn('rounded px-1 text-[9px] font-bold border', OUT_STATUSES.includes(p.injuryStatus) ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200')}>
+                                <span title={p.injuryNote ?? undefined} className={cn('rounded px-1 text-[9px] font-bold border', OUT_STATUSES.includes(p.injuryStatus) ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200', p.injuryNote && 'cursor-help')}>
                                   {injLabel[p.injuryStatus] ?? p.injuryStatus}
                                 </span>
+                              )}
+                              {p.injuryStatus === 'healthy' && p.injuryNote && (
+                                <span title={p.injuryNote} className="cursor-help text-[10px] text-muted-foreground shrink-0">ⓘ</span>
                               )}
                               {p.status === 'WAIVERS' && <span className="text-[9px] uppercase text-muted-foreground">WV</span>}
                             </div>
