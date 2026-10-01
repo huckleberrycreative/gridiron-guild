@@ -6,8 +6,20 @@ import { Loader2 } from 'lucide-react';
 
 import { useTradeValues, type TradeValueRow as Row } from '@/hooks/useTradeValues';
 
+const PRIME: Record<string, number> = { QB: 32, RB: 26, WR: 29, TE: 30 };
+const ageFactor = (pos: string, age: number | null) => {
+  if (!age || age <= PRIME[pos]) return 1;
+  return Math.max(0.45, 1 - (age - PRIME[pos]) * (pos === 'RB' ? 0.09 : 0.08));
+};
+
+type SalaryRow = {
+  id: string; name: string; position: string; team: string; ft?: boolean;
+  s27: number; s28: number; s29: number; total: number; pts: number; ppd: number; ppg: number; rank: number;
+};
+
 const TradeValueChart = () => {
   const { rows: all, isLoading } = useTradeValues();
+  const [tab, setTab] = useState<'value' | 'salary'>('value');
   const [onlyFA, setOnlyFA] = useState(false);
   const [pos, setPos] = useState('ALL');
   const rows = useMemo(
@@ -16,6 +28,40 @@ const TradeValueChart = () => {
       .map((r, i) => ({ ...r, rank: i + 1 })),
     [all, onlyFA, pos]
   );
+  const salaryRows = useMemo<SalaryRow[]>(() => {
+    return all
+      .filter((r: any) => (onlyFA ? !r.teamId : !!r.teamId) && (pos === 'ALL' || r.group === pos) && r.ppg > 0)
+      .map((r: any) => {
+        const age = r.age as number | null;
+        // Projected points over 2027–2029, fading with age each year
+        const pts = [1, 2, 3].reduce((a, k) => a + r.ppg * 17 * ageFactor(r.position, age != null ? age + k : null), 0);
+        const total = r.s27 + r.s28 + r.s29;
+        return { id: r.id, name: r.name, position: r.position, team: r.team, ft: r.ft, s27: r.s27, s28: r.s28, s29: r.s29, total, pts, ppd: total > 0 ? pts / total : 0, ppg: r.ppg, rank: 0 };
+      })
+      .sort((a, b) => b.ppd - a.ppd)
+      .map((r, i) => ({ ...r, rank: i + 1 }));
+  }, [all, onlyFA, pos]);
+
+  const salaryColumns: Column<SalaryRow>[] = [
+    { key: 'rank', label: '#', sortable: true, align: 'center' },
+    { key: 'name', label: 'Player', sortable: true, render: (v, row) => (
+      <span className="flex items-center gap-1.5 whitespace-nowrap font-semibold min-w-[12rem]">
+        {String(v)}
+        {row.ft && <span title="Franchise tag" className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded bg-accent text-[10px] font-bold leading-none text-accent-foreground">F</span>}
+      </span>
+    ) },
+    { key: 'position', label: 'Pos', sortable: true, align: 'center' },
+    { key: 'team', label: 'Team', sortable: true },
+    { key: 'ppd', label: 'Pts per $', sortable: true, align: 'center', render: (v) => (
+      <span className="inline-block min-w-[3rem] rounded bg-primary/10 px-2 py-1 font-bold text-primary">{Number(v).toFixed(1)}</span>
+    ) },
+    { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => Number(v).toFixed(1) },
+    { key: 'pts', label: 'Proj Pts (27–29)', sortable: true, align: 'center', render: (v) => Math.round(Number(v)).toLocaleString() },
+    { key: 's27', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
+    { key: 's28', label: '2028 $', sortable: true, align: 'center', render: (v) => `$${v}` },
+    { key: 's29', label: '2029 $', sortable: true, align: 'center', render: (v) => `$${v}` },
+    { key: 'total', label: '3-Yr $', sortable: true, align: 'center', render: (v) => `$${v}` },
+  ];
 
   const columns: Column<Row & { rank: number }>[] = [
     { key: 'rank', label: '#', sortable: true, align: 'center' },
@@ -120,6 +166,24 @@ const TradeValueChart = () => {
           </div>
         </div>
 
+        <div className="mb-4 flex gap-1 border-b border-border">
+          {([['value', 'Trade Value'], ['salary', 'Best Salaries']] as const).map(([t, label]) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn('-mb-px border-b-2 px-4 py-2 text-sm font-semibold', tab === t ? 'border-accent text-primary' : 'border-transparent text-muted-foreground')}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === 'salary' && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            Best bang for the buck over 2027–2029: projected points across the next three seasons (fading with age)
+            divided by total salary owed. Higher = more points per dollar.
+          </p>
+        )}
+
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {[['ALL', 'All'], ['QB', 'QB'], ['RB', 'RB'], ['PC', 'Pass Catchers']].map(([p, label]) => (
             <button
@@ -147,6 +211,8 @@ const TradeValueChart = () => {
           <div className="flex justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
           </div>
+        ) : tab === 'salary' ? (
+          <SortableTable data={salaryRows} columns={salaryColumns} />
         ) : (
           <SortableTable data={rows as (Row & { rank: number })[]} columns={columns} />
         )}

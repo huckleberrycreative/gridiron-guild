@@ -11,11 +11,13 @@ import {
 import { cn } from '@/lib/utils';
 import { useTradeValues } from '@/hooks/useTradeValues';
 import { Loader2, TrendingUp, Shield, Activity } from 'lucide-react';
+import { DynastyRanks } from '@/components/DynastyRanks';
 
 const pct = (v: number) => (v >= 99.5 ? '>99%' : v < 0.5 && v > 0 ? '<1%' : `${Math.round(v)}%`);
 
 const PowerRanks = () => {
   const { rows, loading, weeksPlayed } = usePowerRankRows();
+  const [tab, setTab] = useState<'now' | 'dynasty'>('now');
 
   return (
     <Layout>
@@ -34,7 +36,31 @@ const PowerRanks = () => {
       </div>
 
       <div className="container mx-auto px-4 py-10">
-        {loading ? (
+        <div className="mb-6 flex gap-1 border-b border-border">
+          {([['now', '2026 Season'], ['dynasty', 'Dynasty']] as const).map(([t, label]) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn('-mb-px border-b-2 px-4 py-2 text-sm font-semibold', tab === t ? 'border-accent text-primary' : 'border-transparent text-muted-foreground')}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === 'dynasty' ? (
+          <>
+            <DynastyRanks />
+            <div className="mt-6 rounded-lg border border-border bg-muted/40 p-5 text-sm text-muted-foreground">
+              <h2 className="mb-2 font-serif text-lg font-semibold text-primary">How the Dynasty grade works</h2>
+              <ul className="list-disc space-y-1 pl-5">
+                <li><strong>2027 roster:</strong> every player's 2027 salary. Teams over the $1,000 cap cut their worst points-per-dollar players until they fit.</li>
+                <li><strong>Next-year scoring:</strong> each player's projected PPG, aged a year — players past their prime decline, young players get a growth bump.</li>
+                <li><strong>Lineup:</strong> best legal nine from what's left, plus small credit for cap space and roster Trade Value.</li>
+                <li><strong>Title odds:</strong> 5,000 simulated 2027 seasons with offseason uncertainty, top 4 to the playoffs.</li>
+              </ul>
+            </div>
+          </>
+        ) : loading ? (
           <div className="flex justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-[#bf2121]" />
           </div>
