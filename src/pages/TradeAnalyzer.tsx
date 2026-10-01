@@ -50,6 +50,7 @@ type Asset = {
   weeksOut: number;
   out: boolean;
   injuryNote: string | null;
+  tagBroken?: { deadCap: number; posMax: number; extraCost: number; contractYear: number };
 };
 
 const lineupTotal = (roster: PRAsset[], excluded?: Set<string>) =>
@@ -257,8 +258,37 @@ const TradeAnalyzer = () => {
     const outA = rosters.A.filter((p) => selA.has(p.id));
     const outB = rosters.B.filter((p) => selB.has(p.id));
 
-    const afterA = [...rosters.A.filter((p) => !selA.has(p.id)), ...outB];
-    const afterB = [...rosters.B.filter((p) => !selB.has(p.id)), ...outA];
+    // Constitution: trading a franchised player (not for another franchised
+    // player) breaks the tag — he reverts to the positional max and the
+    // acquiring team assumes the dead cap penalty for that contract year.
+    const TAG_POS_MAX: Record<string, number> = { QB: 180, RB: 257, WR: 203, TE: 167 };
+    const TAG_PENALTY = [1.5, 0.75, 0.5, 0.25];
+    const breakTags = (sent: Asset[], received: Asset[]) => {
+      if (received.some((p) => p.franchiseTag)) return sent;
+      return sent.map((p) => {
+        if (!p.franchiseTag) return p;
+        const s = salaries.find((x) => x.id === p.id);
+        const yrs = [s?.salary2026, s?.salary2027, s?.salary2028, s?.salary2029].map((v) => toNum(v));
+        const tagYearsLeft = Math.max(1, yrs.filter((v) => v === 100).length);
+        const contractYear = Math.min(4, Math.max(1, 5 - tagYearsLeft));
+        const posMax = TAG_POS_MAX[p.position] ?? 200;
+        const deadCap = Math.round(TAG_PENALTY[contractYear - 1] * posMax);
+        const futureTagYears = Math.max(0, tagYearsLeft - 1);
+        const extraCost = (posMax - 100) * futureTagYears + deadCap;
+        return {
+          ...p,
+          franchiseTag: false,
+          effectiveSalary: posMax + deadCap,
+          futureSalary: posMax * 3 + deadCap,
+          tagBroken: { deadCap, posMax, extraCost, contractYear },
+        };
+      });
+    };
+    const inA = breakTags(outB, outA); // what team A receives
+    const inB = breakTags(outA, outB);
+
+    const afterA = [...rosters.A.filter((p) => !selA.has(p.id)), ...inA];
+    const afterB = [...rosters.B.filter((p) => !selB.has(p.id)), ...inB];
 
     const build = (
       teamId: string,
@@ -313,8 +343,11 @@ const TradeAnalyzer = () => {
       }
       // Trade Value Chart: best asset counts fully, extras count less, so
       // three nickels don't automatically beat a quarter.
-      const cuffVal = (p: Asset, owner: Asset[]) =>
-        handcuffStarter(p, owner) ? Math.min(100, assetOf(p.id) + HANDCUFF_BONUS) : assetOf(p.id);
+      const cuffVal = (p: Asset, owner: Asset[]) => {
+        const base = handcuffStarter(p, owner) ? Math.min(100, assetOf(p.id) + HANDCUFF_BONUS) : assetOf(p.id);
+        // Broken franchise tag: every extra dollar owed eats into his value
+        return p.tagBroken ? Math.max(0, base - p.tagBroken.extraCost / 6) : base;
+      };
       const pkg = (xs: Asset[], owner: Asset[]) =>
         xs
           .map((p) => cuffVal(p, owner))
@@ -369,6 +402,7 @@ const TradeAnalyzer = () => {
           starterIn = { p: bestIn, over: cur, hurt, bump };
         }
       }
+      const tagBreaks = gained.filter((p) => p.tagBroken);
       const eliteOut =
         [...lost].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0] ?? null;
       return {
@@ -395,12 +429,13 @@ const TradeAnalyzer = () => {
         starterIn,
         eliteOut,
         handcuffs,
+        tagBreaks,
       };
     };
 
     return {
-      A: build(teamA, rosters.A, afterA, outB, outA),
-      B: build(teamB, rosters.B, afterB, outA, outB),
+      A: build(teamA, rosters.A, afterA, inA, outA),
+      B: build(teamB, rosters.B, afterB, inB, outB),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosters, selA, selB, teamA, teamB, powerRows, weeksLeft, tv]);
