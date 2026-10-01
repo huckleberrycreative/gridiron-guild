@@ -116,9 +116,9 @@ export function useActiveSeasonStandings() {
               cur.points += pts;
               cur.pf += row.score;
               cur.weeks += 1;
-              // 10+ pts = W, exactly 8 = TIE, under 8 = L
-              if (pts >= 10) cur.wins += 1;
-              else if (pts === 8) cur.ties += 1;
+              // Weekly finish: Top 4 = W, 5th = TIE, bottom = L
+              if (index < 4) cur.wins += 1;
+              else if (index === 4) cur.ties += 1;
               else cur.losses += 1;
               totals.set(row.teamId, cur);
             });
