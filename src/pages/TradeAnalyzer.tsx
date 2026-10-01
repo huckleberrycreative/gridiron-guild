@@ -788,6 +788,10 @@ const TradeAnalyzer = () => {
     if (cuffOut) {
       bear = `${cuffOut.p.name} is worth more to you than anyone else — he's the insurance policy on ${cuffOut.starter.name}, and one bad ankle turns this into a disaster. ` + bear;
     }
+    const tb = r.tagBreaks[0];
+    if (tb?.tagBroken) {
+      bear = `${tb.name}'s franchise tag doesn't travel — he jumps to the $${tb.tagBroken.posMax} positional max, and you eat a $${tb.tagBroken.deadCap} dead cap hit (Year ${tb.tagBroken.contractYear} penalty) on top. ` + bear;
+    }
     return { bull, bear, base };
   };
 
@@ -803,6 +807,11 @@ const TradeAnalyzer = () => {
               {r.situation.mode === 'rebuild' ? 'Rebuilding' : r.situation.mode === 'contender' ? 'Contending' : 'On the bubble'} · {Math.round(r.situation.playoff)}% playoff odds
             </p>
             <p className="text-xs text-muted-foreground truncate">Gets: {names(r.gained)}</p>
+            {r.tagBreaks.map((p) => p.tagBroken && (
+              <p key={p.id} className="text-xs text-destructive truncate" title="Franchise tag broken by trade — salary reverts to positional max plus dead cap penalty">
+                Tag broken: {p.name} → ${p.tagBroken.posMax}/yr + ${p.tagBroken.deadCap} dead cap
+              </p>
+            ))}
             {r.drops.length > 0 && (
               <p className="text-xs text-destructive truncate">Must cut to make room: {names(r.drops)}</p>
             )}
@@ -903,6 +912,7 @@ const TradeAnalyzer = () => {
                   <li><b className="text-foreground">Handcuffs</b> — a backup RB is worth +20 Trade Value to the team that rosters his NFL starter (e.g. Emmett Johnson behind Kenneth Walker for the Fanatics), and only his normal value elsewhere.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
                   <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
+                  <li><b className="text-foreground">Franchise tags</b> — trade a franchised player for anyone who isn't franchised and the tag breaks: the new team pays the positional max every year plus the Constitution's dead cap penalty (150% / 75% / 50% / 25% of the max, by contract year).</li>
                   <li><b className="text-foreground">Win-now</b> = this season only (lineup + injury depth). <b className="text-foreground">Dynasty</b> = long term (full-health roster, future salary, Trade Value scores). <b className="text-foreground">Blended</b> = the big number, weighted by where your team stands.</li>
                 </ul>
               </div>
