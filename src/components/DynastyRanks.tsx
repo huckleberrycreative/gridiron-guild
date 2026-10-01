@@ -69,6 +69,7 @@ export function DynastyRanks() {
       return { id, name: t.name, ppw, payroll, space: CAP - payroll, cut, avgTv };
     });
 
+    if (out.length < 5) return [];
     // Strength = projected lineup + small credit for cap space and roster value
     const strength = out.map((t) => t.ppw + Math.max(0, t.space) * 0.02 + t.avgTv * 0.1);
     // Monte Carlo: 13-week season, top 4 make playoffs, semis + 2-week final

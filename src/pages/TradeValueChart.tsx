@@ -14,7 +14,7 @@ const ageFactor = (pos: string, age: number | null) => {
 
 type SalaryRow = {
   id: string; name: string; position: string; team: string; ft?: boolean;
-  s27: number; s28: number; s29: number; total: number; pts: number; ppd: number; ppg: number; rank: number;
+  s27: number; s28: number; s29: number; total: number; pts: number; ppd: number; ppg: number; rank: number; age: number | null; dynRank: number | null;
 };
 
 const TradeValueChart = () => {
@@ -33,10 +33,21 @@ const TradeValueChart = () => {
       .filter((r: any) => (onlyFA ? !r.teamId : !!r.teamId) && (pos === 'ALL' || r.group === pos) && r.ppg > 0)
       .map((r: any) => {
         const age = r.age as number | null;
-        // Projected points over 2027–2029, fading with age each year
-        const pts = [1, 2, 3].reduce((a, k) => a + r.ppg * 17 * ageFactor(r.position, age != null ? age + k : null), 0);
+        const avg = r.vor != null ? r.ppg - r.vor : r.ppg; // positional average
+        const dyn = (r.dynScore ?? 0) / 100;
+        const young = age != null && age <= 24;
+        // Sustainability: the dynasty ranking reflects track record + outlook, so
+        // hot starts from low-ranked players are discounted; elite assets hold value.
+        const sustain = 0.45 + 0.55 * dyn;
+        // Points over positional average across 2027–2029, aged each year,
+        // with growth for young, highly-ranked players.
+        const pts = [1, 2, 3].reduce((a, k) => {
+          const growth = young ? 1 + dyn * 0.06 * k : 1;
+          const ppgK = r.ppg * growth * ageFactor(r.position, age != null ? age + k : null);
+          return a + Math.max(0, ppgK - avg) * 17 * sustain;
+        }, 0);
         const total = r.s27 + r.s28 + r.s29;
-        return { id: r.id, name: r.name, position: r.position, team: r.team, ft: r.ft, s27: r.s27, s28: r.s28, s29: r.s29, total, pts, ppd: total > 0 ? pts / total : 0, ppg: r.ppg, rank: 0 };
+        return { id: r.id, name: r.name, position: r.position, team: r.team, ft: r.ft, s27: r.s27, s28: r.s28, s29: r.s29, total, pts, ppd: total > 0 ? (pts / total) * 10 : 0, ppg: r.ppg, age, dynRank: r.dynastyRank, rank: 0 };
       })
       .sort((a, b) => b.ppd - a.ppd)
       .map((r, i) => ({ ...r, rank: i + 1 }));
@@ -52,11 +63,13 @@ const TradeValueChart = () => {
     ) },
     { key: 'position', label: 'Pos', sortable: true, align: 'center' },
     { key: 'team', label: 'Team', sortable: true },
-    { key: 'ppd', label: 'Pts per $', sortable: true, align: 'center', render: (v) => (
+    { key: 'ppd', label: 'Value per $10', sortable: true, align: 'center', render: (v) => (
       <span className="inline-block min-w-[3rem] rounded bg-primary/10 px-2 py-1 font-bold text-primary">{Number(v).toFixed(1)}</span>
     ) },
     { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => Number(v).toFixed(1) },
-    { key: 'pts', label: 'Proj Pts (27–29)', sortable: true, align: 'center', render: (v) => Math.round(Number(v)).toLocaleString() },
+    { key: 'age', label: 'Age', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
+    { key: 'dynRank', label: 'Dyn Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
+    { key: 'pts', label: 'Pts Over Avg (27–29)', sortable: true, align: 'center', render: (v) => Math.round(Number(v)).toLocaleString() },
     { key: 's27', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 's28', label: '2028 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 's29', label: '2029 $', sortable: true, align: 'center', render: (v) => `$${v}` },
@@ -179,8 +192,9 @@ const TradeValueChart = () => {
         </div>
         {tab === 'salary' && (
           <p className="mb-4 text-sm text-muted-foreground">
-            Best bang for the buck over 2027–2029: projected points across the next three seasons (fading with age)
-            divided by total salary owed. Higher = more points per dollar.
+            Best bang for the buck over 2027–2029: points scored above the average starter at his position, each year,
+            per $10 of salary. Older players fade, young high-ranked players grow, and hot starts from low-ranked
+            players are discounted unless their dynasty ranking backs them up.
           </p>
         )}
 
