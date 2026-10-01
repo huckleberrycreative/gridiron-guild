@@ -166,6 +166,24 @@ const TradeValueChart = () => {
           </div>
         </div>
 
+        <div className="mb-4 flex gap-1 border-b border-border">
+          {([['value', 'Trade Value'], ['salary', 'Best Salaries']] as const).map(([t, label]) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn('-mb-px border-b-2 px-4 py-2 text-sm font-semibold', tab === t ? 'border-accent text-primary' : 'border-transparent text-muted-foreground')}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === 'salary' && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            Best bang for the buck over 2027–2029: projected points across the next three seasons (fading with age)
+            divided by total salary owed. Higher = more points per dollar.
+          </p>
+        )}
+
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {[['ALL', 'All'], ['QB', 'QB'], ['RB', 'RB'], ['PC', 'Pass Catchers']].map(([p, label]) => (
             <button
@@ -193,6 +211,8 @@ const TradeValueChart = () => {
           <div className="flex justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
           </div>
+        ) : tab === 'salary' ? (
+          <SortableTable data={salaryRows} columns={salaryColumns} />
         ) : (
           <SortableTable data={rows as (Row & { rank: number })[]} columns={columns} />
         )}
