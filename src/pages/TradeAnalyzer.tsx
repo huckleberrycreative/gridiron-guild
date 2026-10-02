@@ -491,7 +491,14 @@ const TradeAnalyzer = () => {
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
                   {getTeamLogo(teamName(value)) ? (
-                    <img src={getTeamLogo(teamName(value))} alt="" className="h-6 w-6 shrink-0 object-contain" />
+                    <img
+                      src={getTeamLogo(teamName(value))}
+                      alt=""
+                      className="h-6 w-6 shrink-0 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                   ) : null}
                   <span className="truncate font-semibold">{teamName(value)}</span>
                 </div>
