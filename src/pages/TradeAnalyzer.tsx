@@ -4,6 +4,13 @@ import { useTeams, usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hoo
 import { cn } from '@/lib/utils';
 import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useTradeValues } from '@/hooks/useTradeValues';
 import { getTeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
@@ -466,33 +473,59 @@ const TradeAnalyzer = () => {
     return (
       <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
         <div className="border-b border-border bg-muted/50 px-3 py-2">
-          <div className="flex flex-wrap gap-1">
-            {teams.map((t) => {
-              const logo = getTeamLogo(t.name);
-              const on = t.id === value;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={t.id === other}
-                  title={t.name}
-                  onClick={() => {
-                    setValue(t.id);
-                    setSel(new Set());
-                  }}
-                  className={cn(
-                    'h-9 w-9 rounded-md border flex items-center justify-center transition',
-                    on ? 'border-primary ring-2 ring-primary bg-background' : 'border-transparent hover:bg-background',
-                    t.id === other && 'opacity-25 cursor-not-allowed'
-                  )}
-                >
-                  {logo ? <img src={logo} alt={t.name} className="h-7 w-7 object-contain" /> : <span className="text-[10px] font-bold">{t.name.slice(0, 3)}</span>}
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-1.5 flex items-baseline justify-between gap-2">
-            <h2 className="font-display font-bold uppercase tracking-wide text-sm truncate">{teamName(value)}</h2>
+          <div className="flex items-center gap-2">
+            <span className="font-display text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">
+              Team
+            </span>
+            <Select
+              value={value}
+              onValueChange={(id) => {
+                if (id === other) return;
+                setValue(id);
+                setSel(new Set());
+              }}
+            >
+              <SelectTrigger
+                aria-label={`Choose ${side === 'A' ? 'the sending' : 'the receiving'} team`}
+                className="h-11 flex-1 min-w-0 gap-2 bg-background"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                  {getTeamLogo(teamName(value)) ? (
+                    <img
+                      src={getTeamLogo(teamName(value))}
+                      alt=""
+                      className="h-6 w-6 shrink-0 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span className="truncate font-semibold">{teamName(value)}</span>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {teams.map((t) => {
+                  const logo = getTeamLogo(t.name);
+                  return (
+                    <SelectItem key={t.id} value={t.id} disabled={t.id === other}>
+                      <span className="flex items-center gap-2">
+                        {logo ? (
+                          <img
+                            src={logo}
+                            alt=""
+                            className="h-5 w-5 shrink-0 object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        <span className="font-medium">{t.name}</span>
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
             <span className="text-xs text-muted-foreground shrink-0">{sel.size} selected</span>
           </div>
         </div>
