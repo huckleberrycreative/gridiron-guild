@@ -509,7 +509,16 @@ const TradeAnalyzer = () => {
                   return (
                     <SelectItem key={t.id} value={t.id} disabled={t.id === other}>
                       <span className="flex items-center gap-2">
-                        {logo ? <img src={logo} alt="" className="h-5 w-5 shrink-0 object-contain" /> : null}
+                        {logo ? (
+                          <img
+                            src={logo}
+                            alt=""
+                            className="h-5 w-5 shrink-0 object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : null}
                         <span className="font-medium">{t.name}</span>
                       </span>
                     </SelectItem>
