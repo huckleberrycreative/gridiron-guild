@@ -4,6 +4,13 @@ import { useTeams, usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hoo
 import { cn } from '@/lib/utils';
 import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useTradeValues } from '@/hooks/useTradeValues';
 import { getTeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
