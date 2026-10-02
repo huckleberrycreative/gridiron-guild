@@ -489,12 +489,12 @@ const TradeAnalyzer = () => {
                 aria-label={`Choose ${side === 'A' ? 'the sending' : 'the receiving'} team`}
                 className="h-11 flex-1 min-w-0 gap-2 bg-background"
               >
-                <span className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
                   {getTeamLogo(teamName(value)) ? (
                     <img src={getTeamLogo(teamName(value))} alt="" className="h-6 w-6 shrink-0 object-contain" />
                   ) : null}
                   <span className="truncate font-semibold">{teamName(value)}</span>
-                </span>
+                </div>
               </SelectTrigger>
               <SelectContent>
                 {teams.map((t) => {
