@@ -16,6 +16,7 @@ import { getTeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
 import {
   bestLineup,
+  STARTER_SLOTS,
   normalize,
   toNum,
   salaryImpliedPpg,
