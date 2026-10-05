@@ -410,6 +410,22 @@ const TradeAnalyzer = () => {
         }
       }
       const tagBreaks = gained.filter((p) => p.tagBroken);
+      // Best starting nine before/after (healthy, active players only)
+      const nine = (roster: Asset[]) => {
+        const pool = roster.filter((p) => !p.practiceSquad && !p.out);
+        const picks = bestLineup(pool as any) as unknown as Asset[];
+        const used = new Set<string>();
+        return STARTER_SLOTS.map((slot) => {
+          const p = picks.find((x) => !used.has(x.id) && (slot === 'OP' || (slot === 'FLEX' ? x.position !== 'QB' : x.position === slot)));
+          if (p) used.add(p.id);
+          return { slot, p: p ?? null };
+        });
+      };
+      const lineupBefore = nine(before);
+      const lineupAfter = nine(after);
+      const sumL = (l: { p: Asset | null }[]) => l.reduce((s, x) => s + (x.p?.ppg ?? 0), 0);
+      const afterIds = new Set(lineupAfter.map((x) => x.p?.id));
+      const benchedOut = lineupBefore.map((x) => x.p).filter((p): p is Asset => !!p && !afterIds.has(p.id));
       const eliteOut =
         [...lost].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0] ?? null;
       return {
@@ -881,6 +897,36 @@ const TradeAnalyzer = () => {
           <li><span className="font-bold text-destructive">Bear:</span> {c.bear}</li>
           <li><span className="font-bold text-foreground">Base:</span> {c.base}</li>
         </ul>
+        <div className="mb-3 rounded-md border border-border/60">
+          <div className="flex items-center justify-between bg-muted/40 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span>New best starting nine</span>
+            <span className="tabular-nums">
+              {r.lineupAfterTotal.toFixed(1)} PPW{' '}
+              <span className={r.lineupAfterTotal - r.lineupBeforeTotal >= 0 ? 'text-emerald-600' : 'text-destructive'}>
+                ({r.lineupAfterTotal - r.lineupBeforeTotal >= 0 ? '+' : ''}{(r.lineupAfterTotal - r.lineupBeforeTotal).toFixed(1)})
+              </span>
+            </span>
+          </div>
+          <ul className="divide-y divide-border/40 text-xs">
+            {r.lineupAfter.map((s, i) => {
+              const isNew = r.gained.some((g) => g.id === s.p?.id);
+              return (
+                <li key={i} className={cn('flex items-center gap-2 px-2 py-1', isNew && 'bg-emerald-600/10')}>
+                  <span className="w-10 shrink-0 font-mono text-[10px] font-bold text-muted-foreground">{s.slot}</span>
+                  <span className={cn('flex-1 truncate', isNew && 'font-bold text-emerald-700')}>
+                    {s.p ? s.p.name : <span className="text-destructive">Empty</span>}
+                    {s.p && <span className="ml-1 text-[10px] text-muted-foreground">{s.p.position}</span>}
+                    {isNew && <span className="ml-1 text-[9px] font-bold uppercase">New</span>}
+                  </span>
+                  <span className="font-mono tabular-nums">{s.p ? s.p.ppg.toFixed(1) : '—'}</span>
+                </li>
+              );
+            })}
+          </ul>
+          {r.benchedOut.length > 0 && (
+            <p className="px-2 py-1 text-[10px] text-muted-foreground truncate">Leaves the lineup: {names(r.benchedOut)}</p>
+          )}
+        </div>
         <div className="grid grid-cols-4 gap-1.5 text-center">
           {[
             { k: 'Trade value', v: `${Math.round(r.valueIn)} in / ${Math.round(r.valueOut)} out`, good: r.valueIn >= r.valueOut },
