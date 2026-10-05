@@ -454,6 +454,10 @@ const TradeAnalyzer = () => {
         eliteOut,
         handcuffs,
         tagBreaks,
+        lineupAfter,
+        lineupBeforeTotal: sumL(lineupBefore),
+        lineupAfterTotal: sumL(lineupAfter),
+        benchedOut,
       };
     };
 
