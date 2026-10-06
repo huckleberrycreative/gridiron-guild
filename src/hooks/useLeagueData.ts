@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { LEGACY_WEEK1_FINISH_POINTS, pointsForFinish } from '@/hooks/useWeeklyScores';
+import { weeklyPoints, RIVALRY_WEEKS } from '@/hooks/useWeeklyScores';
 
 export interface TeamWithStandings {
   id: string;
@@ -107,17 +107,17 @@ export function useActiveSeasonStandings() {
             const ordered = [...rows].sort((a, b) => b.score - a.score);
             const fieldSize = ordered.length;
             ordered.forEach((row, index) => {
-              const pts =
-                week === 1
-                  ? LEGACY_WEEK1_FINISH_POINTS[index] ?? 1
-                  : pointsForFinish(index, fieldSize);
+              const pts = weeklyPoints(week, row.teamId, index, fieldSize);
               const cur =
                 totals.get(row.teamId) || { points: 0, pf: 0, wins: 0, losses: 0, ties: 0, weeks: 0 };
               cur.points += pts;
               cur.pf += row.score;
               cur.weeks += 1;
               // Weekly finish: Top 4 = W, 5th = TIE, bottom = L
-              if (index < 4) cur.wins += 1;
+              if (RIVALRY_WEEKS[week]) {
+                if (pts > 0) cur.wins += 1;
+                else cur.losses += 1;
+              } else if (index < 4) cur.wins += 1;
               else if (index === 4) cur.ties += 1;
               else cur.losses += 1;
               totals.set(row.teamId, cur);

@@ -49,3 +49,22 @@ export const pointsForFinish = (place: number, fieldSize: number) => {
   const remaining = fieldSize - 1 - tieSpot;
   return Math.max(0, Math.round(8 - ((place - tieSpot) * 8) / Math.max(1, remaining)));
 };
+
+// Rivalry weeks are head-to-head: winners get +15 standings points, losers 0.
+export const RIVALRY_WIN_POINTS = 15;
+export const RIVALRY_WEEKS: Record<number, string[]> = {
+  4: [
+    '11111111-0001-0001-0001-000000000006', // Fire Ants
+    '11111111-0001-0001-0001-000000000002', // Fanatics
+    '11111111-0001-0001-0001-000000000007', // Brock Party
+    '11111111-0001-0001-0001-000000000003', // Kats
+  ],
+};
+
+/** Standings points for a team's weekly finish, honoring legacy Week 1 and rivalry weeks. */
+export const weeklyPoints = (week: number, teamId: string, place: number, fieldSize: number) => {
+  const rivalry = RIVALRY_WEEKS[week];
+  if (rivalry) return rivalry.includes(teamId) ? RIVALRY_WIN_POINTS : 0;
+  if (week === 1) return LEGACY_WEEK1_FINISH_POINTS[place] ?? 1;
+  return pointsForFinish(place, fieldSize);
+};
