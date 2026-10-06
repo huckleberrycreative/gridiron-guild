@@ -5,8 +5,8 @@ import { useTeams } from '@/hooks/usePlayerSalaries';
 import {
   useWeeklyScores,
   REGULAR_SEASON_WEEKS,
-  pointsForFinish,
-  LEGACY_WEEK1_FINISH_POINTS,
+  weeklyPoints,
+  RIVALRY_WEEKS,
 } from '@/hooks/useWeeklyScores';
 import { TeamLogo } from '@/components/TeamLogo';
 import { cn } from '@/lib/utils';
@@ -54,10 +54,7 @@ const Season2026 = () => {
         inner.set(s.teamId, {
           score: s.score,
           place: i,
-          points:
-            w === 1
-              ? LEGACY_WEEK1_FINISH_POINTS[i] ?? 1
-              : pointsForFinish(i, weekScores.length),
+          points: weeklyPoints(w, s.teamId, i, weekScores.length),
         });
       });
       grid.set(w, inner);
@@ -111,6 +108,7 @@ const Season2026 = () => {
             <p className="text-muted-foreground">
               Weekly scores for all ten franchises across the {REGULAR_SEASON_WEEKS}-week regular
               season. The small number in each cell is the points earned for that week's finish.
+              Rivalry Week (Week 4) was head-to-head: winners earned 15 points, losers 0.
             </p>
           </motion.div>
 
@@ -150,6 +148,9 @@ const Season2026 = () => {
                     <tr key={w} className="border-t border-border/60">
                       <td className="sticky left-0 z-10 bg-card px-3 py-2 font-display font-bold uppercase text-[11px] whitespace-nowrap">
                         Wk {w}
+                        {RIVALRY_WEEKS[w] && (
+                          <div className="text-[9px] font-bold tracking-wider text-accent">Rivalry</div>
+                        )}
                       </td>
                       {orderedTeams.map((team) => {
                         const cell = grid.get(w)?.get(team.id);
@@ -169,7 +170,11 @@ const Season2026 = () => {
                             <div
                               className={cn(
                                 'relative rounded-md px-2 py-2 text-center font-mono font-bold tabular-nums',
-                                rankStyle(cell.place, fieldSize)
+                                RIVALRY_WEEKS[w]
+                                  ? cell.points > 0
+                                    ? 'bg-emerald-200 text-emerald-900'
+                                    : 'bg-red-200 text-red-900'
+                                  : rankStyle(cell.place, fieldSize)
                               )}
                             >
                               <span className="absolute top-0.5 right-1 text-[9px] font-semibold opacity-80">
