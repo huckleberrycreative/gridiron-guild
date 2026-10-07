@@ -61,6 +61,7 @@ export type Asset = {
   injuryStatus?: string;
   weeksOut?: number;
   out?: boolean;
+  nflTeam?: string | null;
 };
 
 export const OUT_STATUSES = ['out', 'ir'];
@@ -314,6 +315,7 @@ export function usePowerRankRows() {
             injuryStatus: status,
             weeksOut,
             out: isOut,
+            nflTeam: s.nflTeam ?? null,
           };
         });
       return { team, roster };

@@ -8,6 +8,7 @@ import { usePowerRankRows, bestLineup, REG_SEASON_WEEKS, normalize, INJURY_MULTI
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { byeWeekFor } from '@/lib/byeWeeks';
 import { Loader2, TrendingUp, TrendingDown, Minus, ArrowUpDown } from 'lucide-react';
 
 type EspnFA = {
@@ -39,14 +40,13 @@ const valueTone = (v: number) =>
 
 type SortKey = 'value' | 'ppg' | 'weekProj' | 'avgPpg' | 'lastGame';
 
-// Rest-of-season projection, week by week. Each week every player can be
-// unavailable (bye ~1 in 14 remaining weeks, random injury ~6%), and Out/IR
+// Rest-of-season projection, week by week. Each week a player is out on their
+// real NFL bye week (2026 schedule) or via random injury (~6%), and Out/IR
 // players return after their listed weeks. The best legal nine is re-picked
 // each week, so bench players earn points when starters sit.
-const BYE_P = 1 / 14;
 const INJ_P = 0.06;
 const SEASON_SIMS = 400;
-const seasonProjection = (roster: Asset[], weeksLeft: number) => {
+const seasonProjection = (roster: Asset[], weeksLeft: number, startWeek: number) => {
   if (weeksLeft <= 0 || !roster.length) return { total: 0, benchPts: 0, perWeek: 0 };
   // deterministic RNG so before/after compare on identical scenarios
   let seed = 12345;
@@ -56,11 +56,12 @@ const seasonProjection = (roster: Asset[], weeksLeft: number) => {
   let total = 0, bench = 0;
   for (let s = 0; s < SEASON_SIMS; s++) {
     for (let w = 0; w < weeksLeft; w++) {
+      const weekNum = startWeek + w;
       const excl = new Set<string>();
       for (const p of healthy) {
         const r = rnd();
         if (p.out && w < Math.max(1, p.weeksOut ?? 1)) excl.add(p.id);
-        else if (r < BYE_P + INJ_P) excl.add(p.id);
+        else if (byeWeekFor(p.nflTeam) === weekNum || r < INJ_P) excl.add(p.id);
       }
       const lineup = bestLineup(healthy, excl);
       for (const p of lineup) {
@@ -164,6 +165,7 @@ const WaiverWire = () => {
       injuryStatus: picked.injuryStatus,
       weeksOut: OUT_STATUSES.includes(picked.injuryStatus) ? 1 : 0,
       out: OUT_STATUSES.includes(picked.injuryStatus),
+      nflTeam: picked.proTeam || null,
     };
     const after = whatIf(teamId, drops, [asset]);
     const oldRow = prRows[before];
@@ -176,8 +178,8 @@ const WaiverWire = () => {
     const rankDelta = before - newIdx; // positive = moved up
     const inLineup = newRow.starters.some((s) => s.id === asset.id);
     const afterRoster = [...myRoster.filter((p) => !drops.has(p.id)), asset];
-    const projBefore = seasonProjection(myRoster, weeksLeft);
-    const projAfter = seasonProjection(afterRoster, weeksLeft);
+    const projBefore = seasonProjection(myRoster, weeksLeft, weeksPlayed + 1);
+    const projAfter = seasonProjection(afterRoster, weeksLeft, weeksPlayed + 1);
     const seasonDelta = projAfter.total - projBefore.total;
     const depthDelta = projAfter.benchPts - projBefore.benchPts;
     const rawBefore = oldRow.rawScore ?? oldRow.score;
@@ -210,7 +212,7 @@ const WaiverWire = () => {
         : `Pass unless you need the roster spot — it doesn't move the needle.`;
 
     return { projBefore, projAfter, seasonDelta, depthDelta, rawBefore, rawAfter, rawDelta: rawAfter - rawBefore, oldRank: before + 1, newRank: newIdx + 1, rankDelta, oldScore: oldRow.score, newScore: newRow.score, scoreDelta, lineupDelta, bull, bear, base };
-  }, [teamId, picked, drops, prRows, whatIf, proj, myRoster, byId, weeksLeft]);
+  }, [teamId, picked, drops, prRows, whatIf, proj, myRoster, byId, weeksLeft, weeksPlayed]);
 
   const loading = espnLoading || tvLoading || prLoading;
   const teamName = teams.find((t) => t.id === teamId)?.name;
