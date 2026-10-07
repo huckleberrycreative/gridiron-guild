@@ -6,6 +6,13 @@ const SEASON = 2026;
 
 const POSITIONS: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE' };
 
+const PRO_TEAMS: Record<number, string> = {
+  0: 'FA', 1: 'ATL', 2: 'BUF', 3: 'CHI', 4: 'CIN', 5: 'CLE', 6: 'DAL', 7: 'DEN', 8: 'DET', 9: 'GB', 10: 'TEN',
+  11: 'IND', 12: 'KC', 13: 'LV', 14: 'LAR', 15: 'MIA', 16: 'MIN', 17: 'NE', 18: 'NO', 19: 'NYG', 20: 'NYJ',
+  21: 'PHI', 22: 'ARI', 23: 'PIT', 24: 'LAC', 25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WSH', 29: 'CAR', 30: 'JAX',
+  33: 'BAL', 34: 'HOU',
+};
+
 const INJURY_MAP: Record<string, string> = {
   ACTIVE: 'healthy',
   NORMAL: 'healthy',
@@ -171,9 +178,13 @@ Deno.serve(async (req) => {
     }));
 
     // --- existing players / salary rows ---
-    const { data: players } = await admin.from('players').select('id, full_name, position');
+    const { data: players } = await admin.from('players').select('id, full_name, position, nfl_team');
     const playerIdByName = new Map<string, string>();
-    for (const p of players ?? []) playerIdByName.set(norm(p.full_name), p.id);
+    const nflTeamByPlayerId = new Map<string, string | null>();
+    for (const p of players ?? []) {
+      playerIdByName.set(norm(p.full_name), p.id);
+      nflTeamByPlayerId.set(p.id, (p as any).nfl_team ?? null);
+    }
 
     const { data: salaryRows } = await admin
       .from('player_salaries')
@@ -267,6 +278,13 @@ Deno.serve(async (req) => {
           playerId = created.id;
           playerIdByName.set(key, playerId);
           added.push(fullName);
+        }
+
+        // Keep the player's NFL team current so bye weeks can be applied.
+        const nflTeam: string | null = PRO_TEAMS[p.proTeamId] && PRO_TEAMS[p.proTeamId] !== 'FA' ? PRO_TEAMS[p.proTeamId] : null;
+        if (nflTeam && nflTeamByPlayerId.get(playerId) !== nflTeam) {
+          await admin.from('players').update({ nfl_team: nflTeam }).eq('id', playerId);
+          nflTeamByPlayerId.set(playerId, nflTeam);
         }
 
         const status = INJURY_MAP[p.injuryStatus ?? 'ACTIVE'] ?? 'healthy';
