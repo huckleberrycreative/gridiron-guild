@@ -59,6 +59,7 @@ export function usePlayerSalaries() {
         injuryStatus: (s as any).injury_status || 'healthy',
         injuryWeeksOut: (s as any).injury_weeks_out ?? 0,
         injuryNote: (s as any).injury_note ?? null,
+        nflTeam: (s.player as any)?.nfl_team ?? null,
         // Remove $ prefix if present since we add it in the UI
         salary2026: s.salary_2026?.replace(/^\$/, '') || undefined,
         salary2027: s.salary_2027?.replace(/^\$/, '') || undefined,
