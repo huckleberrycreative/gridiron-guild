@@ -22,6 +22,7 @@ export interface PlayerSalaryWithDetails {
   injuryStatus: string;
   injuryWeeksOut: number;
   injuryNote: string | null;
+  nflTeam?: string | null;
 }
 
 // Fetch player salaries with player and team data
