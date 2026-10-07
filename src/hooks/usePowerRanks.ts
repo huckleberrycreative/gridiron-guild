@@ -91,6 +91,7 @@ export type PowerRankRow = {
   replacementPpg: number;
   benchCount: number;
   score: number;
+  rawScore?: number;
   odds: Odds;
   weeksPlayed: number;
   startN: number;
@@ -386,6 +387,7 @@ export function usePowerRankRows() {
         depthN,
         standN,
         score: Math.round(12 + raw * 88),
+        rawScore: 12 + raw * 88,
       };
     });
 
