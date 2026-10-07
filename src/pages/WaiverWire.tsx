@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useTeams, usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { useTradeValues } from '@/hooks/useTradeValues';
-import { usePowerRankRows, normalize, INJURY_MULTIPLIER, OUT_STATUSES, type Asset } from '@/hooks/usePowerRanks';
+import { usePowerRankRows, bestLineup, REG_SEASON_WEEKS, normalize, INJURY_MULTIPLIER, OUT_STATUSES, type Asset } from '@/hooks/usePowerRanks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,39 @@ const valueTone = (v: number) =>
   v >= 80 ? 'bg-emerald-600 text-white' : v >= 60 ? 'bg-emerald-100 text-emerald-800' : v >= 40 ? 'bg-muted text-foreground' : 'bg-muted/60 text-muted-foreground';
 
 type SortKey = 'value' | 'ppg' | 'weekProj' | 'avgPpg' | 'lastGame';
+
+// Rest-of-season projection, week by week. Each week every player can be
+// unavailable (bye ~1 in 14 remaining weeks, random injury ~6%), and Out/IR
+// players return after their listed weeks. The best legal nine is re-picked
+// each week, so bench players earn points when starters sit.
+const BYE_P = 1 / 14;
+const INJ_P = 0.06;
+const SEASON_SIMS = 400;
+const seasonProjection = (roster: Asset[], weeksLeft: number) => {
+  if (weeksLeft <= 0 || !roster.length) return { total: 0, benchPts: 0, perWeek: 0 };
+  // deterministic RNG so before/after compare on identical scenarios
+  let seed = 12345;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const healthy = roster.map((p) => ({ ...p, ppg: p.out ? (p as any).basePpg ?? p.ppg : p.ppg }));
+  const fullStarters = new Set(bestLineup(healthy.filter((p) => !p.out)).map((p) => p.id));
+  let total = 0, bench = 0;
+  for (let s = 0; s < SEASON_SIMS; s++) {
+    for (let w = 0; w < weeksLeft; w++) {
+      const excl = new Set<string>();
+      for (const p of healthy) {
+        const r = rnd();
+        if (p.out && w < Math.max(1, p.weeksOut ?? 1)) excl.add(p.id);
+        else if (r < BYE_P + INJ_P) excl.add(p.id);
+      }
+      const lineup = bestLineup(healthy, excl);
+      for (const p of lineup) {
+        total += p.ppg;
+        if (!fullStarters.has(p.id)) bench += p.ppg;
+      }
+    }
+  }
+  return { total: total / SEASON_SIMS, benchPts: bench / SEASON_SIMS, perWeek: total / SEASON_SIMS / weeksLeft };
+};
 
 const WaiverWire = () => {
   const { data: teams = [] } = useTeams();
@@ -95,7 +128,8 @@ const WaiverWire = () => {
     [fas]
   );
   const { byName, byId, isLoading: tvLoading } = useTradeValues(extra);
-  const { rows: prRows, whatIf, proj, loading: prLoading } = usePowerRankRows();
+  const { rows: prRows, whatIf, proj, loading: prLoading, weeksPlayed } = usePowerRankRows();
+  const weeksLeft = Math.max(0, REG_SEASON_WEEKS - weeksPlayed);
 
   const tableRows = useMemo(() => {
     const list = fas
@@ -141,9 +175,18 @@ const WaiverWire = () => {
     const scoreDelta = newRow.score - oldRow.score;
     const rankDelta = before - newIdx; // positive = moved up
     const inLineup = newRow.starters.some((s) => s.id === asset.id);
+    const afterRoster = [...myRoster.filter((p) => !drops.has(p.id)), asset];
+    const projBefore = seasonProjection(myRoster, weeksLeft);
+    const projAfter = seasonProjection(afterRoster, weeksLeft);
+    const seasonDelta = projAfter.total - projBefore.total;
+    const depthDelta = projAfter.benchPts - projBefore.benchPts;
+    const rawBefore = oldRow.rawScore ?? oldRow.score;
+    const rawAfter = newRow.rawScore ?? newRow.score;
     const topDrop = [...dropped].sort((a, b) => (byId.get(b.id)?.value ?? 0) - (byId.get(a.id)?.value ?? 0))[0];
 
-    const bull = lineupDelta > 0.2
+    const bull = lineupDelta <= 0.2 && depthDelta > 3
+      ? `He won't start every week, but filling in for byes and injuries he's worth about ${depthDelta.toFixed(1)} extra points the rest of the way.`
+      : lineupDelta > 0.2
       ? `${picked.name} steps straight into your starting lineup and adds about ${lineupDelta.toFixed(1)} points a week.`
       : picked.value > dropVal
         ? `${picked.name} is worth more long-term than who you're cutting (${picked.value} vs ${dropVal}).`
@@ -159,15 +202,15 @@ const WaiverWire = () => {
           : !drops.size
             ? `You haven't picked anyone to drop, and you'll need an open roster spot.`
             : `His salary jumps to $125 in 2028, so he's likely a short-term rental.`;
-    const good = scoreDelta > 0 || rankDelta > 0 || (scoreDelta === 0 && picked.value > dropVal);
+    const good = seasonDelta > 1 || scoreDelta > 0 || rankDelta > 0 || (scoreDelta === 0 && picked.value > dropVal);
     const base = good
       ? `Make the claim${rankDelta > 0 ? ` — it moves you up ${rankDelta} spot${rankDelta === 1 ? '' : 's'} in the Power Ranks` : scoreDelta > 0 ? ' — it makes your team a little stronger' : ' as a stash'}.`
       : scoreDelta < 0 || rankDelta < 0
         ? `Pass — this makes your team weaker than it is now.`
         : `Pass unless you need the roster spot — it doesn't move the needle.`;
 
-    return { oldRank: before + 1, newRank: newIdx + 1, rankDelta, oldScore: oldRow.score, newScore: newRow.score, scoreDelta, lineupDelta, bull, bear, base };
-  }, [teamId, picked, drops, prRows, whatIf, proj, myRoster, byId]);
+    return { projBefore, projAfter, seasonDelta, depthDelta, rawBefore, rawAfter, rawDelta: rawAfter - rawBefore, oldRank: before + 1, newRank: newIdx + 1, rankDelta, oldScore: oldRow.score, newScore: newRow.score, scoreDelta, lineupDelta, bull, bear, base };
+  }, [teamId, picked, drops, prRows, whatIf, proj, myRoster, byId, weeksLeft]);
 
   const loading = espnLoading || tvLoading || prLoading;
   const teamName = teams.find((t) => t.id === teamId)?.name;
@@ -205,8 +248,24 @@ const WaiverWire = () => {
                   </div>
                   <div className="text-sm font-semibold">#{result.oldRank} → #{result.newRank}</div>
                   <div className="text-xs text-muted-foreground">
-                    Score {result.oldScore} → {result.newScore} · Lineup {result.lineupDelta >= 0 ? '+' : ''}{result.lineupDelta.toFixed(1)} pts/wk
+                    Lineup {result.lineupDelta >= 0 ? '+' : ''}{result.lineupDelta.toFixed(1)} pts/wk
                   </div>
+                </div>
+                <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+                  {[
+                    { k: 'Power Rank score', b: result.rawBefore, a: result.rawAfter, d: result.rawDelta, unit: '' },
+                    { k: `Rest-of-season pts (${weeksLeft} wks)`, b: result.projBefore.total, a: result.projAfter.total, d: result.seasonDelta, unit: '' },
+                    { k: 'Avg weekly score', b: result.projBefore.perWeek, a: result.projAfter.perWeek, d: result.projAfter.perWeek - result.projBefore.perWeek, unit: '' },
+                    { k: 'Bench pts (byes & injuries)', b: result.projBefore.benchPts, a: result.projAfter.benchPts, d: result.depthDelta, unit: '' },
+                  ].map((m) => (
+                    <div key={m.k} className="rounded-md border border-border/60 bg-muted/40 px-2 py-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{m.k}</div>
+                      <div className="font-mono text-xs tabular-nums text-muted-foreground">{m.b.toFixed(1)} → {m.a.toFixed(1)}</div>
+                      <div className={cn('font-mono text-lg font-extrabold tabular-nums', m.d > 0.05 ? 'text-emerald-600' : m.d < -0.05 ? 'text-destructive' : 'text-muted-foreground')}>
+                        {m.d >= 0 ? '+' : ''}{m.d.toFixed(1)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">
