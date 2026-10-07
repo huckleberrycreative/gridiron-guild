@@ -8,6 +8,7 @@ import { usePowerRankRows, bestLineup, REG_SEASON_WEEKS, normalize, INJURY_MULTI
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { byeWeekFor } from '@/lib/byeWeeks';
 import { Loader2, TrendingUp, TrendingDown, Minus, ArrowUpDown } from 'lucide-react';
 
 type EspnFA = {
@@ -164,6 +165,7 @@ const WaiverWire = () => {
       injuryStatus: picked.injuryStatus,
       weeksOut: OUT_STATUSES.includes(picked.injuryStatus) ? 1 : 0,
       out: OUT_STATUSES.includes(picked.injuryStatus),
+      nflTeam: picked.proTeam || null,
     };
     const after = whatIf(teamId, drops, [asset]);
     const oldRow = prRows[before];
@@ -176,8 +178,8 @@ const WaiverWire = () => {
     const rankDelta = before - newIdx; // positive = moved up
     const inLineup = newRow.starters.some((s) => s.id === asset.id);
     const afterRoster = [...myRoster.filter((p) => !drops.has(p.id)), asset];
-    const projBefore = seasonProjection(myRoster, weeksLeft);
-    const projAfter = seasonProjection(afterRoster, weeksLeft);
+    const projBefore = seasonProjection(myRoster, weeksLeft, weeksPlayed + 1);
+    const projAfter = seasonProjection(afterRoster, weeksLeft, weeksPlayed + 1);
     const seasonDelta = projAfter.total - projBefore.total;
     const depthDelta = projAfter.benchPts - projBefore.benchPts;
     const rawBefore = oldRow.rawScore ?? oldRow.score;
@@ -210,7 +212,7 @@ const WaiverWire = () => {
         : `Pass unless you need the roster spot — it doesn't move the needle.`;
 
     return { projBefore, projAfter, seasonDelta, depthDelta, rawBefore, rawAfter, rawDelta: rawAfter - rawBefore, oldRank: before + 1, newRank: newIdx + 1, rankDelta, oldScore: oldRow.score, newScore: newRow.score, scoreDelta, lineupDelta, bull, bear, base };
-  }, [teamId, picked, drops, prRows, whatIf, proj, myRoster, byId, weeksLeft]);
+  }, [teamId, picked, drops, prRows, whatIf, proj, myRoster, byId, weeksLeft, weeksPlayed]);
 
   const loading = espnLoading || tvLoading || prLoading;
   const teamName = teams.find((t) => t.id === teamId)?.name;
