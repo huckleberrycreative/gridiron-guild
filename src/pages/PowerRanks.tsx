@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
 import { useTradeValues } from '@/hooks/useTradeValues';
 import { Loader2, TrendingUp, Shield, Activity } from 'lucide-react';
 import { DynastyRanks } from '@/components/DynastyRanks';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import brockPartyHexed from '@/assets/brock-party-hexed.png.asset.json';
 
 const pct = (v: number) => (v >= 99.5 ? '>99%' : v < 0.5 && v > 0 ? '<1%' : `${Math.round(v)}%`);
 
@@ -211,16 +214,19 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
 
   const enriched = useMemo(
     () =>
-      rows.map((r, i) => {
+      rows.map((r) => {
         const starterIds = new Set(r.starters.map((s) => s.id));
+        const deduction = /brock party/i.test(r.team.name) ? 10 : 0;
         return {
           r,
-          rank: i + 1,
+          deduction,
+          score: r.score - deduction,
           starterTv: avg(r.starters),
           benchTv: avg(r.roster.filter((p) => !starterIds.has(p.id))),
           rosterTv: avg(r.roster),
         };
-      }),
+      }).sort((a, b) => b.score - a.score || b.r.starterPpw - a.r.starterPpw)
+        .map((entry, i) => ({ ...entry, rank: i + 1 })),
     [rows, tv]
   );
 
@@ -232,7 +238,7 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
         case 'team':
           return e.r.team.name;
         case 'grade':
-          return e.r.score;
+          return e.score;
         case 'starterPpw':
           return e.r.lineupPpw ?? e.r.starterPpw;
         case 'starterTv':
@@ -348,7 +354,28 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
                   )}
                 </td>
                 <td className="px-2 py-3 text-center">
-                  <span className="font-serif text-2xl font-bold text-[#bf2121]">{r.score}</span>
+                  <div className="flex flex-wrap items-center justify-center gap-1">
+                    <span className="font-serif text-2xl font-bold text-accent">{e.score}</span>
+                    {e.deduction > 0 && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 border-accent/40 bg-accent/10 px-1.5 font-body text-xs font-bold text-accent hover:bg-accent/20 hover:text-accent"
+                            aria-label="View Brock Party −10 deduction photo"
+                            title={`Original grade ${r.score}; −10 deduction`}
+                          >
+                            −10
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-[calc(100%-2rem)] max-w-5xl gap-3 p-3 pt-10" aria-describedby={undefined}>
+                          <DialogTitle className="sr-only">Brock Party: Hexed. −10 deduction</DialogTitle>
+                          <img src={brockPartyHexed.url} alt="Hexed — Brock Party's −10 deduction photo" className="max-h-[80vh] w-full rounded object-contain" />
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
                 </td>
                 <td className={td}>{(r.lineupPpw ?? r.starterPpw).toFixed(1)}</td>
                 {!compact && <td className={td}>{fmt(e.starterTv)}</td>}

@@ -472,6 +472,7 @@ export type Database = {
           full_name: string
           id: string
           last_name: string
+          nfl_team: string | null
           position: string
           updated_at: string
         }
@@ -481,6 +482,7 @@ export type Database = {
           full_name: string
           id?: string
           last_name: string
+          nfl_team?: string | null
           position: string
           updated_at?: string
         }
@@ -490,6 +492,7 @@ export type Database = {
           full_name?: string
           id?: string
           last_name?: string
+          nfl_team?: string | null
           position?: string
           updated_at?: string
         }
