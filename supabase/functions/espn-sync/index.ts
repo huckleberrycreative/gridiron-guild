@@ -188,10 +188,10 @@ Deno.serve(async (req) => {
 
     const { data: salaryRows } = await admin
       .from('player_salaries')
-      .select('id, player_id, team_id, practice_squad');
+      .select('id, player_id, team_id, practice_squad, injury_status, injury_weeks_out');
     const salaryByPlayer = new Map<
       string,
-      { id: string; team_id: string | null; practice_squad: boolean }
+      { id: string; team_id: string | null; practice_squad: boolean; injury_status?: string; injury_weeks_out?: number }
     >();
     // Match salary rows by normalized NAME (not player id) so duplicate player
     // records can never spawn a second salary row for the same person.
