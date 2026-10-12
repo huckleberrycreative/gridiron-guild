@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     // --- fetch league ---
     const espnUrl =
       `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}` +
-      `/segments/0/leagues/${LEAGUE_ID}?view=mRoster&view=mTeam&view=mMatchupScore&view=mSettings`;
+      `/segments/0/leagues/${LEAGUE_ID}?view=mRoster&view=mTeam&view=mMatchupScore&view=mScoreboard&view=mSettings`;
 
     const res = await fetch(espnUrl, {
       headers: {
@@ -411,6 +411,47 @@ Deno.serve(async (req) => {
         .upsert(scoreRows, { onConflict: 'season_year,week,team_id' });
       if (scoreErr) console.error('weekly_scores upsert', scoreErr);
       weeksSynced = new Set(scoreRows.map((r) => r.week)).size;
+    }
+
+    // --- projected totals for the in-progress week ---
+    let projectedWeek: number | null = null;
+    {
+      const finalWeeks = new Set(scoreRows.map((r) => r.week));
+      const curPeriod: number = league.status?.currentMatchupPeriod ?? league.scoringPeriodId ?? 1;
+      const scoringPeriod: number = league.scoringPeriodId ?? curPeriod;
+      // Roster-based fallback: starters' actual points if any, else ESPN's weekly projection
+      const rosterProj = new Map<number, number>();
+      for (const t of league.teams ?? []) {
+        let sum = 0;
+        for (const entry of t.roster?.entries ?? []) {
+          if ([20, 21].includes(entry.lineupSlotId)) continue;
+          const stats: any[] = entry.playerPoolEntry?.player?.stats ?? [];
+          const act = stats.find((s) => s.statSourceId === 0 && s.statSplitTypeId === 1 && s.scoringPeriodId === scoringPeriod);
+          const prj = stats.find((s) => s.statSourceId === 1 && s.statSplitTypeId === 1 && s.scoringPeriodId === scoringPeriod);
+          sum += act && (act.appliedTotal ?? 0) !== 0 ? act.appliedTotal : (prj?.appliedTotal ?? 0);
+        }
+        rosterProj.set(t.id, sum);
+      }
+      const projRows: any[] = [];
+      for (const m of league.schedule ?? []) {
+        if (m.matchupPeriodId !== curPeriod || m.winner !== 'UNDECIDED' || finalWeeks.has(curPeriod)) continue;
+        for (const side of [m.home, m.away]) {
+          if (!side) continue;
+          const teamId = teamIdByEspn.get(side.teamId);
+          if (!teamId) continue;
+          const projected = side.totalProjectedPointsLive ?? rosterProj.get(side.teamId) ?? 0;
+          const live = side.totalPointsLive ?? side.totalPoints ?? null;
+          if (!projected) continue;
+          projRows.push({ season_year: SEASON, week: curPeriod, team_id: teamId, projected, live_score: live, updated_at: new Date().toISOString() });
+        }
+      }
+      // Clear stale projections (finished weeks) then save current
+      await admin.from('projected_weekly_scores').delete().eq('season_year', SEASON).neq('week', projRows.length ? curPeriod : -1);
+      if (projRows.length) {
+        const { error: pErr } = await admin.from('projected_weekly_scores').upsert(projRows, { onConflict: 'season_year,week,team_id' });
+        if (pErr) console.error('projected upsert', pErr);
+        else projectedWeek = curPeriod;
+      }
     }
 
     // --- live player stats (all rosters, incl. practice squad holding teams) ---
