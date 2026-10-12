@@ -534,7 +534,7 @@ Deno.serve(async (req) => {
         const { error: bErr } = await admin.from('player_week_scores').upsert(rows, { onConflict: 'season_year,week,player_id' });
         if (bErr) console.error('backfill', w, bErr);
       }
-    }
+    }));
 
 
     return json({
