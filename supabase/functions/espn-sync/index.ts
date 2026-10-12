@@ -470,6 +470,7 @@ Deno.serve(async (req) => {
     // --- live player stats (all rosters, incl. practice squad holding teams) ---
     let statsUpdated = 0;
     const statTasks: Array<() => PromiseLike<unknown>> = [];
+    const allWeekRows: any[] = [];
     const nowIso = new Date().toISOString();
     for (const t of league.teams ?? []) {
       for (const entry of t.roster?.entries ?? []) {
