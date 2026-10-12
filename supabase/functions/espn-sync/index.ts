@@ -212,8 +212,10 @@ Deno.serve(async (req) => {
     let injuryUpdates = 0;
 
     // --- player news blurbs (ESPN news_wl view) ---
+    // Fetched in the background while team mapping / DB loads run, so it doesn't block the sync.
     const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const newsByName = new Map<string, string>();
+    const newsPromise = (async () => {
     try {
       const newsFilter = { players: { limit: 1500, sortPercOwned: { sortAsc: false, sortPriority: 1 } } };
       const newsRes = await fetch(
