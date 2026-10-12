@@ -247,6 +247,14 @@ Deno.serve(async (req) => {
       console.log('news notes collected:', newsByName.size);
     }
 
+    // DB writes are collected and run in parallel batches to keep sync fast.
+    const dbTasks: Array<() => PromiseLike<unknown>> = [];
+    const runBatched = async (tasks: Array<() => PromiseLike<unknown>>, size = 25) => {
+      for (let i = 0; i < tasks.length; i += size) {
+        await Promise.all(tasks.slice(i, i + size).map((fn) => fn()));
+      }
+    };
+
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
       if (!teamId) continue;
@@ -283,7 +291,8 @@ Deno.serve(async (req) => {
         // Keep the player's NFL team current so bye weeks can be applied.
         const nflTeam: string | null = PRO_TEAMS[p.proTeamId] && PRO_TEAMS[p.proTeamId] !== 'FA' ? PRO_TEAMS[p.proTeamId] : null;
         if (nflTeam && nflTeamByPlayerId.get(playerId) !== nflTeam) {
-          await admin.from('players').update({ nfl_team: nflTeam }).eq('id', playerId);
+          const pid = playerId;
+          dbTasks.push(() => admin.from('players').update({ nfl_team: nflTeam }).eq('id', pid));
           nflTeamByPlayerId.set(playerId, nflTeam);
         }
 
