@@ -550,6 +550,33 @@ Deno.serve(async (req) => {
 
 
     lap('backfill done');
+
+    // Apply ESPN news blurbs in the background after responding, so the
+    // slow news fetch never blocks the refresh button.
+    const newsBackground = (async () => {
+      try {
+        await newsPromise;
+        lap('news ready (background)');
+        const blurbTasks: Array<() => PromiseLike<unknown>> = [];
+        for (const [nameKey, blurb] of newsByName) {
+          const pid = playerIdByName.get(nameKey);
+          const sal = pid ? salaryByPlayer.get(pid) : undefined;
+          if (!sal) continue;
+          blurbTasks.push(() => admin.from('player_salaries').update({ injury_note: blurb }).eq('id', sal.id));
+        }
+        await runBatched(blurbTasks);
+        lap('news blurbs saved (background)');
+      } catch (e) {
+        console.error('background news save failed', e);
+      }
+    })();
+    try {
+      (globalThis as any).EdgeRuntime?.waitUntil?.(newsBackground);
+    } catch {
+      // EdgeRuntime unavailable — fall back to awaiting inline.
+      await newsBackground;
+    }
+
     return json({
       ok: true,
       teamsSynced: teamIdByEspn.size,
