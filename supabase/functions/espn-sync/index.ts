@@ -498,15 +498,17 @@ Deno.serve(async (req) => {
         const weekRows = weekly
           .filter((s) => s.scoringPeriodId)
           .map((s) => ({ season_year: SEASON, week: s.scoringPeriodId, player_id: pid, points: s.appliedTotal ?? 0 }));
-        if (weekRows.length) {
-          const { error: wErr } = await admin
-            .from('player_week_scores')
-            .upsert(weekRows, { onConflict: 'season_year,week,player_id' });
-          if (wErr) console.error('player_week_scores upsert', wErr);
-        }
+        if (weekRows.length) allWeekRows.push(...weekRows);
       }
     }
     await runBatched(statTasks);
+    if (allWeekRows.length) {
+      // One bulk upsert instead of a per-player round trip.
+      const { error: wErr } = await admin
+        .from('player_week_scores')
+        .upsert(allWeekRows, { onConflict: 'season_year,week,player_id' });
+      if (wErr) console.error('player_week_scores upsert', wErr);
+    }
 
     // --- backfill earlier weeks' player scores (ESPN only returns the latest week by default) ---
     const curWeek: number = league.scoringPeriodId ?? 1;
