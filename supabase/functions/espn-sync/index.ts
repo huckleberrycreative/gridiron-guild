@@ -109,6 +109,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    const t0 = Date.now();
+    const lap = (label: string) => console.log(`[timing] ${label}: ${Date.now() - t0}ms`);
     // --- fetch league ---
     const espnUrl =
       `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}` +
@@ -135,6 +137,7 @@ Deno.serve(async (req) => {
       );
     }
     const league = await res.json();
+    lap('league fetch');
 
     // --- team mapping ---
     const { data: dbTeams } = await admin.from('teams').select('id, name, espn_team_id');
@@ -252,13 +255,11 @@ Deno.serve(async (req) => {
 
     // DB writes are collected and run in parallel batches to keep sync fast.
     const dbTasks: Array<() => PromiseLike<unknown>> = [];
-    const runBatched = async (tasks: Array<() => PromiseLike<unknown>>, size = 25) => {
+    const runBatched = async (tasks: Array<() => PromiseLike<unknown>>, size = 50) => {
       for (let i = 0; i < tasks.length; i += size) {
         await Promise.all(tasks.slice(i, i + size).map((fn) => fn()));
       }
     };
-
-    await newsPromise;
 
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
@@ -304,19 +305,19 @@ Deno.serve(async (req) => {
         const status = INJURY_MAP[p.injuryStatus ?? 'ACTIVE'] ?? 'healthy';
         const existingSalary = salaryByPlayer.get(playerId);
 
-        // News blurb from the news_wl fetch; fall back to injury details if present.
+        // Injury details from the roster payload; ESPN news blurbs are applied
+        // afterwards in the background so they don't block the sync.
         const injuries: any[] = Array.isArray(p.injuries) ? p.injuries : [];
         const latestInjury = injuries
           .slice()
           .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))[0];
         const injuryNote: string | null =
-          newsByName.get(key) ??
-          (status === 'healthy'
+          status === 'healthy'
             ? null
             : (latestInjury?.details?.longDetail ??
                latestInjury?.details?.shortDetail ??
                latestInjury?.details?.detail ??
-               null));
+               null);
 
         const injuryPatch = (prevWeeks: number) => {
           const weeks =
@@ -358,6 +359,7 @@ Deno.serve(async (req) => {
     }
 
     await runBatched(dbTasks);
+    lap('roster db writes');
 
     // --- practice squad holding rosters: cross-reference only, never import ---
     const playerNameById = new Map<string, string>();
@@ -502,6 +504,7 @@ Deno.serve(async (req) => {
       }
     }
     await runBatched(statTasks);
+    lap('stats writes');
     if (allWeekRows.length) {
       // One bulk upsert instead of a per-player round trip.
       const { error: wErr } = await admin
@@ -510,6 +513,7 @@ Deno.serve(async (req) => {
       if (wErr) console.error('player_week_scores upsert', wErr);
     }
 
+    lap('scores+projections');
     // --- backfill earlier weeks' player scores (ESPN only returns the latest week by default) ---
     const curWeek: number = league.scoringPeriodId ?? 1;
     const { data: haveRows } = await admin.from('player_week_scores').select('week').eq('season_year', SEASON);
@@ -544,6 +548,34 @@ Deno.serve(async (req) => {
       }
     }));
 
+
+    lap('backfill done');
+
+    // Apply ESPN news blurbs in the background after responding, so the
+    // slow news fetch never blocks the refresh button.
+    const newsBackground = (async () => {
+      try {
+        await newsPromise;
+        lap('news ready (background)');
+        const blurbTasks: Array<() => PromiseLike<unknown>> = [];
+        for (const [nameKey, blurb] of newsByName) {
+          const pid = playerIdByName.get(nameKey);
+          const sal = pid ? salaryByPlayer.get(pid) : undefined;
+          if (!sal) continue;
+          blurbTasks.push(() => admin.from('player_salaries').update({ injury_note: blurb }).eq('id', sal.id));
+        }
+        await runBatched(blurbTasks);
+        lap('news blurbs saved (background)');
+      } catch (e) {
+        console.error('background news save failed', e);
+      }
+    })();
+    try {
+      (globalThis as any).EdgeRuntime?.waitUntil?.(newsBackground);
+    } catch {
+      // EdgeRuntime unavailable — fall back to awaiting inline.
+      await newsBackground;
+    }
 
     return json({
       ok: true,
