@@ -212,8 +212,10 @@ Deno.serve(async (req) => {
     let injuryUpdates = 0;
 
     // --- player news blurbs (ESPN news_wl view) ---
+    // Fetched in the background while team mapping / DB loads run, so it doesn't block the sync.
     const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const newsByName = new Map<string, string>();
+    const newsPromise = (async () => {
     try {
       const newsFilter = { players: { limit: 1500, sortPercOwned: { sortAsc: false, sortPriority: 1 } } };
       const newsRes = await fetch(
@@ -246,6 +248,7 @@ Deno.serve(async (req) => {
     } finally {
       console.log('news notes collected:', newsByName.size);
     }
+    })();
 
     // DB writes are collected and run in parallel batches to keep sync fast.
     const dbTasks: Array<() => PromiseLike<unknown>> = [];
@@ -254,6 +257,8 @@ Deno.serve(async (req) => {
         await Promise.all(tasks.slice(i, i + size).map((fn) => fn()));
       }
     };
+
+    await newsPromise;
 
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
@@ -465,6 +470,7 @@ Deno.serve(async (req) => {
     // --- live player stats (all rosters, incl. practice squad holding teams) ---
     let statsUpdated = 0;
     const statTasks: Array<() => PromiseLike<unknown>> = [];
+    const allWeekRows: any[] = [];
     const nowIso = new Date().toISOString();
     for (const t of league.teams ?? []) {
       for (const entry of t.roster?.entries ?? []) {
@@ -492,15 +498,17 @@ Deno.serve(async (req) => {
         const weekRows = weekly
           .filter((s) => s.scoringPeriodId)
           .map((s) => ({ season_year: SEASON, week: s.scoringPeriodId, player_id: pid, points: s.appliedTotal ?? 0 }));
-        if (weekRows.length) {
-          const { error: wErr } = await admin
-            .from('player_week_scores')
-            .upsert(weekRows, { onConflict: 'season_year,week,player_id' });
-          if (wErr) console.error('player_week_scores upsert', wErr);
-        }
+        if (weekRows.length) allWeekRows.push(...weekRows);
       }
     }
     await runBatched(statTasks);
+    if (allWeekRows.length) {
+      // One bulk upsert instead of a per-player round trip.
+      const { error: wErr } = await admin
+        .from('player_week_scores')
+        .upsert(allWeekRows, { onConflict: 'season_year,week,player_id' });
+      if (wErr) console.error('player_week_scores upsert', wErr);
+    }
 
     // --- backfill earlier weeks' player scores (ESPN only returns the latest week by default) ---
     const curWeek: number = league.scoringPeriodId ?? 1;
