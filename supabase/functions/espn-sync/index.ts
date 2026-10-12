@@ -188,10 +188,10 @@ Deno.serve(async (req) => {
 
     const { data: salaryRows } = await admin
       .from('player_salaries')
-      .select('id, player_id, team_id, practice_squad');
+      .select('id, player_id, team_id, practice_squad, injury_status, injury_weeks_out');
     const salaryByPlayer = new Map<
       string,
-      { id: string; team_id: string | null; practice_squad: boolean }
+      { id: string; team_id: string | null; practice_squad: boolean; injury_status?: string; injury_weeks_out?: number }
     >();
     // Match salary rows by normalized NAME (not player id) so duplicate player
     // records can never spawn a second salary row for the same person.
@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
     for (const p of players ?? []) nameByPlayerId.set(p.id, norm(p.full_name));
     const salaryByName = new Map<string, { id: string; team_id: string | null; practice_squad: boolean }>();
     for (const s of salaryRows ?? []) {
-      const row = { id: s.id, team_id: s.team_id, practice_squad: !!s.practice_squad };
+      const row = { id: s.id, team_id: s.team_id, practice_squad: !!s.practice_squad, injury_status: (s as any).injury_status ?? 'healthy', injury_weeks_out: (s as any).injury_weeks_out ?? 0 };
       salaryByPlayer.set(s.player_id, row);
       const nk = nameByPlayerId.get(s.player_id);
       const prev = nk ? salaryByName.get(nk) : undefined;
@@ -247,6 +247,14 @@ Deno.serve(async (req) => {
       console.log('news notes collected:', newsByName.size);
     }
 
+    // DB writes are collected and run in parallel batches to keep sync fast.
+    const dbTasks: Array<() => PromiseLike<unknown>> = [];
+    const runBatched = async (tasks: Array<() => PromiseLike<unknown>>, size = 25) => {
+      for (let i = 0; i < tasks.length; i += size) {
+        await Promise.all(tasks.slice(i, i + size).map((fn) => fn()));
+      }
+    };
+
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
       if (!teamId) continue;
@@ -283,7 +291,8 @@ Deno.serve(async (req) => {
         // Keep the player's NFL team current so bye weeks can be applied.
         const nflTeam: string | null = PRO_TEAMS[p.proTeamId] && PRO_TEAMS[p.proTeamId] !== 'FA' ? PRO_TEAMS[p.proTeamId] : null;
         if (nflTeam && nflTeamByPlayerId.get(playerId) !== nflTeam) {
-          await admin.from('players').update({ nfl_team: nflTeam }).eq('id', playerId);
+          const pid = playerId;
+          dbTasks.push(() => admin.from('players').update({ nfl_team: nflTeam }).eq('id', pid));
           nflTeamByPlayerId.set(playerId, nflTeam);
         }
 
@@ -316,18 +325,13 @@ Deno.serve(async (req) => {
 
         if (existingSalary) {
           seenSalaryIds.add(existingSalary.id);
-          const { data: prev } = await admin
-            .from('player_salaries')
-            .select('injury_weeks_out, injury_status')
-            .eq('id', existingSalary.id)
-            .single();
           const patch: Record<string, unknown> = {
             team_id: teamId,
-            ...injuryPatch(prev?.injury_weeks_out ?? 0),
+            ...injuryPatch(existingSalary.injury_weeks_out ?? 0),
           };
           if (existingSalary.team_id !== teamId) moved.push(fullName);
-          await admin.from('player_salaries').update(patch).eq('id', existingSalary.id);
-          if ((prev?.injury_status ?? 'healthy') !== status) injuryUpdates++;
+          dbTasks.push(() => admin.from('player_salaries').update(patch).eq('id', existingSalary.id));
+          if ((existingSalary.injury_status ?? 'healthy') !== status) injuryUpdates++;
         } else {
           const { data: inserted } = await admin
             .from('player_salaries')
@@ -347,6 +351,8 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    await runBatched(dbTasks);
 
     // --- practice squad holding rosters: cross-reference only, never import ---
     const playerNameById = new Map<string, string>();
@@ -378,6 +384,7 @@ Deno.serve(async (req) => {
 
     // --- players no longer rostered on ESPN become free agents ---
     let released = 0;
+    const releaseTasks: Array<() => PromiseLike<unknown>> = [];
     const syncedLeagueTeamIds = new Set(teamIdByEspn.values());
     if (teamIdByEspn.size > 0) {
       for (const s of salaryRows ?? []) {
@@ -385,10 +392,11 @@ Deno.serve(async (req) => {
         if (s.practice_squad || espnPsKeys.has(norm(playerNameById.get(s.player_id) ?? ''))) continue;
         // only touch teams that ESPN actually reported on
         if (s.team_id && syncedLeagueTeamIds.has(s.team_id) && !seenSalaryIds.has(s.id)) {
-          await admin.from('player_salaries').update({ team_id: null }).eq('id', s.id);
+          releaseTasks.push(() => admin.from('player_salaries').update({ team_id: null }).eq('id', s.id));
           released++;
         }
       }
+      await runBatched(releaseTasks);
     }
 
     // --- weekly scores ---
@@ -456,6 +464,7 @@ Deno.serve(async (req) => {
 
     // --- live player stats (all rosters, incl. practice squad holding teams) ---
     let statsUpdated = 0;
+    const statTasks: Array<() => PromiseLike<unknown>> = [];
     const nowIso = new Date().toISOString();
     for (const t of league.teams ?? []) {
       for (const entry of t.roster?.entries ?? []) {
@@ -473,10 +482,12 @@ Deno.serve(async (req) => {
         const games = actual?.appliedAverage ? Math.round((actual.appliedTotal ?? 0) / actual.appliedAverage) : weekly.length;
         const actualPpg = actual?.appliedAverage ?? (games ? (actual?.appliedTotal ?? 0) / games : null);
         const projPpg = proj?.appliedTotal ? proj.appliedTotal / 17 : null;
-        await admin
-          .from('player_salaries')
-          .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, espn_lineup_slot: entry.lineupSlotId ?? null, stats_updated_at: nowIso })
-          .eq('id', sal.id);
+        statTasks.push(() =>
+          admin
+            .from('player_salaries')
+            .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, espn_lineup_slot: entry.lineupSlotId ?? null, stats_updated_at: nowIso })
+            .eq('id', sal.id)
+        );
         statsUpdated++;
         const weekRows = weekly
           .filter((s) => s.scoringPeriodId)
@@ -489,18 +500,23 @@ Deno.serve(async (req) => {
         }
       }
     }
+    await runBatched(statTasks);
 
     // --- backfill earlier weeks' player scores (ESPN only returns the latest week by default) ---
     const curWeek: number = league.scoringPeriodId ?? 1;
     const { data: haveRows } = await admin.from('player_week_scores').select('week').eq('season_year', SEASON);
     const haveWeeks = new Set((haveRows ?? []).map((r: any) => r.week));
+    const weeksToFetch: number[] = [];
     for (let w = 1; w <= curWeek; w++) {
       if (haveWeeks.has(w) && w < curWeek - 1) continue;
+      weeksToFetch.push(w);
+    }
+    await Promise.all(weeksToFetch.map(async (w) => {
       const r = await fetch(
         `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mRoster&scoringPeriodId=${w}`,
         { headers: { Cookie: `espn_s2=${s2}; SWID=${swid}`, Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' } }
       );
-      if (!r.ok) continue;
+      if (!r.ok) return;
       const wk = await r.json();
       const rows: any[] = [];
       for (const t of wk.teams ?? []) {
@@ -518,7 +534,7 @@ Deno.serve(async (req) => {
         const { error: bErr } = await admin.from('player_week_scores').upsert(rows, { onConflict: 'season_year,week,player_id' });
         if (bErr) console.error('backfill', w, bErr);
       }
-    }
+    }));
 
 
     return json({
