@@ -516,7 +516,7 @@ Deno.serve(async (req) => {
         `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mRoster&scoringPeriodId=${w}`,
         { headers: { Cookie: `espn_s2=${s2}; SWID=${swid}`, Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' } }
       );
-      if (!r.ok) continue;
+      if (!r.ok) return;
       const wk = await r.json();
       const rows: any[] = [];
       for (const t of wk.teams ?? []) {
