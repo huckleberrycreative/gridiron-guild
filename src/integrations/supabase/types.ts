@@ -632,6 +632,44 @@ export type Database = {
         }
         Relationships: []
       }
+      projected_weekly_scores: {
+        Row: {
+          id: string
+          live_score: number | null
+          projected: number
+          season_year: number
+          team_id: string
+          updated_at: string
+          week: number
+        }
+        Insert: {
+          id?: string
+          live_score?: number | null
+          projected: number
+          season_year: number
+          team_id: string
+          updated_at?: string
+          week: number
+        }
+        Update: {
+          id?: string
+          live_score?: number | null
+          projected?: number
+          season_year?: number
+          team_id?: string
+          updated_at?: string
+          week?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projected_weekly_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regular_season_standings: {
         Row: {
           average_finish: number | null

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TeamLogo } from '@/components/TeamLogo';
 import { TeamWithStandings, useActiveSeasonStandings } from '@/hooks/useLeagueData';
+import { useProjectedScores } from '@/hooks/useProjectedScores';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -21,7 +22,12 @@ const fadeInUp = {
 const Index = () => {
   const [newComment, setNewComment] = useState({ teamName: '', comment: '' });
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
-  const { data: standings = [] } = useActiveSeasonStandings();
+  const [showProjected, setShowProjected] = useState(false);
+  const { data: actualStandings = [] } = useActiveSeasonStandings();
+  const { data: projectedStandings = [] } = useActiveSeasonStandings(true);
+  const { data: projections = [] } = useProjectedScores();
+  const hasProjections = projections.length > 0;
+  const standings = showProjected && hasProjections ? projectedStandings : actualStandings;
 
   // Fetch latest published recap from database
   const { data: latestRecap, isLoading: recapLoading } = useQuery({
@@ -219,6 +225,32 @@ const Index = () => {
                   <h2 className="font-display text-lg font-bold text-primary-foreground text-center">
                     LEAGUE STANDINGS
                   </h2>
+                  {hasProjections && (
+                    <div className="mt-3 grid grid-cols-2 rounded-md bg-primary-foreground/10 p-0.5 text-[11px] font-bold uppercase tracking-wider">
+                      {[
+                        { v: false, label: 'Current' },
+                        { v: true, label: 'Projected' },
+                      ].map((o) => (
+                        <button
+                          key={o.label}
+                          type="button"
+                          onClick={() => setShowProjected(o.v)}
+                          className={`rounded px-2 py-1 transition-colors ${
+                            showProjected === o.v
+                              ? 'bg-primary-foreground text-primary'
+                              : 'text-primary-foreground/80 hover:text-primary-foreground'
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showProjected && hasProjections && (
+                    <p className="mt-2 text-center text-[10px] text-primary-foreground/80">
+                      If Week {projections[0].week} ESPN projections stand
+                    </p>
+                  )}
                 </div>
 
                 {/* If the Playoffs Started Tomorrow */}

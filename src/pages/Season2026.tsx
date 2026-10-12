@@ -8,6 +8,7 @@ import {
   weeklyPoints,
   RIVALRY_WEEKS,
 } from '@/hooks/useWeeklyScores';
+import { useProjectedScores } from '@/hooks/useProjectedScores';
 import { TeamLogo } from '@/components/TeamLogo';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
@@ -34,7 +35,25 @@ const rankStyle = (place: number, fieldSize: number) => {
 
 const Season2026 = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
-  const { data: scores = [], isLoading: scoresLoading } = useWeeklyScores();
+  const { data: actualScores = [], isLoading: scoresLoading } = useWeeklyScores();
+  const { data: projections = [] } = useProjectedScores();
+
+  // Merge projections for weeks that have no final scores yet
+  const { scores, projectedWeeks, liveByTeam, projUpdatedAt } = useMemo(() => {
+    const finalWeeks = new Set(actualScores.map((s) => s.week));
+    const pending = projections.filter((p) => !finalWeeks.has(p.week));
+    const projectedWeeks = new Set(pending.map((p) => p.week));
+    const liveByTeam = new Map(pending.map((p) => [`${p.week}:${p.teamId}`, p.live]));
+    return {
+      scores: [
+        ...actualScores,
+        ...pending.map((p) => ({ id: `proj-${p.week}-${p.teamId}`, week: p.week, teamId: p.teamId, score: p.projected })),
+      ],
+      projectedWeeks,
+      liveByTeam,
+      projUpdatedAt: pending[0]?.updatedAt,
+    };
+  }, [actualScores, projections]);
 
   const { weeks, grid, totals } = useMemo(() => {
     const playedWeeks = Array.from(new Set(scores.map((s) => s.week))).sort((a, b) => a - b);
@@ -60,28 +79,32 @@ const Season2026 = () => {
       grid.set(w, inner);
     });
 
-    const totals = new Map<string, { points: number; pf: number }>();
+    const totals = new Map<string, { points: number; pf: number; projPoints: number }>();
     teams.forEach((t) => {
       let points = 0;
       let pf = 0;
+      let projPoints = 0;
       playedWeeks.forEach((w) => {
         const cell = grid.get(w)?.get(t.id);
         if (cell) {
-          points += cell.points;
-          pf += cell.score;
+          projPoints += cell.points;
+          if (!projectedWeeks.has(w)) {
+            points += cell.points;
+            pf += cell.score;
+          }
         }
       });
-      totals.set(t.id, { points, pf });
+      totals.set(t.id, { points, pf, projPoints });
     });
 
     return { weeks: playedWeeks, grid, totals };
-  }, [scores, teams]);
+  }, [scores, teams, projectedWeeks]);
 
   const orderedTeams = useMemo(
     () =>
       [...teams].sort((a, b) => {
-        const ta = totals.get(a.id) ?? { points: 0, pf: 0 };
-        const tb = totals.get(b.id) ?? { points: 0, pf: 0 };
+        const ta = totals.get(a.id) ?? { points: 0, pf: 0, projPoints: 0 };
+        const tb = totals.get(b.id) ?? { points: 0, pf: 0, projPoints: 0 };
         return tb.points - ta.points || tb.pf - ta.pf || a.name.localeCompare(b.name);
       }),
     [teams, totals]
@@ -110,6 +133,13 @@ const Season2026 = () => {
               season. The small number in each cell is the points earned for that week's finish.
               Rivalry Week (Week 4) was head-to-head: winners earned 15 points, losers 0.
             </p>
+            {projectedWeeks.size > 0 && (
+              <p className="mt-2 text-sm font-semibold text-accent">
+                Week {[...projectedWeeks].join(', ')} is in progress — dashed cells show ESPN projected
+                totals and where teams would finish if projections stand
+                {projUpdatedAt && ` (as of ${new Date(projUpdatedAt).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })})`}.
+              </p>
+            )}
           </motion.div>
 
           {isLoading ? (
@@ -148,6 +178,9 @@ const Season2026 = () => {
                     <tr key={w} className="border-t border-border/60">
                       <td className="sticky left-0 z-10 bg-card px-3 py-2 font-display font-bold uppercase text-[11px] whitespace-nowrap">
                         Wk {w}
+                        {projectedWeeks.has(w) && (
+                          <div className="text-[9px] font-bold tracking-wider text-accent">Projected</div>
+                        )}
                         {RIVALRY_WEEKS[w] && (
                           <div className="text-[9px] font-bold tracking-wider text-accent">Rivalry</div>
                         )}
@@ -165,11 +198,15 @@ const Season2026 = () => {
                             </td>
                           );
                         }
+                        const isProj = projectedWeeks.has(w);
+                        const live = liveByTeam.get(`${w}:${team.id}`);
                         return (
                           <td key={team.id} className="p-1">
                             <div
+                              title={isProj ? `Projected ${cell.score.toFixed(1)}${live != null ? ` · live ${live.toFixed(1)}` : ''}` : undefined}
                               className={cn(
                                 'relative rounded-md px-2 py-2 text-center font-mono font-bold tabular-nums',
+                                isProj && 'border-2 border-dashed border-foreground/30 opacity-80 italic',
                                 RIVALRY_WEEKS[w]
                                   ? cell.points > 0
                                     ? 'bg-emerald-200 text-emerald-900'
@@ -181,6 +218,11 @@ const Season2026 = () => {
                                 {cell.points}
                               </span>
                               {cell.score.toFixed(1)}
+                              {isProj && live != null && (
+                                <div className="text-[9px] font-semibold not-italic opacity-70">
+                                  live {live.toFixed(1)}
+                                </div>
+                              )}
                             </div>
                           </td>
                         );
@@ -194,7 +236,7 @@ const Season2026 = () => {
                       Total
                     </td>
                     {orderedTeams.map((team) => {
-                      const total = totals.get(team.id) ?? { points: 0, pf: 0 };
+                      const total = totals.get(team.id) ?? { points: 0, pf: 0, projPoints: 0 };
                       return (
                         <td
                           key={team.id}
@@ -204,6 +246,11 @@ const Season2026 = () => {
                           <div className="text-[10px] text-muted-foreground">
                             {total.pf.toFixed(1)}
                           </div>
+                          {projectedWeeks.size > 0 && (
+                            <div className="text-[10px] font-bold text-accent" title="Total if projections stand">
+                              proj {total.projPoints}
+                            </div>
+                          )}
                         </td>
                       );
                     })}
