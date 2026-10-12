@@ -500,13 +500,18 @@ Deno.serve(async (req) => {
         }
       }
     }
+    await runBatched(statTasks);
 
     // --- backfill earlier weeks' player scores (ESPN only returns the latest week by default) ---
     const curWeek: number = league.scoringPeriodId ?? 1;
     const { data: haveRows } = await admin.from('player_week_scores').select('week').eq('season_year', SEASON);
     const haveWeeks = new Set((haveRows ?? []).map((r: any) => r.week));
+    const weeksToFetch: number[] = [];
     for (let w = 1; w <= curWeek; w++) {
       if (haveWeeks.has(w) && w < curWeek - 1) continue;
+      weeksToFetch.push(w);
+    }
+    await Promise.all(weeksToFetch.map(async (w) => {
       const r = await fetch(
         `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mRoster&scoringPeriodId=${w}`,
         { headers: { Cookie: `espn_s2=${s2}; SWID=${swid}`, Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' } }
