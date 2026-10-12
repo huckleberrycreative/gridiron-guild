@@ -50,6 +50,13 @@
       "when": 1790702566279,
       "tag": "0006_restrict_image_bucket_writes_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791769543417,
+      "tag": "0007_projected_weekly_scores",
+      "breakpoints": true
     }
   ]
 }
