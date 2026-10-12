@@ -464,6 +464,7 @@ Deno.serve(async (req) => {
 
     // --- live player stats (all rosters, incl. practice squad holding teams) ---
     let statsUpdated = 0;
+    const statTasks: Array<() => PromiseLike<unknown>> = [];
     const nowIso = new Date().toISOString();
     for (const t of league.teams ?? []) {
       for (const entry of t.roster?.entries ?? []) {
@@ -481,10 +482,12 @@ Deno.serve(async (req) => {
         const games = actual?.appliedAverage ? Math.round((actual.appliedTotal ?? 0) / actual.appliedAverage) : weekly.length;
         const actualPpg = actual?.appliedAverage ?? (games ? (actual?.appliedTotal ?? 0) / games : null);
         const projPpg = proj?.appliedTotal ? proj.appliedTotal / 17 : null;
-        await admin
-          .from('player_salaries')
-          .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, espn_lineup_slot: entry.lineupSlotId ?? null, stats_updated_at: nowIso })
-          .eq('id', sal.id);
+        statTasks.push(() =>
+          admin
+            .from('player_salaries')
+            .update({ actual_ppg: actualPpg, games_played: games, espn_proj_ppg: projPpg, espn_lineup_slot: entry.lineupSlotId ?? null, stats_updated_at: nowIso })
+            .eq('id', sal.id)
+        );
         statsUpdated++;
         const weekRows = weekly
           .filter((s) => s.scoringPeriodId)
