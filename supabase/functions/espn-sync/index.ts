@@ -248,6 +248,7 @@ Deno.serve(async (req) => {
     } finally {
       console.log('news notes collected:', newsByName.size);
     }
+    })();
 
     // DB writes are collected and run in parallel batches to keep sync fast.
     const dbTasks: Array<() => PromiseLike<unknown>> = [];
