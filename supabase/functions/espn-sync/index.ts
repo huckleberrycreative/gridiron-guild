@@ -352,6 +352,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    await runBatched(dbTasks);
+
     // --- practice squad holding rosters: cross-reference only, never import ---
     const playerNameById = new Map<string, string>();
     for (const p of players ?? []) playerNameById.set(p.id, p.full_name);
