@@ -316,18 +316,13 @@ Deno.serve(async (req) => {
 
         if (existingSalary) {
           seenSalaryIds.add(existingSalary.id);
-          const { data: prev } = await admin
-            .from('player_salaries')
-            .select('injury_weeks_out, injury_status')
-            .eq('id', existingSalary.id)
-            .single();
           const patch: Record<string, unknown> = {
             team_id: teamId,
-            ...injuryPatch(prev?.injury_weeks_out ?? 0),
+            ...injuryPatch(existingSalary.injury_weeks_out ?? 0),
           };
           if (existingSalary.team_id !== teamId) moved.push(fullName);
-          await admin.from('player_salaries').update(patch).eq('id', existingSalary.id);
-          if ((prev?.injury_status ?? 'healthy') !== status) injuryUpdates++;
+          dbTasks.push(() => admin.from('player_salaries').update(patch).eq('id', existingSalary.id));
+          if ((existingSalary.injury_status ?? 'healthy') !== status) injuryUpdates++;
         } else {
           const { data: inserted } = await admin
             .from('player_salaries')
