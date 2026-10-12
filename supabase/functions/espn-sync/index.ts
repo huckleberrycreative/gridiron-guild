@@ -384,6 +384,7 @@ Deno.serve(async (req) => {
 
     // --- players no longer rostered on ESPN become free agents ---
     let released = 0;
+    const releaseTasks: Array<() => PromiseLike<unknown>> = [];
     const syncedLeagueTeamIds = new Set(teamIdByEspn.values());
     if (teamIdByEspn.size > 0) {
       for (const s of salaryRows ?? []) {
@@ -391,10 +392,11 @@ Deno.serve(async (req) => {
         if (s.practice_squad || espnPsKeys.has(norm(playerNameById.get(s.player_id) ?? ''))) continue;
         // only touch teams that ESPN actually reported on
         if (s.team_id && syncedLeagueTeamIds.has(s.team_id) && !seenSalaryIds.has(s.id)) {
-          await admin.from('player_salaries').update({ team_id: null }).eq('id', s.id);
+          releaseTasks.push(() => admin.from('player_salaries').update({ team_id: null }).eq('id', s.id));
           released++;
         }
       }
+      await runBatched(releaseTasks);
     }
 
     // --- weekly scores ---
