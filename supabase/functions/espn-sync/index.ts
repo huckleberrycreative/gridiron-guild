@@ -255,14 +255,11 @@ Deno.serve(async (req) => {
 
     // DB writes are collected and run in parallel batches to keep sync fast.
     const dbTasks: Array<() => PromiseLike<unknown>> = [];
-    const runBatched = async (tasks: Array<() => PromiseLike<unknown>>, size = 25) => {
+    const runBatched = async (tasks: Array<() => PromiseLike<unknown>>, size = 50) => {
       for (let i = 0; i < tasks.length; i += size) {
         await Promise.all(tasks.slice(i, i + size).map((fn) => fn()));
       }
     };
-
-    await newsPromise;
-    lap('news ready');
 
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
@@ -308,19 +305,19 @@ Deno.serve(async (req) => {
         const status = INJURY_MAP[p.injuryStatus ?? 'ACTIVE'] ?? 'healthy';
         const existingSalary = salaryByPlayer.get(playerId);
 
-        // News blurb from the news_wl fetch; fall back to injury details if present.
+        // Injury details from the roster payload; ESPN news blurbs are applied
+        // afterwards in the background so they don't block the sync.
         const injuries: any[] = Array.isArray(p.injuries) ? p.injuries : [];
         const latestInjury = injuries
           .slice()
           .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))[0];
         const injuryNote: string | null =
-          newsByName.get(key) ??
-          (status === 'healthy'
+          status === 'healthy'
             ? null
             : (latestInjury?.details?.longDetail ??
                latestInjury?.details?.shortDetail ??
                latestInjury?.details?.detail ??
-               null));
+               null);
 
         const injuryPatch = (prevWeeks: number) => {
           const weeks =
