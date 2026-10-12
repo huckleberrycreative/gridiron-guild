@@ -258,6 +258,8 @@ Deno.serve(async (req) => {
       }
     };
 
+    await newsPromise;
+
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
       if (!teamId) continue;
