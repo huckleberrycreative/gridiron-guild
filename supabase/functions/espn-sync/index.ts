@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
     for (const p of players ?? []) nameByPlayerId.set(p.id, norm(p.full_name));
     const salaryByName = new Map<string, { id: string; team_id: string | null; practice_squad: boolean }>();
     for (const s of salaryRows ?? []) {
-      const row = { id: s.id, team_id: s.team_id, practice_squad: !!s.practice_squad };
+      const row = { id: s.id, team_id: s.team_id, practice_squad: !!s.practice_squad, injury_status: (s as any).injury_status ?? 'healthy', injury_weeks_out: (s as any).injury_weeks_out ?? 0 };
       salaryByPlayer.set(s.player_id, row);
       const nk = nameByPlayerId.get(s.player_id);
       const prev = nk ? salaryByName.get(nk) : undefined;
