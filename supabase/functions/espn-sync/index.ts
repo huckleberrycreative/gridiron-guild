@@ -532,6 +532,7 @@ Deno.serve(async (req) => {
       released,
       injuryUpdates,
       weeksSynced,
+      projectedWeek,
       statsUpdated,
       practiceSquad: {
         holdingRosters: practiceSquadEspnTeams.map((t: any) => espnTeamName(t)),
