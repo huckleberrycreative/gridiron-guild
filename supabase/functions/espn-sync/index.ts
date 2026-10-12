@@ -109,6 +109,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    const t0 = Date.now();
+    const lap = (label: string) => console.log(`[timing] ${label}: ${Date.now() - t0}ms`);
     // --- fetch league ---
     const espnUrl =
       `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}` +
@@ -135,6 +137,7 @@ Deno.serve(async (req) => {
       );
     }
     const league = await res.json();
+    lap('league fetch');
 
     // --- team mapping ---
     const { data: dbTeams } = await admin.from('teams').select('id, name, espn_team_id');
@@ -259,6 +262,7 @@ Deno.serve(async (req) => {
     };
 
     await newsPromise;
+    lap('news ready');
 
     for (const t of realEspnTeams) {
       const teamId = teamIdByEspn.get(t.id);
@@ -358,6 +362,7 @@ Deno.serve(async (req) => {
     }
 
     await runBatched(dbTasks);
+    lap('roster db writes');
 
     // --- practice squad holding rosters: cross-reference only, never import ---
     const playerNameById = new Map<string, string>();
@@ -502,6 +507,7 @@ Deno.serve(async (req) => {
       }
     }
     await runBatched(statTasks);
+    lap('stats writes');
     if (allWeekRows.length) {
       // One bulk upsert instead of a per-player round trip.
       const { error: wErr } = await admin
@@ -510,6 +516,7 @@ Deno.serve(async (req) => {
       if (wErr) console.error('player_week_scores upsert', wErr);
     }
 
+    lap('scores+projections');
     // --- backfill earlier weeks' player scores (ESPN only returns the latest week by default) ---
     const curWeek: number = league.scoringPeriodId ?? 1;
     const { data: haveRows } = await admin.from('player_week_scores').select('week').eq('season_year', SEASON);
@@ -545,6 +552,7 @@ Deno.serve(async (req) => {
     }));
 
 
+    lap('backfill done');
     return json({
       ok: true,
       teamsSynced: teamIdByEspn.size,
