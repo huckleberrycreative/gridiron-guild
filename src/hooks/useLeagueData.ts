@@ -49,9 +49,9 @@ export function useActiveSeason() {
 }
 
 // Fetch standings for the active season, derived live from weekly scores
-export function useActiveSeasonStandings() {
+export function useActiveSeasonStandings(includeProjected = false) {
   return useQuery({
-    queryKey: ['active-season-standings'],
+    queryKey: includeProjected ? ['weekly-scores', 'projected-standings'] : ['active-season-standings'],
     queryFn: async () => {
       // First get the active season
       const { data: season, error: seasonError } = await supabase
@@ -63,7 +63,7 @@ export function useActiveSeasonStandings() {
       if (seasonError) throw seasonError;
       if (!season) return [];
 
-      const [{ data: weekly, error: weeklyError }, { data: standings, error: standingsError }] =
+      const [{ data: weeklyRaw, error: weeklyError }, { data: standings, error: standingsError }, { data: proj }] =
         await Promise.all([
           supabase
             .from('weekly_scores')
@@ -74,10 +74,25 @@ export function useActiveSeasonStandings() {
             .select(`*, team:teams(*)`)
             .eq('season_id', season.id)
             .order('rank'),
+          includeProjected
+            ? supabase
+                .from('projected_weekly_scores')
+                .select('week, team_id, projected')
+                .eq('season_year', season.year)
+            : Promise.resolve({ data: [] as any[] }),
         ]);
 
       if (weeklyError) throw weeklyError;
       if (standingsError) throw standingsError;
+
+      let weekly: any[] = weeklyRaw || [];
+      if (includeProjected && proj?.length) {
+        const finalWeeks = new Set(weekly.map((r) => r.week));
+        const extra = proj
+          .filter((p: any) => !finalWeeks.has(p.week))
+          .map((p: any) => ({ week: p.week, team_id: p.team_id, score: Number(p.projected) }));
+        weekly = [...weekly, ...extra];
+      }
 
       const teamInfo = new Map<string, { name: string; owner: string }>();
       (standings || []).forEach((s: any) => {
