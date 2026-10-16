@@ -205,9 +205,11 @@ const TradeAnalyzer = () => {
     const name = `${s.firstName} ${s.lastName}`.trim();
     const projected = proj[normalize(name)];
     const salary2026 = toNum(s.salary2026);
+    // 2026 salaries are historical — a rollover player's real cost is his 2027
+    // salary. Only 2026 draftees / waiver pickups carry their 2026 number forward.
+    const carryover = s.rookieDraftRound || s.acquiredViaWaivers ? salary2026 : 0;
     const effectiveSalary = Math.max(
-      salary2026,
-      toNum(s.salary2027),
+      toNum(s.salary2027) || carryover || 1,
       s.franchiseTag ? 100 : 0
     );
     const futureSalary =
@@ -276,12 +278,14 @@ const TradeAnalyzer = () => {
       return sent.map((p) => {
         if (!p.franchiseTag) return p;
         const s = salaries.find((x) => x.id === p.id);
-        const yrs = [s?.salary2026, s?.salary2027, s?.salary2028, s?.salary2029].map((v) => toNum(v));
+        // Ignore 2026 (current year is historical); count remaining $100 tag
+        // years from 2027 on. Contract year = which tag year we're in.
+        const yrs = [s?.salary2027, s?.salary2028, s?.salary2029].map((v) => toNum(v));
         const tagYearsLeft = Math.max(1, yrs.filter((v) => v === 100).length);
-        const contractYear = Math.min(4, Math.max(1, 5 - tagYearsLeft));
+        const contractYear = Math.min(4, Math.max(1, 4 - tagYearsLeft));
         const posMax = TAG_POS_MAX[p.position] ?? 200;
         const deadCap = Math.round(TAG_PENALTY[contractYear - 1] * posMax);
-        const futureTagYears = Math.max(0, tagYearsLeft - 1);
+        const futureTagYears = tagYearsLeft;
         const extraCost = (posMax - 100) * futureTagYears + deadCap;
         return {
           ...p,

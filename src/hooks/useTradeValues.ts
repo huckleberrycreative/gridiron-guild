@@ -143,7 +143,10 @@ export function useTradeValues(extra?: PlayerSalaryWithDetails[]) {
         const s27 = toNum(p.salary2027);
         const s28 = toNum(p.salary2028);
         const s29 = toNum(p.salary2029);
-        const fallback = toNum(p.salary2026) || 1;
+        // 2026 salaries are historical (last year's locked-in number); rollover
+        // players are valued on their 2027+ salaries. Only 2026 draftees and
+        // waiver pickups carry their 2026 salary forward.
+        const fallback = (p.rookieDraftRound || p.acquiredViaWaivers ? toNum(p.salary2026) : 0) || 1;
         const parts: [number, number][] = [
           [s27, 0.625],
           [s28, 0.25],
