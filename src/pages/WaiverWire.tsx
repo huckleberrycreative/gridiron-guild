@@ -114,6 +114,7 @@ const WaiverWire = () => {
         fantasyTeam: 'Free Agent',
         teamId: null,
         franchiseTag: false,
+        acquiredViaWaivers: true,
         practiceSquad: false,
         salary2026: '1',
         salary2027: '1',
