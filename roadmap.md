@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Replace Roast season outlook with representative Power Ranks simulation scenarios
+- [x] Add player-specific mutually credible trade plans targeting current or dynasty #1
+- [x] Test scenario and rebuild rules and verify live team reports
+
 - [x] Correct Best Salaries reputation bias and verify Williams/Skattebo/Hubbard comparisons
 
 - [x] Add Roast My Team to GM Tools with team selection and four written report sections

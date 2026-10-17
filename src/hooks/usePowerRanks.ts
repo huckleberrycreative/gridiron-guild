@@ -4,7 +4,7 @@ import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
 import { useTradeValues } from '@/hooks/useTradeValues';
 import { useWeeklyScores } from '@/hooks/useWeeklyScores';
 import { useNflSchedule, emptySchedule } from '@/hooks/useNflSchedule';
-import { bestLineup, simulateSeason, rosterRisks, observedWeeklySd, actualPlayerPpg, actualRosterForecast, type SimTeam } from '@/lib/seasonSimulation';
+import { bestLineup, simulateSeason, simulateSeasonDetails, rosterRisks, observedWeeklySd, actualPlayerPpg, actualRosterForecast, type SimTeam, type TeamSeasonScenario } from '@/lib/seasonSimulation';
 export { bestLineup, simulateSeason } from '@/lib/seasonSimulation';
 
 /* ------------------------------------------------------------------ */
@@ -105,6 +105,7 @@ export type PowerRankRow = {
   standN: number;
   risks?: ReturnType<typeof rosterRisks>;
   weeklySd?: number;
+  scenario?: TeamSeasonScenario;
 };
 
 /* ------------------------------------------------------------------ */
@@ -323,10 +324,11 @@ export function usePowerRankRows(strengthModel: 'blended' | 'actual' = 'blended'
         weeklySd: observedWeeklySd(weeklyScores.filter(s => s.teamId === b.team.id && s.week <= weeksPlayed).map(s => s.score)),
       };
     });
-    const odds = simulateSeason(simTeams, weeksPlayed, schedule);
+    const details = strengthModel === 'actual' ? simulateSeasonDetails(simTeams, weeksPlayed, schedule) : null;
+    const odds = details?.odds ?? simulateSeason(simTeams, weeksPlayed, schedule);
 
     return scored
-      .map((b) => ({ ...b, odds: odds[b.team.id], weeksPlayed, risks: rosterRisks(b.roster, weeksPlayed + 1, schedule), weeklySd: simTeams.find(t => t.id === b.team.id)?.weeklySd }))
+      .map((b) => ({ ...b, odds: odds[b.team.id], scenario: details?.scenarios[b.team.id], weeksPlayed, risks: rosterRisks(b.roster, weeksPlayed + 1, schedule), weeklySd: simTeams.find(t => t.id === b.team.id)?.weeklySd }))
       .sort((a, b) => b.score - a.score || b.starterPpw - a.starterPpw);
   }, [schedule, weeklyScores, strengthModel]);
 
