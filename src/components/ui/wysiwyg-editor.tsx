@@ -53,7 +53,7 @@ export function WysiwygEditor({
     editorProps: {
       attributes: {
         class:
-          'prose prose-sm sm:prose max-w-none min-h-[300px] p-4 focus:outline-none',
+          'wysiwyg-content max-w-none min-h-[300px] p-4 focus:outline-none',
       },
     },
     onUpdate: ({ editor }) => {
