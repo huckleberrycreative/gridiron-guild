@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Correct Best Salaries reputation bias and verify Williams/Skattebo/Hubbard comparisons
+- [x] Correct Best Salaries reputation bias and verify Williams/Skattebo/Hubbard comparisons
 
 - [x] Add Roast My Team to GM Tools with team selection and four written report sections
 - [x] Share dynasty ranking calculations and test assessment rules
