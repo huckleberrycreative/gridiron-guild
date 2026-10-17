@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
 import { useTradeValues } from '@/hooks/useTradeValues';
+import { useWeeklyScores } from '@/hooks/useWeeklyScores';
+import { useNflSchedule, emptySchedule } from '@/hooks/useNflSchedule';
+import { bestLineup, simulateSeason, rosterRisks, observedWeeklySd, type SimTeam } from '@/lib/seasonSimulation';
+export { bestLineup, simulateSeason } from '@/lib/seasonSimulation';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                          */
@@ -57,6 +61,7 @@ export type Asset = {
   name: string;
   position: string;
   ppg: number;
+  basePpg?: number;
   projected: boolean;
   injuryStatus?: string;
   weeksOut?: number;
@@ -98,27 +103,13 @@ export type PowerRankRow = {
   startN: number;
   depthN: number;
   standN: number;
+  risks?: ReturnType<typeof rosterRisks>;
+  weeklySd?: number;
 };
 
 /* ------------------------------------------------------------------ */
 /* Lineup + depth                                                     */
 /* ------------------------------------------------------------------ */
-
-export const bestLineup = (roster: Asset[], excluded = new Set<string>()) => {
-  const pool = [...roster]
-    .filter((p) => !excluded.has(p.id))
-    .sort((a, b) => b.ppg - a.ppg);
-  const used = new Set<string>();
-  const lineup: Asset[] = [];
-  for (const slot of STARTER_SLOTS) {
-    const pick = pool.find((p) => !used.has(p.id) && eligible(slot, p.position));
-    if (pick) {
-      used.add(pick.id);
-      lineup.push(pick);
-    }
-  }
-  return lineup;
-};
 
 const lineupTotal = (roster: Asset[], excluded?: Set<string>) =>
   bestLineup(roster, excluded).reduce((s, p) => s + p.ppg, 0);
@@ -142,89 +133,6 @@ export const depthResilience = (roster: Asset[]) => {
 /* Season simulation                                                  */
 /* ------------------------------------------------------------------ */
 
-type SimTeam = {
-  id: string;
-  meanPpw: number;
-  accumulated: number;
-};
-
-// Box-Muller
-let spare: number | null = null;
-const gauss = () => {
-  if (spare != null) {
-    const v = spare;
-    spare = null;
-    return v;
-  }
-  let u = 0;
-  let v = 0;
-  let s = 0;
-  do {
-    u = Math.random() * 2 - 1;
-    v = Math.random() * 2 - 1;
-    s = u * u + v * v;
-  } while (s === 0 || s >= 1);
-  const mul = Math.sqrt((-2 * Math.log(s)) / s);
-  spare = v * mul;
-  return u * mul;
-};
-
-export const simulateSeason = (teams: SimTeam[], weeksPlayed: number): Record<string, Odds> => {
-  const n = teams.length;
-  const counts: Record<string, Odds> = {};
-  teams.forEach((t) => (counts[t.id] = { top2: 0, top4: 0, top5: 0, champ: 0 }));
-  const weeksLeft = Math.max(0, REG_SEASON_WEEKS - weeksPlayed);
-
-  for (let sim = 0; sim < SIMS; sim++) {
-    const totals = teams.map((t) => t.accumulated);
-
-    for (let w = 0; w < weeksLeft; w++) {
-      const scores = teams.map((t, i) => ({ i, s: t.meanPpw + gauss() * WEEKLY_SD }));
-      scores.sort((a, b) => b.s - a.s);
-      scores.forEach((row, place) => {
-        totals[row.i] += WEEKLY_POINTS[place] ?? 0;
-      });
-    }
-
-    const order = totals
-      .map((v, i) => ({ i, v: v + Math.random() * 0.01 }))
-      .sort((a, b) => b.v - a.v);
-
-    order.forEach((row, seedIdx) => {
-      const id = teams[row.i].id;
-      if (seedIdx < 2) counts[id].top2++;
-      if (seedIdx < 4) counts[id].top4++;
-      if (seedIdx < 5) counts[id].top5++;
-    });
-
-    // Playoffs: weeks 14 & 15 semifinal per the Constitution
-    const field = order.slice(0, 5).map((row, seedIdx) => {
-      const t = teams[row.i];
-      const a = t.meanPpw + gauss() * WEEKLY_SD;
-      const b = t.meanPpw + gauss() * WEEKLY_SD;
-      const semi =
-        seedIdx < 2 ? Math.max(a, b) : seedIdx < 4 ? (a + b) / 2 : Math.min(a, b);
-      return { t, semi };
-    });
-    field.sort((a, b) => b.semi - a.semi);
-    const finalists = field.slice(0, 2);
-    const f0 = finalists[0].t.meanPpw * 2 + gauss() * WEEKLY_SD * Math.SQRT2;
-    const f1 = finalists[1].t.meanPpw * 2 + gauss() * WEEKLY_SD * Math.SQRT2;
-    counts[f0 >= f1 ? finalists[0].t.id : finalists[1].t.id].champ++;
-  }
-
-  const out: Record<string, Odds> = {};
-  Object.entries(counts).forEach(([id, c]) => {
-    out[id] = {
-      top2: (c.top2 / SIMS) * 100,
-      top4: (c.top4 / SIMS) * 100,
-      top5: (c.top5 / SIMS) * 100,
-      champ: (c.champ / SIMS) * 100,
-    };
-  });
-  return out;
-};
-
 /* ------------------------------------------------------------------ */
 /* Hook                                                               */
 /* ------------------------------------------------------------------ */
@@ -233,6 +141,8 @@ export function usePowerRankRows() {
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const { data: standings = [], isLoading: standingsLoading } = useActiveSeasonStandings();
   const { byId: tvById } = useTradeValues();
+  const { data: weeklyScores = [] } = useWeeklyScores();
+  const { data: schedule = emptySchedule, isLoading: scheduleLoading, isError: scheduleError } = useNflSchedule();
   const [proj, setProj] = useState<Record<string, number>>({});
   const [projLoaded, setProjLoaded] = useState(false);
 
@@ -303,13 +213,17 @@ export function usePowerRankRows() {
           );
           const status = s.injuryStatus ?? 'healthy';
           const weeksOut = s.injuryWeeksOut ?? 0;
-          const isOut = OUT_STATUSES.includes(status) && weeksOut > 0;
-          const raw = projected ?? salaryImpliedPpg(s.position, salary);
+          const isOut = OUT_STATUSES.includes(status);
+          const baseline = projected ?? s.espnProjPpg ?? salaryImpliedPpg(s.position, salary);
+          // Current production leads, but a short hot/cold run is shrunk toward expectations.
+          const performanceWeight = s.actualPpg != null && s.gamesPlayed > 0 ? Math.min(0.8, s.gamesPlayed / (s.gamesPlayed + 3)) : 0;
+          const raw = baseline * (1 - performanceWeight) + (s.actualPpg ?? baseline) * performanceWeight;
           return {
             id: s.id,
             name,
             position: s.position,
             ppg: raw * (INJURY_MULTIPLIER[status] ?? 1),
+            basePpg: raw,
             projected: projected != null,
             injuryStatus: status,
             weeksOut,
@@ -392,30 +306,26 @@ export function usePowerRankRows() {
       };
     });
 
-    const projMean = scored.reduce((s, b) => s + b.starterPpw, 0) / scored.length;
     const simTeams: SimTeam[] = scored.map((b) => {
-      const actual = b.team.avgPPW;
-      const blend =
-        weeksPlayed > 0
-          ? (b.starterPpw * (REG_SEASON_WEEKS - Math.min(weeksPlayed, REG_SEASON_WEEKS)) +
-              actual * Math.min(weeksPlayed, REG_SEASON_WEEKS)) /
-            REG_SEASON_WEEKS
-          : b.starterPpw;
-      const injuryDrag = (1 - b.retained) * 0.55;
+      const healthy = b.roster.map(p => ({ ...p, ppg: p.basePpg ?? p.ppg }));
+      const rosterPpw = bestLineup(healthy).reduce((s, p) => s + p.ppg, 0);
+      // Historical TEAM totals are a modest calibration, not the forecast itself.
+      // Current-lineup actual averages and player histories already inform the roster model.
+      const historyWeight = Math.min(0.2, weeksPlayed / 40);
       return {
         id: b.team.id,
-        meanPpw: Math.max(40, blend * (1 - injuryDrag)),
+        meanPpw: rosterPpw * (1 - historyWeight) + b.team.avgPPW * historyWeight,
         accumulated: b.team.totalPoints,
+        roster: b.roster,
+        weeklySd: observedWeeklySd(weeklyScores.filter(s => s.teamId === b.team.id && s.week <= weeksPlayed).map(s => s.score)),
       };
     });
-    void projMean;
-
-    const odds = simulateSeason(simTeams, weeksPlayed);
+    const odds = simulateSeason(simTeams, weeksPlayed, schedule);
 
     return scored
-      .map((b) => ({ ...b, odds: odds[b.team.id], weeksPlayed }))
+      .map((b) => ({ ...b, odds: odds[b.team.id], weeksPlayed, risks: rosterRisks(b.roster, weeksPlayed + 1, schedule), weeklySd: simTeams.find(t => t.id === b.team.id)?.weeklySd }))
       .sort((a, b) => b.score - a.score || b.starterPpw - a.starterPpw);
-  }, []);
+  }, [schedule, weeklyScores]);
 
   const tvOf = useCallback((id: string) => tvById.get(id)?.value, [tvById]);
 
@@ -450,7 +360,7 @@ export function usePowerRankRows() {
     [compute, input, lineupPpw, tvOf]
   );
 
-  const loading = salariesLoading || standingsLoading || !projLoaded;
+  const loading = salariesLoading || standingsLoading || !projLoaded || scheduleLoading;
 
-  return { rows, loading, weeksPlayed: rows[0]?.weeksPlayed ?? 0, whatIf, proj };
+  return { rows, loading, weeksPlayed: rows[0]?.weeksPlayed ?? 0, whatIf, proj, scheduleError, schedule };
 }
