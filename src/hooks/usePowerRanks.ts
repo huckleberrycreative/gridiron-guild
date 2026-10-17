@@ -4,7 +4,7 @@ import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
 import { useTradeValues } from '@/hooks/useTradeValues';
 import { useWeeklyScores } from '@/hooks/useWeeklyScores';
 import { useNflSchedule, emptySchedule } from '@/hooks/useNflSchedule';
-import { bestLineup, simulateSeason, rosterRisks, observedWeeklySd, type SimTeam } from '@/lib/seasonSimulation';
+import { bestLineup, simulateSeason, rosterRisks, observedWeeklySd, actualPlayerPpg, actualRosterForecast, type SimTeam } from '@/lib/seasonSimulation';
 export { bestLineup, simulateSeason } from '@/lib/seasonSimulation';
 
 /* ------------------------------------------------------------------ */
@@ -137,7 +137,7 @@ export const depthResilience = (roster: Asset[]) => {
 /* Hook                                                               */
 /* ------------------------------------------------------------------ */
 
-export function usePowerRankRows() {
+export function usePowerRankRows(strengthModel: 'blended' | 'actual' = 'blended') {
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const { data: standings = [], isLoading: standingsLoading } = useActiveSeasonStandings();
   const { byId: tvById } = useTradeValues();
@@ -217,14 +217,16 @@ export function usePowerRankRows() {
           const baseline = projected ?? s.espnProjPpg ?? salaryImpliedPpg(s.position, salary);
           // Current production leads, but a short hot/cold run is shrunk toward expectations.
           const performanceWeight = s.actualPpg != null && s.gamesPlayed > 0 ? Math.min(0.8, s.gamesPlayed / (s.gamesPlayed + 3)) : 0;
-          const raw = baseline * (1 - performanceWeight) + (s.actualPpg ?? baseline) * performanceWeight;
+          const raw = strengthModel === 'actual'
+            ? actualPlayerPpg(s.actualPpg, baseline)
+            : baseline * (1 - performanceWeight) + (s.actualPpg ?? baseline) * performanceWeight;
           return {
             id: s.id,
             name,
             position: s.position,
             ppg: raw * (INJURY_MULTIPLIER[status] ?? 1),
             basePpg: raw,
-            projected: projected != null,
+            projected: strengthModel === 'actual' ? s.actualPpg == null : projected != null,
             injuryStatus: status,
             weeksOut,
             out: isOut,
@@ -234,7 +236,7 @@ export function usePowerRankRows() {
       return { team, roster };
       }),
     };
-  }, [salaries, standings, proj]);
+  }, [salaries, standings, proj, strengthModel]);
 
   const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number, realPpw: Record<string, number>, tvOf: (id: string) => number | undefined) => {
     if (!list.length) return [];
@@ -260,7 +262,7 @@ export function usePowerRankRows() {
         retained,
         replacementPpg,
         benchCount: Math.max(0, available.length - starters.length),
-        realPpw: realPpw[team.id] ?? starterPpw,
+        realPpw: strengthModel === 'actual' ? starterPpw : realPpw[team.id] ?? starterPpw,
         benchTv: (() => {
           const ids = new Set(starters.map((p) => p.id));
           const vals = roster.filter((p) => !ids.has(p.id)).map((p) => tvOf(p.id)).filter((v): v is number => v != null);
@@ -307,6 +309,7 @@ export function usePowerRankRows() {
     });
 
     const simTeams: SimTeam[] = scored.map((b) => {
+      if (strengthModel === 'actual') return actualRosterForecast(b.roster, b.team.id, b.team.totalPoints);
       const healthy = b.roster.map(p => ({ ...p, ppg: p.basePpg ?? p.ppg }));
       const rosterPpw = bestLineup(healthy).reduce((s, p) => s + p.ppg, 0);
       // Historical TEAM totals are a modest calibration, not the forecast itself.
@@ -325,7 +328,7 @@ export function usePowerRankRows() {
     return scored
       .map((b) => ({ ...b, odds: odds[b.team.id], weeksPlayed, risks: rosterRisks(b.roster, weeksPlayed + 1, schedule), weeklySd: simTeams.find(t => t.id === b.team.id)?.weeklySd }))
       .sort((a, b) => b.score - a.score || b.starterPpw - a.starterPpw);
-  }, [schedule, weeklyScores]);
+  }, [schedule, weeklyScores, strengthModel]);
 
   const tvOf = useCallback((id: string) => tvById.get(id)?.value, [tvById]);
 
@@ -340,8 +343,8 @@ export function usePowerRankRows() {
   }, [salaries]);
 
   const rows = useMemo(
-    () => compute(input.list, input.weeksPlayed, lineupPpw, tvOf).map((r) => ({ ...r, lineupPpw: lineupPpw[r.team.id] ?? null })),
-    [compute, input, lineupPpw, tvOf]
+    () => compute(input.list, input.weeksPlayed, lineupPpw, tvOf).map((r) => ({ ...r, lineupPpw: strengthModel === 'actual' ? r.starterPpw : lineupPpw[r.team.id] ?? null })),
+    [compute, input, lineupPpw, tvOf, strengthModel]
   );
 
   /** Re-run Power Ranks with one team's roster changed (drop ids, add assets). */

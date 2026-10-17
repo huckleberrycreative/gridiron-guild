@@ -1,10 +1,30 @@
 import { describe, test, expect } from 'bun:test';
-import { bestLineup, weeklyLineup, semifinalScore, simulateSeason, rosterRisks, emptySchedule, weeklyFinishPoints, type SimPlayer } from '../src/lib/seasonSimulation';
+import { bestLineup, weeklyLineup, semifinalScore, simulateSeason, rosterRisks, emptySchedule, weeklyFinishPoints, actualPlayerPpg, actualRosterForecast, type SimPlayer } from '../src/lib/seasonSimulation';
 
 const player = (id: string, position: string, ppg: number, nflTeam = 'BUF'): SimPlayer => ({ id, name: id, position, ppg, projected: true, nflTeam });
 const roster = [player('Allen', 'QB', 25), player('rb1', 'RB', 15), player('rb2', 'RB', 14), ...Array.from({ length: 6 }, (_, i) => player(`wr${i}`, 'WR', 12 - i))];
 const total = (r: SimPlayer[]) => r.reduce((s, p) => s + p.ppg, 0);
 describe('roster-aware season odds', () => {
+  test('actual weekly player averages override preseason expectations, including zero', () => {
+    expect(actualPlayerPpg(14, 25)).toBe(14);
+    expect(actualPlayerPpg(0, 25)).toBe(0);
+    expect(actualPlayerPpg(null, 25)).toBe(25);
+  });
+  test('future strength is exactly the best nine actual averages regardless of past team results', () => {
+    const before = actualRosterForecast(roster, 'team', 10);
+    const after = actualRosterForecast(roster, 'team', 100);
+    expect(before.meanPpw).toBe(total(bestLineup(roster)));
+    expect(after.meanPpw).toBe(before.meanPpw);
+    expect(after.weeklySd).toBe(before.weeklySd);
+    expect(after.accumulated).toBe(100);
+  });
+  test('three stronger starting nines beat the fourth in title odds with otherwise equal conditions', () => {
+    const teams = Array.from({ length: 10 }, (_, i) => actualRosterForecast(
+      roster.map(p => ({ ...p, nflTeam: null, ppg: p.ppg * (1.3 - i * 0.06) })), `team${i}`, 0));
+    const odds = simulateSeason(teams, 5);
+    for (const id of ['team0', 'team1', 'team2']) expect(odds[id].champ).toBeGreaterThan(odds.team3.champ);
+    expect(odds.team3.champ).toBeGreaterThan(0);
+  });
   test('QB injury without a backup costs at least 10 points and leaves the QB slot unfilled', () => {
     const before = total(bestLineup(roster));
     const after = total(bestLineup(roster, new Set(['Allen'])));

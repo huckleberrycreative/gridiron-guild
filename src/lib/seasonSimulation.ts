@@ -31,6 +31,13 @@ export const INJURY_ONSET: Record<string, number> = { QB: 0.025, RB: 0.05, WR: 0
 export const emptySchedule: ScheduleContext = { opponents: {}, defense: {}, completedGames: 0 };
 const sum = (list: SimPlayer[]) => list.reduce((s, p) => s + p.ppg, 0);
 export const healthyRoster = (roster: SimPlayer[]) => roster.map(p => ({ ...p, ppg: p.basePpg ?? p.ppg }));
+// Observed zeroes are real data, not a reason to substitute a preseason projection.
+export const actualPlayerPpg = (actual: number | null | undefined, fallback: number) =>
+  actual != null && Number.isFinite(actual) ? actual : fallback;
+export const actualRosterForecast = (roster: SimPlayer[], id: string, accumulated: number): SimTeam => {
+  const meanPpw = sum(bestLineup(healthyRoster(roster)));
+  return { id, accumulated, roster, meanPpw, weeklySd: Math.max(24, meanPpw * 0.22) };
+};
 export const matchupMultiplier = (p: SimPlayer, week: number, schedule: ScheduleContext) => {
   const opponent = p.nflTeam ? schedule.opponents[p.nflTeam]?.[week] : undefined;
   return opponent ? schedule.defense[opponent] ?? 1 : 1;
