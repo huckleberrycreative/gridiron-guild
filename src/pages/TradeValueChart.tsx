@@ -5,17 +5,8 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 import { useTradeValues, type TradeValueRow as Row } from '@/hooks/useTradeValues';
-
-const PRIME: Record<string, number> = { QB: 32, RB: 26, WR: 29, TE: 30 };
-const ageFactor = (pos: string, age: number | null) => {
-  if (!age || age <= PRIME[pos]) return 1;
-  return Math.max(0.45, 1 - (age - PRIME[pos]) * (pos === 'RB' ? 0.09 : 0.08));
-};
-
-type SalaryRow = {
-  id: string; name: string; position: string; team: string; ft?: boolean;
-  s27: number; s28: number; s29: number; total: number; pts: number; ppd: number; ppg: number; rank: number; age: number | null; dynRank: number | null;
-};
+import { rankBestSalaries, type salaryEfficiency } from '@/lib/bestSalaries';
+type SalaryRow = ReturnType<typeof salaryEfficiency>;
 
 const TradeValueChart = () => {
   const { rows: all, isLoading } = useTradeValues();
@@ -29,28 +20,7 @@ const TradeValueChart = () => {
     [all, onlyFA, pos]
   );
   const salaryRows = useMemo<SalaryRow[]>(() => {
-    return all
-      .filter((r: any) => (onlyFA ? !r.teamId : !!r.teamId) && (pos === 'ALL' || r.group === pos) && r.ppg > 0)
-      .map((r: any) => {
-        const age = r.age as number | null;
-        const avg = r.vor != null ? r.ppg - r.vor : r.ppg; // positional average
-        const dyn = (r.dynScore ?? 0) / 100;
-        const young = age != null && age <= 24;
-        // Sustainability: the dynasty ranking reflects track record + outlook, so
-        // hot starts from low-ranked players are discounted; elite assets hold value.
-        const sustain = 0.45 + 0.55 * dyn;
-        // Points over positional average across 2027–2029, aged each year,
-        // with growth for young, highly-ranked players.
-        const pts = [1, 2, 3].reduce((a, k) => {
-          const growth = young ? 1 + dyn * 0.06 * k : 1;
-          const ppgK = r.ppg * growth * ageFactor(r.position, age != null ? age + k : null);
-          return a + Math.max(0, ppgK - avg) * 17 * sustain;
-        }, 0);
-        const total = r.s27 + r.s28 + r.s29;
-        return { id: r.id, name: r.name, position: r.position, team: r.team, ft: r.ft, s27: r.s27, s28: r.s28, s29: r.s29, total, pts, ppd: total > 0 ? (pts / total) * 10 : 0, ppg: r.ppg, age, dynRank: r.dynastyRank, rank: 0 };
-      })
-      .sort((a, b) => b.ppd - a.ppd)
-      .map((r, i) => ({ ...r, rank: i + 1 }));
+    return rankBestSalaries(all.filter(r => (onlyFA ? !r.teamId : !!r.teamId) && (pos === 'ALL' || r.group === pos)));
   }, [all, onlyFA, pos]);
 
   const salaryColumns: Column<SalaryRow>[] = [
@@ -66,10 +36,10 @@ const TradeValueChart = () => {
     { key: 'ppd', label: 'Value per $10', sortable: true, align: 'center', render: (v) => (
       <span className="inline-block min-w-[3rem] rounded bg-primary/10 px-2 py-1 font-bold text-primary">{Number(v).toFixed(1)}</span>
     ) },
-    { key: 'ppg', label: 'Proj PPG', sortable: true, align: 'center', render: (v) => Number(v).toFixed(1) },
+    { key: 'ppg', label: 'Scoring PPG', sortable: true, align: 'center', render: (v,row) => <span title={row.observed ? 'Actual current-season average' : 'Projected fallback: no recorded average'}>{Number(v).toFixed(1)}{!row.observed && '*'}</span> },
     { key: 'age', label: 'Age', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
     { key: 'dynRank', label: 'Dyn Rk', sortable: true, align: 'center', render: (v) => (v ?? '—') as string },
-    { key: 'pts', label: 'Pts Over Avg (27–29)', sortable: true, align: 'center', render: (v) => Math.round(Number(v)).toLocaleString() },
+    { key: 'pts', label: 'Est Pts (27–29)', sortable: true, align: 'center', render: (v) => Number(v).toFixed(1) },
     { key: 's27', label: '2027 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 's28', label: '2028 $', sortable: true, align: 'center', render: (v) => `$${v}` },
     { key: 's29', label: '2029 $', sortable: true, align: 'center', render: (v) => `$${v}` },
@@ -192,9 +162,10 @@ const TradeValueChart = () => {
         </div>
         {tab === 'salary' && (
           <p className="mb-4 text-sm text-muted-foreground">
-            Best bang for the buck over 2027–2029: points scored above the average starter at his position, each year,
-            per $10 of salary. Older players fade, young high-ranked players grow, and hot starts from low-ranked
-            players are discounted unless their dynasty ranking backs them up.
+            Estimated total scoring per $10 of 2027–2029 salary, starting with actual current-season averages
+            and applying age-related decline. Dynasty reputation does not alter this contract-efficiency rank.
+            * marks a projected fallback where no actual average is recorded. Cheap depth can rank well here
+            without being a better starter or trade asset; these are scoring-efficiency estimates, not guaranteed future totals.
           </p>
         )}
 
