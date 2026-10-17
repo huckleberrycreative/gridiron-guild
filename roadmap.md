@@ -1,5 +1,6 @@
 # Roadmap
 
+- [x] Give the Fanatics a −10 Power Ranks deduction that opens their own Hexed poster
 - [x] Delete Roast My Team page, its modules and tests, and all navigation, routing and SEO wiring
 - [x] Replace Roast season outlook with representative Power Ranks simulation scenarios
 - [x] Add player-specific mutually credible trade plans targeting current or dynasty #1
