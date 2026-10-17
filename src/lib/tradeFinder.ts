@@ -61,9 +61,10 @@ export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: nu
   const results: TradeSuggestion[] = [];
   for (const partner of league.filter(t => t.id !== team.id && t.roster.length)) {
     const partnerBefore = rosterUtility(partner.roster, startWeek, schedule);
+    const partnerPackages = packages(partner.roster);
     const candidates = own.flatMap(send => {
       const valueSent = send.reduce((s, p) => s + p.value, 0);
-      return packages(partner.roster).filter(receive => receive.length === send.length).flatMap(receive => {
+      return partnerPackages.filter(receive => receive.length === send.length).flatMap(receive => {
         const valueReceived = receive.reduce((s, p) => s + p.value, 0);
         const imbalance = tradeImbalance(valueSent, valueReceived);
         const sentPos = send.map(p => p.position).sort().join(',');
@@ -80,8 +81,6 @@ export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: nu
       const partnerGain = partnerAfter.utility - partnerBefore.utility;
       // Neither side can lose scheduled scoring; improvements may be scoring, injury cover, or both.
       if (gain <= 0.1 || partnerGain <= 0.1 || after.ros < before.ros - 0.01 || partnerAfter.ros < partnerBefore.ros - 0.01) continue;
-      // Do not worsen an over-cap roster or push an affordable roster over the existing league cap.
-      if (after.salary > Math.max(1000, before.salary) || partnerAfter.salary > Math.max(1000, partnerBefore.salary)) continue;
       results.push({ ...c, partner, gain, partnerGain, rosGain: after.ros - before.ros, partnerRosGain: partnerAfter.ros - partnerBefore.ros, depthGain: after.depth - before.depth, partnerDepthGain: partnerAfter.depth - partnerBefore.depth, salaryChange: after.salary - before.salary, partnerSalaryChange: partnerAfter.salary - partnerBefore.salary });
     }
   }
