@@ -43,7 +43,6 @@ export function buildTeamRoast(teamId: string, standings: TeamWithStandings[], p
   if(!own) return null;
   const assessment=assessRoster(own,league,startWeek);
   const weakest=assessment.weakest, strongest=assessment.strongest;
-  const leader=ranks[0];
   const leaderStanding=[...standings].sort((a,b)=>b.totalPoints-a.totalPoints)[0];
   const rawPayroll=assets.filter(a=>a.teamId===teamId).reduce((v,a)=>v+a.s27,0);
   const surplus=Math.max(0,rawPayroll-1000);
@@ -63,7 +62,7 @@ export function buildTeamRoast(teamId: string, standings: TeamWithStandings[], p
     const worst=[...remaining].sort((a,b)=>a.score-b.score)[0],best=[...remaining].sort((a,b)=>b.score-a.score)[0];
     const lowLineup=worst ? weeklyLineup(current.roster,worst.week,startWeek,schedule) : [];
     const lowIds=new Set(lowLineup.map(p=>p.id));
-    const absent=starters.filter(p=>!lowIds.has(p.id));
+    const absent=starters.filter(p=>!lowIds.has(p.id) && (p.out || weeklyLineup([p],worst?.week ?? startWeek,startWeek,schedule).length===0));
     forecastText=`My pick: ${standing.name} finishes #${finishPrediction} with ${num(result?.points ?? standing.totalPoints)} weekly standings points. This seed-and-playoff-exit combination occurred in ${num(scenario.frequency)}% of runs—the most common joint outcome for your team, not a majority guarantee. ${above ? `${teamName(above.id)} ends ${num(above.points-(result?.points ?? 0))} points ahead of you. ` : 'You finish on top of the regular-season table. '}${below ? `${teamName(below.id)} finishes directly behind you, ${num((result?.points ?? 0)-below.points)} points back. ` : 'You finish at the bottom of the table. '}${worst && best ? `The selected run’s low point is Week ${worst.week}: ${num(worst.score)} scoring points, compared with a Week ${best.week} high of ${num(best.score)}. ${absent.length ? `${absent.map(p=>p.name).join(', ')} is absent from the scheduled lineup that week because of saved availability or byes; random injuries and weekly variance also affect the simulated score.` : 'The low week is a simulated scoring slump, not evidence that you failed to start the right players.'} ` : ''}`;
     if(scenario.outcome==='miss') {
       const fifth=scenario.standings[4];
@@ -83,7 +82,7 @@ export function buildTeamRoast(teamId: string, standings: TeamWithStandings[], p
   const roastAssets:RoastAsset[]=assets.map(a=>{
     const player=power.flatMap(r=>r.roster).find(p=>p.id===a.id);
     const contract=salaries.find(p=>p.id===a.id);
-    return {...a,...player, ppg:player?.basePpg ?? player?.ppg ?? a.ppg, basePpg:player?.basePpg ?? player?.ppg ?? a.ppg, projected:player?.projected ?? true,salary:a.s27,franchiseTag:contract?.franchiseTag ?? false,practiceSquad:contract?.practiceSquad ?? false};
+    return {...a,...player, dynastyPpg:a.ppg, ppg:player?.basePpg ?? player?.ppg ?? a.ppg, basePpg:player?.basePpg ?? player?.ppg ?? a.ppg, projected:player?.projected ?? true,salary:a.s27,franchiseTag:contract?.franchiseTag ?? false,practiceSquad:contract?.practiceSquad ?? false};
   });
   const plan=buildRoastPlan(teamId,power,roastAssets,turnaroundHorizon(powerRank,current.odds.top5,weeksPlayed),schedule,weeksPlayed);
   return {name:standing.name,standingsRank,powerRank,dynastyRank,finish:finishPrediction,currentText,dynastyText,forecastText,steps:plan.steps,horizon:plan.horizon};
