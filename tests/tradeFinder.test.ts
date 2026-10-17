@@ -9,8 +9,8 @@ describe('Trade Finder', () => {
     expect(tradeImbalance(100,100)).toBe(0);
   });
   test('opposite QB and WR depth produces a beneficial balanced swap for both teams', () => {
-    const a: FinderTeam = {id:'a', name:'A', roster:[...base('a'),p('spareQB','QB',19)]};
-    const b: FinderTeam = {id:'b', name:'B', roster:[...base('b'),p('spareWR','WR',18)]};
+    const a: FinderTeam = {id:'a', name:'A', roster:[...base('a'),p('opQB','QB',21),p('spareQB','QB',19)]};
+    const b: FinderTeam = {id:'b', name:'B', roster:[...base('b').map(p => ({...p, ppg:p.position==='WR' ? 22 : p.ppg})),p('spareWR','WR',18)]};
     const results=findTrades(a,[a,b],6);
     expect(results.length).toBeGreaterThan(0);
     for (const r of results) {
