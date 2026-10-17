@@ -19,7 +19,7 @@ import brockPartyHexed from '@/assets/brock-party-hexed.png.asset.json';
 const pct = (v: number) => (v >= 99.5 ? '>99%' : v < 0.5 && v > 0 ? '<1%' : `${Math.round(v)}%`);
 
 const PowerRanks = () => {
-  const { rows, loading, weeksPlayed, scheduleError, schedule } = usePowerRankRows();
+  const { rows, loading, weeksPlayed, scheduleError, schedule } = usePowerRankRows('actual');
   const [tab, setTab] = useState<'now' | 'dynasty'>('now');
 
   return (
@@ -31,7 +31,7 @@ const PowerRanks = () => {
           </p>
           <h1 className="font-serif text-4xl font-bold md:text-5xl">Power Ranks</h1>
           <p className="mt-3 max-w-3xl text-white/80">
-            Every franchise graded 0–100 on live standings, the projected weekly output of its best
+            Every franchise graded 0–100 on live standings, the actual weekly averages of its best
             starting lineup, and the quality of the depth behind it. Odds come from{' '}
             {SIMS.toLocaleString()} simulations of the remaining season and playoff format.
           </p>
@@ -79,7 +79,7 @@ const PowerRanks = () => {
                       ? 'Preseason — 0%'
                       : `${Math.round(30 + 45 * Math.min(1, Math.max(0, (weeksPlayed - 1) / 12)))}% (Wk ${weeksPlayed})`,
                 },
-                { icon: Activity, label: 'Starting lineup', value: 'Current ESPN starters · actual PPG' },
+                { icon: Activity, label: 'Starting lineup', value: 'Best legal nine · actual PPG' },
                 { icon: Shield, label: 'Season odds', value: 'Weekly injuries · byes · hot/cold runs' },
               ].map((c) => (
                 <div key={c.label} className="rounded-lg border border-neutral-200 bg-white p-4">
@@ -104,8 +104,10 @@ const PowerRanks = () => {
               <ul className="list-disc space-y-1 pl-5">
                 <li>
                   <strong>Starting lineup:</strong> best legal nine (QB / RB / RB / WR / WR / 3 FLEX
-                  / OP) using projected fantasy points ÷ 17 games. Players without a public
-                  projection are valued off their league contract.
+                  / OP) using each player's actual current-season weekly average, regardless of
+                  who was started in earlier weeks. Starter PPW and the forecast use the same
+                  player averages; injuries and byes determine who is available each future week.
+                  Projections are a fallback only for players with no recorded average.
                 </li>
                 <li>
                   <strong>Injuries:</strong> each simulated week replaces unavailable players with
@@ -120,9 +122,8 @@ const PowerRanks = () => {
                   than applying the same blanket injury penalty to every team.
                 </li>
                 <li>
-                  <strong>Real results &amp; bench:</strong> outside of standings, the grade blends
-                  projected lineup (34%), actual Starter PPW from your current ESPN lineup (28%),
-                  bench average Trade Value (20%) and depth (18%).
+                  <strong>Scoring &amp; bench:</strong> outside of standings, the grade weights
+                  actual best-nine scoring (62%), bench average Trade Value (20%) and depth (18%).
                 </li>
 
 
@@ -137,8 +138,8 @@ const PowerRanks = () => {
                   are summed. Week 14 byes therefore hurt the lower seeds more.
                 </li>
                 <li><strong>Byes &amp; matchups:</strong> the saved 2026 bye schedule removes players on their actual bye, including Week 14. ESPN opponents and opponent scoring allowed adjust weekly PPG by at most 8%, shrunk toward average because the season is still young. This is a defense proxy, not ESPN’s position-specific OPRK.</li>
-                <li><strong>Variance:</strong> team standard deviations blend actual weekly swings with a 24-point baseline. Heavy-tailed weekly results, 7% season-long talent uncertainty and a shared playoff hot/cold streak allow both upsets and blowouts.</li>
-                <li><strong>Risk assumptions:</strong> new injury rates are estimated at QB 2.5%, RB 5%, WR/TE 3.5% per active week—not verified individual historical probabilities. Team scoring history is capped at 20% of the forecast; player scoring is also tempered by preseason expectations. Unavailable opponent data stays neutral.</li>
+                <li><strong>Variance:</strong> weekly standard deviation is modeled at 22% of full-strength best-nine output, with a 24-point minimum—not estimated from a few past team scores. Heavy-tailed weekly results, 7% season-long scoring uncertainty and a shared playoff hot/cold streak allow both upsets and blowouts. These volatility settings are assumptions, not measured player-level deviations.</li>
+                <li><strong>Risk assumptions:</strong> new injury rates are estimated at QB 2.5%, RB 5%, WR/TE 3.5% per active week—not verified individual historical probabilities. Past team scoring totals and preseason expectations do not adjust observed player averages. Earned standings points still affect playoff qualification and seed advantages, not future scoring strength. Unavailable opponent data stays neutral.</li>
               </ul>
             </div>
           </>
