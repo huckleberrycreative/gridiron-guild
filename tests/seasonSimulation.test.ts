@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { bestLineup, weeklyLineup, semifinalScore, simulateSeason, rosterRisks, emptySchedule, weeklyFinishPoints, type SimPlayer } from './seasonSimulation';
+import { bestLineup, weeklyLineup, semifinalScore, simulateSeason, rosterRisks, emptySchedule, weeklyFinishPoints, type SimPlayer } from '../src/lib/seasonSimulation';
 
 const player = (id: string, position: string, ppg: number, nflTeam = 'BUF'): SimPlayer => ({ id, name: id, position, ppg, projected: true, nflTeam });
 const roster = [player('Allen', 'QB', 25), player('rb1', 'RB', 15), player('rb2', 'RB', 14), ...Array.from({ length: 6 }, (_, i) => player(`wr${i}`, 'WR', 12 - i))];

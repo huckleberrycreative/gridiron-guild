@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { emptySchedule, type ScheduleContext } from '@/lib/seasonSimulation';
 
 type Event = { season?: { year: number; type: number }; week?: { number: number }; status?: { type?: { completed?: boolean } }; competitions?: { competitors?: { team?: { abbreviation?: string }; score?: string }[] }[] };
@@ -31,9 +32,8 @@ export function useNflSchedule() {
   return useQuery({
     queryKey: ['nfl-schedule-defense', 2026], staleTime: 60 * 60 * 1000, retry: 1,
     queryFn: async () => {
-      const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&limit=1000');
-      if (!response.ok) throw new Error('NFL schedule unavailable');
-      const json = await response.json();
+      const { data: json, error } = await supabase.functions.invoke('nfl-schedule');
+      if (error || json?.error) throw new Error('NFL schedule unavailable');
       const result = parseSchedule(json.events ?? []);
       if (!Object.keys(result.opponents).length) throw new Error('NFL schedule empty');
       return result;
