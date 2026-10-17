@@ -29,14 +29,14 @@ const strategyArgument = (s: StrategicTrade, own: boolean, strategy: TradeStrate
   const variant = names.length % 3;
   const current = [
     `Make the push with ${names}: this deal lifts your championship chance by ${num(now)} percentage points this season.`,
-    `${names} is a bet on winning the Shield now, with a modeled ${num(now)}-point increase in your title odds.`,
+    `Adding ${names} is a bet on winning the Shield now, with a modeled ${num(now)}-point increase in your title odds.`,
     `The reason to bring in ${names} is the trophy: your current title odds improve by ${num(now)} percentage points.`,
   ];
   if (strategy === 'win-now') return current[variant];
-  const futureArgument = `${names} raises your estimated next-season title odds by ${num(future)} percentage points${younger > 0.05 ? ` while making the roster ${num(younger)} years younger on average` : ''}.`;
+  const futureArgument = `Adding ${names} raises your estimated next-season title odds by ${num(future)} percentage points${younger > 0.05 ? ` while making the roster ${num(younger)} years younger on average` : ''}.`;
   const salaryArgument = savings > 0.05 ? ` The deal also frees up $${num(savings)} in average annual 2027–2029 salary.` : savings < -0.05 ? ` The added future strength costs $${num(-savings)} more in average annual salary.` : '';
   if (strategy === 'rebuild') return futureArgument + salaryArgument;
-  return `${names} keeps the championship push alive: ${signed(now)} percentage points this year and ${signed(future)} in the next-season estimate.${salaryArgument}`;
+  return `Bringing in ${names} keeps the championship push alive: ${signed(now)} percentage points this year and ${signed(future)} in the next-season estimate.${salaryArgument}`;
 };
 const FinderLogo = ({ name, large = false }: { name: string; large?: boolean }) => {
   const [failed, setFailed] = useState(false);

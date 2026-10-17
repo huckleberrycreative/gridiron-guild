@@ -49,7 +49,7 @@ const odds = (league: StrategyTeam[], startWeek: number, schedule: ScheduleConte
     future ? futureRoster(t.roster) : t.roster.filter(p => !p.practiceSquad), t.id, future ? 0 : t.accumulated ?? 0,
   )), future ? 0 : startWeek - 1, future ? emptySchedule : schedule, 3000);
 
-export function findStrategicTrades(team: StrategyTeam, league: StrategyTeam[], startWeek: number, schedule: ScheduleContext, target: number, ids: ReadonlySet<string>, strategy: TradeStrategy): StrategicTrade[] {
+export function findStrategicTrades(team: StrategyTeam, league: StrategyTeam[], startWeek: number, schedule: ScheduleContext, target: number, ids: ReadonlySet<string>, strategy: TradeStrategy, evaluateOdds: typeof odds = odds): StrategicTrade[] {
   const own = packages(team.roster.filter(p => ids.has(p.id)));
   if (!own.length) return [];
   const before = rosterUtility(team.roster, startWeek, schedule);
@@ -79,11 +79,11 @@ export function findStrategicTrades(team: StrategyTeam, league: StrategyTeam[], 
   // Expensive, paired season simulations run only on a diverse shortlist, off the UI thread.
   const shortlist = candidates.filter((c,i) => candidates.slice(0,i).filter(p => p.partner.id === c.partner.id).length < 3).slice(0,18);
   if (!shortlist.length) return [];
-  const currentBase = odds(league,startWeek,schedule,false), futureBase = odds(league,startWeek,schedule,true);
+  const currentBase = evaluateOdds(league,startWeek,schedule,false), futureBase = evaluateOdds(league,startWeek,schedule,true);
   const results: StrategicTrade[] = [];
   for (const c of shortlist) {
     const changed = league.map(t => t.id === team.id ? c.after : t.id === c.partner.id ? c.partnerAfter : t);
-    const current = odds(changed,startWeek,schedule,false), future = odds(changed,startWeek,schedule,true);
+    const current = evaluateOdds(changed,startWeek,schedule,false), future = evaluateOdds(changed,startWeek,schedule,true);
     const currentOddsGain = (current[team.id]?.champ ?? 0) - (currentBase[team.id]?.champ ?? 0);
     const futureOddsGain = (future[team.id]?.champ ?? 0) - (futureBase[team.id]?.champ ?? 0);
     const partnerCurrentOddsGain = (current[c.partner.id]?.champ ?? 0) - (currentBase[c.partner.id]?.champ ?? 0);
