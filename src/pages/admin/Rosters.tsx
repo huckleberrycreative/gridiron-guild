@@ -142,10 +142,11 @@ export default function AdminRosters() {
       const { data: existing } = await supabase
         .from('players')
         .select('id')
-        .eq('full_name', full)
-        .maybeSingle();
-      if (existing) {
-        playerId = existing.id;
+        .ilike('full_name', full)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      if (existing?.[0]) {
+        playerId = existing[0].id;
       } else {
         const { data: created, error: pErr } = await supabase
           .from('players')
@@ -177,6 +178,7 @@ export default function AdminRosters() {
         .from('player_salaries')
         .select('id')
         .eq('player_id', playerId)
+        .limit(1)
         .maybeSingle();
 
       if (existingSalary) {
