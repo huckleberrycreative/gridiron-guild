@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Add Roast My Team to GM Tools with team selection and four written report sections
+- [ ] Share dynasty ranking calculations and test assessment rules
+- [ ] Verify live reports, team switching and mobile layout
+
 - [x] Add prominent team, improvement and strategy selections
 - [x] Implement championship-focused Win Now, future-focused Rebuild and balanced trade search
 - [x] Test strategy rules and verify live submissions and layouts
