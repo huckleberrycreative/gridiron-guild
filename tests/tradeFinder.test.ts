@@ -1,8 +1,34 @@
 import { describe, test, expect } from 'bun:test';
-import { assessRoster, findTrades, isIdealTrade, tradeImbalance, rosterUtility, type FinderPlayer, type FinderTeam } from '../src/lib/tradeFinder';
+import { assessRoster, findTrades, isIdealTrade, tradeImbalance, tradeValueUpgrade, matchesUpgradeTarget, rosterUtility, type FinderPlayer, type FinderTeam } from '../src/lib/tradeFinder';
 const p = (id: string, position: string, ppg: number, value = 50): FinderPlayer => ({ id, name: id, position, ppg, value, salary: 1, franchiseTag: false, projected: false });
 const base = (prefix: string) => [p(prefix+'qb','QB',20), p(prefix+'rb1','RB',15), p(prefix+'rb2','RB',14), ...Array.from({length:6},(_,i)=>p(prefix+'wr'+i,'WR',12-i))];
 describe('Trade Finder', () => {
+  test('a +4% upgrade means receiving 104 Trade Value for 100 sent, not the reverse', () => {
+    expect(tradeValueUpgrade(100, 104)).toBeCloseTo(4, 8);
+    expect(matchesUpgradeTarget(100, 104, 4)).toBe(true);
+    expect(matchesUpgradeTarget(104, 100, 4)).toBe(false);
+    expect(matchesUpgradeTarget(100, 102, 4)).toBe(false);
+  });
+  test('settings span +1% through +5% and match within half a percentage point', () => {
+    for (const target of [1, 2, 3, 4, 5]) {
+      expect(matchesUpgradeTarget(100, 100 + target, target)).toBe(true);
+      expect(matchesUpgradeTarget(100, 100 + target + 0.6, target)).toBe(false);
+    }
+    expect(matchesUpgradeTarget(100, 100, 0)).toBe(false);
+    expect(matchesUpgradeTarget(100, 106, 6)).toBe(false);
+  });
+  test('targeted search only returns the requested value upgrade while both rosters improve', () => {
+    const a: FinderTeam = {id:'a', name:'A', roster:[...base('a'),p('opQB','QB',21),p('spareQB','QB',19)]};
+    const b: FinderTeam = {id:'b', name:'B', roster:[...base('b').map(p => ({...p, value:52, ppg:p.position==='WR' ? 22 : p.ppg})),p('spareWR','WR',18,52)]};
+    const results = findTrades(a, [a,b], 6, undefined, 4);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r.valueUpgrade).toBeCloseTo(4, 8);
+      expect(r.gain).toBeGreaterThan(0);
+      expect(r.partnerGain).toBeGreaterThan(0);
+    }
+    expect(findTrades(a, [a,b], 6, undefined, 1)).toEqual([]);
+  });
   test('ideal balance is within 2 percent, not two value points', () => {
     expect(isIdealTrade(100,102)).toBe(true);
     expect(isIdealTrade(50,52)).toBe(false);
