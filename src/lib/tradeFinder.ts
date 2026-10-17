@@ -9,8 +9,9 @@ export const isIdealTrade = (a: number, b: number) => tradeImbalance(a, b) <= 2;
 export const tradeValueUpgrade = (sent: number, received: number) => sent > 0 ? (received - sent) / sent * 100 : NaN;
 export const matchesUpgradeTarget = (sent: number, received: number, target: number) =>
   Number.isInteger(target) && target >= 1 && target <= 5 && Math.abs(tradeValueUpgrade(sent, received) - target) <= 0.5 + 1e-9;
-const positions = ['QB', 'RB', 'WR', 'TE'];
-const required: Record<string, number> = { QB: 1, RB: 2, WR: 2, TE: 1 };
+// Only mandatory positions have standalone needs; TEs compete for FLEX/OP slots.
+const positions = ['QB', 'RB', 'WR'];
+const required: Record<string, number> = { QB: 1, RB: 2, WR: 2 };
 
 export function assessRoster(team: FinderTeam, league: FinderTeam[], startWeek: number) {
   const available = (r: FinderPlayer[]) => r.filter(p => !p.out).sort((a, b) => b.ppg - a.ppg);
