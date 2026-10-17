@@ -1,7 +1,7 @@
 import { bestLineup, healthyRoster, weeklyLineup, type SimPlayer, type ScheduleContext, emptySchedule } from './seasonSimulation';
 import { byeWeekFor } from './byeWeeks';
 
-export type FinderPlayer = SimPlayer & { value: number; salary: number; franchiseTag: boolean };
+export type FinderPlayer = SimPlayer & { value: number; salary: number; franchiseTag: boolean; practiceSquad?: boolean };
 export type FinderTeam = { id: string; name: string; roster: FinderPlayer[] };
 const total = (r: SimPlayer[]) => r.reduce((s, p) => s + p.ppg, 0);
 export const tradeImbalance = (a: number, b: number) => a + b > 0 ? Math.abs(a - b) / ((a + b) / 2) * 100 : Infinity;
@@ -41,9 +41,10 @@ export function assessRoster(team: FinderTeam, league: FinderTeam[], startWeek: 
 }
 
 export function rosterUtility(roster: FinderPlayer[], startWeek: number, schedule: ScheduleContext = emptySchedule) {
+  const activeRoster = roster.filter(p => !p.practiceSquad);
   const weeks = Array.from({ length: Math.max(1, 18 - startWeek) }, (_, i) => Math.min(17, startWeek + i));
-  const ros = weeks.reduce((s, w) => s + total(weeklyLineup(roster, w, startWeek, schedule)), 0) / weeks.length;
-  const healthy = healthyRoster(roster);
+  const ros = weeks.reduce((s, w) => s + total(weeklyLineup(activeRoster, w, startWeek, schedule)), 0) / weeks.length;
+  const healthy = healthyRoster(activeRoster);
   const starters = bestLineup(healthy);
   const depth = starters.length ? starters.reduce((s, p) => s + total(bestLineup(healthy, new Set([p.id]))), 0) / starters.length : 0;
   return { ros, depth, utility: ros + depth * 0.25, salary: roster.reduce((s, p) => s + p.salary, 0) };
@@ -59,8 +60,9 @@ const packages = (roster: FinderPlayer[]) => {
   const pool = roster.filter(p => !p.franchiseTag && p.value > 0);
   return [...pool.map(p => [p]), ...pool.flatMap((p, i) => pool.slice(i + 1).map(q => [p, q]))];
 };
-export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: number, schedule: ScheduleContext = emptySchedule, upgradeTarget?: number): TradeSuggestion[] {
-  const own = packages(team.roster);
+export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: number, schedule: ScheduleContext = emptySchedule, upgradeTarget?: number, tradablePlayerIds?: ReadonlySet<string>): TradeSuggestion[] {
+  const own = packages(team.roster.filter(p => tradablePlayerIds === undefined || tradablePlayerIds.has(p.id)));
+  if (!own.length) return [];
   const before = rosterUtility(team.roster, startWeek, schedule);
   const results: TradeSuggestion[] = [];
   for (const partner of league.filter(t => t.id !== team.id && t.roster.length)) {
@@ -81,8 +83,9 @@ export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: nu
     for (const c of candidates) {
       const sendIds = new Set(c.send.map(p => p.id));
       const receiveIds = new Set(c.receive.map(p => p.id));
-      const after = rosterUtility([...team.roster.filter(p => !sendIds.has(p.id)), ...c.receive], startWeek, schedule);
-      const partnerAfter = rosterUtility([...partner.roster.filter(p => !receiveIds.has(p.id)), ...c.send], startWeek, schedule);
+      // Incoming practice-squad players are evaluated as active additions to the receiving roster.
+      const after = rosterUtility([...team.roster.filter(p => !sendIds.has(p.id)), ...c.receive.map(p => ({ ...p, practiceSquad: false }))], startWeek, schedule);
+      const partnerAfter = rosterUtility([...partner.roster.filter(p => !receiveIds.has(p.id)), ...c.send.map(p => ({ ...p, practiceSquad: false }))], startWeek, schedule);
       const gain = after.utility - before.utility;
       const partnerGain = partnerAfter.utility - partnerBefore.utility;
       // Neither side can lose scheduled scoring; improvements may be scoring, injury cover, or both.

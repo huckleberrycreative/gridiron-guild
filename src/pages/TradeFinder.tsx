@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowDown, ArrowRight, Loader2, Search, ShieldCheck } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { getTeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePlayerSalaries, useTeams } from '@/hooks/usePlayerSalaries';
 import { useTradeValues } from '@/hooks/useTradeValues';
@@ -16,11 +17,11 @@ const num = (v: number) => v.toFixed(1);
 const signed = (v: number) => `${v >= 0 ? '+' : ''}${num(v)}`;
 const tradeReason = (team: FinderTeam, outgoing: FinderPlayer[], incoming: FinderPlayer[], scoringGain: number, coverGain: number) => {
   const outgoingIds = new Set(outgoing.map(p => p.id));
-  const after = [...team.roster.filter(p => !outgoingIds.has(p.id)), ...incoming];
+  const after = [...team.roster.filter(p => !outgoingIds.has(p.id) && !p.practiceSquad), ...incoming];
   const starterIds = new Set(bestLineup(healthyRoster(after)).map(p => p.id));
   const additions = incoming.map(p => `${p.name}${p.position === 'TE' ? ' (FLEX)' : ''}`).join(' and ');
   const starters = incoming.filter(p => starterIds.has(p.id));
-  const beforeIds = new Set(bestLineup(healthyRoster(team.roster)).map(p => p.id));
+  const beforeIds = new Set(bestLineup(healthyRoster(team.roster.filter(p => !p.practiceSquad))).map(p => p.id));
   const sparePlayers = outgoing.filter(p => !beforeIds.has(p.id)).map(p => p.name).join(' and ');
   const sentNames = outgoing.map(p => p.name).join(' and ');
   const starterNames = starters.map(p => p.name).join(' and ');
@@ -76,22 +77,38 @@ const TradeFinder = () => {
   const { data: schedule = emptySchedule } = useNflSchedule();
   const [selected, setSelected] = useState('');
   const [upgrade, setUpgrade] = useState('1');
+  const [protectedIds, setProtectedIds] = useState<Set<string>>(new Set());
+  const [submission, setSubmission] = useState<{ teamId: string; upgrade: number; playerIds: Set<string> } | null>(null);
   const startWeek = Math.min(17, Math.max(0, ...scores.map(s => s.week)) + 1);
   const league = useMemo<FinderTeam[]>(() => teams.map(team => {
     const seen = new Set<string>();
-    const roster: FinderPlayer[] = salaries.filter(p => p.teamId === team.id && !p.practiceSquad).flatMap(p => {
+    const roster: FinderPlayer[] = salaries.filter(p => p.teamId === team.id).flatMap(p => {
       const name = `${p.firstName} ${p.lastName}`.trim();
       const key = name.toLowerCase().replace(/\s+/g, ' ');
       if (seen.has(key)) return [];
       seen.add(key);
       const tv = values.get(p.id);
       const ppg = p.actualPpg ?? tv?.ppg ?? p.espnProjPpg ?? 0;
-      return [{ id: p.id, name, position: p.position, ppg, basePpg: ppg, projected: p.actualPpg == null, nflTeam: p.nflTeam, out: ['out', 'ir'].includes(p.injuryStatus), injuryStatus: p.injuryStatus, weeksOut: p.injuryWeeksOut, value: tv?.value ?? 0, salary: tv?.salary ?? 1, franchiseTag: p.franchiseTag }];
+      return [{ id: p.id, name, position: p.position, ppg, basePpg: ppg, projected: p.actualPpg == null, nflTeam: p.nflTeam, out: ['out', 'ir'].includes(p.injuryStatus), injuryStatus: p.injuryStatus, weeksOut: p.injuryWeeksOut, value: tv?.value ?? 0, salary: tv?.salary ?? 1, franchiseTag: p.franchiseTag, practiceSquad: p.practiceSquad }];
     });
     return { ...team, roster };
   }), [teams, salaries, values]);
   const team = league.find(t => t.id === selected);
-  const suggestions = useMemo(() => team ? findTrades(team, league, startWeek, schedule, Number(upgrade)) : [], [team, league, startWeek, schedule, upgrade]);
+  const suggestions = useMemo(() => team && submission?.teamId === team.id ? findTrades(team, league, startWeek, schedule, submission.upgrade, submission.playerIds) : [], [team, league, startWeek, schedule, submission]);
+  const changeTeam = (id: string) => {
+    setSelected(id);
+    setProtectedIds(new Set());
+    setSubmission(null);
+  };
+  const togglePlayer = (id: string, checked: boolean) => {
+    setProtectedIds(previous => {
+      const next = new Set(previous);
+      if (checked) next.delete(id); else next.add(id);
+      return next;
+    });
+    setSubmission(null);
+  };
+  const eligibleCount = team?.roster.filter(p => !protectedIds.has(p.id)).length ?? 0;
   const loading = teamsLoading || salariesLoading || valuesLoading;
   return <Layout>
     <section className="border-b border-border">
@@ -101,14 +118,14 @@ const TradeFinder = () => {
           <div className="flex w-full items-end gap-3 sm:w-auto">
             <div className="min-w-0 flex-1 sm:w-72">
               <label className="mb-2 block text-xs font-semibold text-muted-foreground" id="finder-team-label">Your team</label>
-              <Select value={selected} onValueChange={setSelected}>
+              <Select value={selected} onValueChange={changeTeam}>
                 <SelectTrigger aria-labelledby="finder-team-label"><SelectValue placeholder="Select a team" /></SelectTrigger>
                 <SelectContent>{teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="w-32 shrink-0">
               <label className="mb-2 block text-xs font-semibold text-muted-foreground" id="finder-upgrade-label">Value upgrade</label>
-              <Select value={upgrade} onValueChange={setUpgrade}>
+              <Select value={upgrade} onValueChange={value => { setUpgrade(value); setSubmission(null); }}>
                 <SelectTrigger aria-labelledby="finder-upgrade-label"><SelectValue /></SelectTrigger>
                 <SelectContent>{[1, 2, 3, 4, 5].map(v => <SelectItem key={v} value={String(v)}>+{v}%</SelectItem>)}</SelectContent>
               </Select>
@@ -118,7 +135,28 @@ const TradeFinder = () => {
       </div>
     </section>
     <div className="container mx-auto min-h-[60vh] px-4 py-7">
-      {selected && (loading ? <div className="flex items-center justify-center gap-3 py-20" role="status"><Loader2 className="h-5 w-5 animate-spin text-accent" />Finding trades…</div> : isError ? <p role="alert">Rosters could not be loaded. Please try again.</p> : !team?.roster.length ? <p className="text-muted-foreground">No active roster is available for this team.</p> : <>
+      {selected && (loading ? <div className="flex items-center justify-center gap-3 py-20" role="status"><Loader2 className="h-5 w-5 animate-spin text-accent" />Loading roster…</div> : isError ? <p role="alert">Rosters could not be loaded. Please try again.</p> : !team?.roster.length ? <p className="text-muted-foreground">No roster is available for this team.</p> : <>
+        <form className="mb-7 border-b border-border pb-6" onSubmit={event => {
+          event.preventDefault();
+          setSubmission({ teamId: team.id, upgrade: Number(upgrade), playerIds: new Set(team.roster.filter(p => !protectedIds.has(p.id)).map(p => p.id)) });
+        }}>
+          <div className="mb-5 flex items-center gap-3"><FinderLogo key={team.id} name={team.name} /><h2 className="font-display text-xl font-semibold text-primary">Players available to trade</h2></div>
+          <div className="space-y-5">{[{ label: 'Roster', practiceSquad: false }, { label: 'Practice Squad', practiceSquad: true }].map(group => {
+            const players = team.roster.filter(p => Boolean(p.practiceSquad) === group.practiceSquad);
+            return <fieldset key={group.label}>
+              <legend className="mb-3 text-xs font-semibold uppercase text-muted-foreground">{group.label} · {players.length}</legend>
+              {players.length ? <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{players.map(player => <label key={player.id} className="flex min-w-0 cursor-pointer items-center gap-3 rounded py-2">
+                <Checkbox aria-label={player.name} checked={!protectedIds.has(player.id)} onCheckedChange={checked => togglePlayer(player.id, checked === true)} />
+                <span className="min-w-0 break-words text-sm font-medium">{player.name} <span className="text-xs font-normal text-muted-foreground">{player.position}</span></span>
+              </label>)}</div> : <p className="text-sm text-muted-foreground">No Practice Squad players.</p>}
+            </fieldset>;
+          })}</div>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">{eligibleCount} available · {team.roster.length - eligibleCount} protected</p>
+            <Button type="submit" disabled={!eligibleCount}><Search className="mr-2 h-4 w-4" />Submit</Button>
+          </div>
+        </form>
+        {submission && <>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3"><FinderLogo key={team.id} name={team.name} /><h2 className="font-display text-xl font-semibold text-primary">{team.name}</h2></div>
           <p className="text-xs text-muted-foreground">{suggestions.length} opportunities · +{upgrade}% Trade Value target</p>
@@ -145,6 +183,7 @@ const TradeFinder = () => {
           </article>;
         })}</div>}
         {suggestions.length > 0 && <p className="mt-4 text-xs text-muted-foreground">Received versus sent Trade Value · within 0.5 percentage points of +{upgrade}% · both rosters improve</p>}
+        </>}
       </>)}
     </div>
   </Layout>;
