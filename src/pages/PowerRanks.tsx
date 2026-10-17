@@ -19,7 +19,7 @@ import brockPartyHexed from '@/assets/brock-party-hexed.png.asset.json';
 const pct = (v: number) => (v >= 99.5 ? '>99%' : v < 0.5 && v > 0 ? '<1%' : `${Math.round(v)}%`);
 
 const PowerRanks = () => {
-  const { rows, loading, weeksPlayed } = usePowerRankRows();
+  const { rows, loading, weeksPlayed, scheduleError, schedule } = usePowerRankRows();
   const [tab, setTab] = useState<'now' | 'dynasty'>('now');
 
   return (
@@ -77,10 +77,10 @@ const PowerRanks = () => {
                   value:
                     weeksPlayed === 0
                       ? 'Preseason — 0%'
-                      : `${Math.round(40 * Math.min(1, weeksPlayed / REG_SEASON_WEEKS))}% (Wk ${weeksPlayed})`,
+                      : `${Math.round(30 + 45 * Math.min(1, Math.max(0, (weeksPlayed - 1) / 12)))}% (Wk ${weeksPlayed})`,
                 },
-                { icon: Activity, label: 'Starting lineup', value: '9 slots · PPG = FPTS ÷ 17' },
-                { icon: Shield, label: 'Depth test', value: 'Output retained per starter lost' },
+                { icon: Activity, label: 'Starting lineup', value: 'Current ESPN starters · actual PPG' },
+                { icon: Shield, label: 'Season odds', value: 'Weekly injuries · byes · hot/cold runs' },
               ].map((c) => (
                 <div key={c.label} className="rounded-lg border border-neutral-200 bg-white p-4">
                   <div className="flex items-center gap-2 text-[#bf2121]">
@@ -96,6 +96,28 @@ const PowerRanks = () => {
 
             <PowerRanksTable rows={rows} />
 
+            <section className="mt-8 border-t border-border pt-6">
+              <h2 className="font-serif text-xl font-semibold text-primary">The road to the Shield</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {scheduleError ? 'NFL opponent data unavailable; matchup effects are neutral. Saved bye weeks still apply.' : `Playoff matchup estimates use scoring allowed across ${schedule.completedGames} completed NFL games; this is a defense proxy, not position-specific fantasy points allowed.`}
+              </p>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {rows.map(r => (
+                  <div key={r.team.id} className="rounded-md border border-border bg-card p-4">
+                    <h3 className="truncate font-serif font-semibold text-primary">{r.team.name}</h3>
+                    <dl className="mt-3 space-y-2 text-xs">
+                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Biggest injury drop</dt><dd className="text-right tabular-nums" title={r.risks?.largestLoss?.name}>{r.risks?.largestLoss?.name ?? '—'}: −{(r.risks?.largestLoss?.loss ?? 0).toFixed(1)} PPW</dd></div>
+                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Estimated injury exposure</dt><dd className="tabular-nums">−{(r.risks?.injuryExposure ?? 0).toFixed(1)} PPW</dd></div>
+                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Worst remaining bye</dt><dd className="tabular-nums">{r.risks?.worstBye ? `W${r.risks.worstBye.week}: −${r.risks.worstBye.loss.toFixed(1)} PPW` : 'None'}</dd></div>
+                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Week 14 starter byes</dt><dd className="tabular-nums" title={r.risks?.week14Byes.join(', ')}>{r.risks?.week14Byes.length ?? 0}</dd></div>
+                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Playoff matchup effect</dt><dd className="tabular-nums">{(r.risks?.playoffMatchupPpw ?? 0) >= 0 ? '+' : ''}{(r.risks?.playoffMatchupPpw ?? 0).toFixed(1)} PPW</dd></div>
+                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Weekly standard deviation</dt><dd className="tabular-nums">{(r.weeklySd ?? 24).toFixed(1)} pts</dd></div>
+                    </dl>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <div className="mt-6 rounded-lg border border-neutral-200 bg-neutral-50 p-5 text-sm text-neutral-600">
               <h2 className="mb-2 font-serif text-lg font-semibold text-[#1a2b4d]">
                 How the grade is built
@@ -107,14 +129,16 @@ const PowerRanks = () => {
                   projection are valued off their league contract.
                 </li>
                 <li>
-                  <strong>Injuries:</strong> players marked out or on IR are pulled from the lineup
-                  entirely; questionable and doubtful tags discount a player's weekly output. Grades
-                  and odds move the moment the injury report is updated.
+                  <strong>Injuries:</strong> each simulated week replaces unavailable players with
+                  the best eligible bench option. Out/IR players return after their listed absence
+                  (one week if unknown); new injuries can last 1, 2 or 4 weeks. Questionable is not
+                  an automatic downgrade. Doubtful adds a 60% first-week absence assumption.
                 </li>
                 <li>
                   <strong>Depth:</strong> each starter is removed in turn and the lineup rebuilt —
                   the percentage of weekly output a team retains through an injury is its depth
-                  score. Thin benches also carry an injury drag into the simulation.
+                  score. In the odds, a missing QB with no backup leaves that slot empty, rather
+                  than applying the same blanket injury penalty to every team.
                 </li>
                 <li>
                   <strong>Real results &amp; bench:</strong> outside of standings, the grade blends
@@ -129,9 +153,13 @@ const PowerRanks = () => {
                 </li>
                 <li>
                   <strong>Odds:</strong> {SIMS.toLocaleString()} simulated seasons using the
-                  Constitution's 20/18/16/14/12/5/4/3/2/1 weekly scale, then the Weeks 14–15
-                  semifinal and the two-week championship.
+                  20/18/16/14/8/4/3/2/1/0 weekly scale. All five qualifiers can win. Weeks 14–15
+                  use the best week for seeds 1–2, average for 3–4, and worst for 5; Weeks 16–17
+                  are summed. Week 14 byes therefore hurt the lower seeds more.
                 </li>
+                <li><strong>Byes &amp; matchups:</strong> the saved 2026 bye schedule removes players on their actual bye, including Week 14. ESPN opponents and opponent scoring allowed adjust weekly PPG by at most 8%, shrunk toward average because the season is still young.</li>
+                <li><strong>Variance:</strong> team standard deviations blend actual weekly swings with a 24-point baseline. Heavy-tailed weekly results, 7% season-long talent uncertainty and a shared playoff hot/cold streak allow both upsets and blowouts.</li>
+                <li><strong>Risk assumptions:</strong> new injury rates are estimated at QB 2.5%, RB 5%, WR/TE 3.5% per active week—not verified individual historical probabilities. Team scoring history is capped at 20% of the forecast; player scoring is also tempered by preseason expectations. Unavailable opponent data stays neutral.</li>
               </ul>
             </div>
           </>
