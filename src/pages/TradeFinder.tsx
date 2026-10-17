@@ -12,6 +12,7 @@ import { useWeeklyScores } from '@/hooks/useWeeklyScores';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
 import { useNflSchedule, emptySchedule } from '@/hooks/useNflSchedule';
 import { type StrategicTrade, type StrategyTeam, type TradeStrategy } from '@/lib/tradeFinderStrategy';
+import leagueShield from '@/assets/shield.png';
 
 const num = (v: number) => v.toFixed(1);
 const signed = (v: number) => `${v >= 0 ? '+' : ''}${num(v)}`;
@@ -111,7 +112,7 @@ const TradeFinder = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-7 flex items-center justify-between gap-4">
           <h1 className="font-display text-3xl font-bold text-primary">Trade Finder</h1>
-          <div className="flex items-center gap-2 text-primary"><Trophy className="h-5 w-5" /><span className="text-xs font-semibold uppercase">The next move</span></div>
+          <img src={leagueShield} alt="Men’s League Shield" className="h-16 w-16 shrink-0 object-contain" />
         </div>
           <div className="grid gap-5 sm:grid-cols-3">
             <div className="min-w-0">

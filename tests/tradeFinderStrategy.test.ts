@@ -34,6 +34,23 @@ describe('Trade Finder strategies', () => {
   test('Practice Squad players remain future promotion options', () => {
     expect(futureRoster([{...player('rookie','WR',10,22),practiceSquad:true}])[0]?.practiceSquad).toBe(false);
   });
+  test('Rebuild search accepts a current-year loss for a next-season title improvement', () => {
+    const a: StrategyTeam = {id:'a',name:'A',roster:[...base('a'),{...player('veteran','WR',30,31),futurePpg:8}]};
+    const b: StrategyTeam = {id:'b',name:'B',roster:[...base('b'),{...player('young','WR',8,22,52),futurePpg:30}]};
+    const evaluateOdds = (league: StrategyTeam[], _week: number, _schedule: typeof emptySchedule, future: boolean) => {
+      const traded = league.find(t => t.id === 'a')?.roster.some(p => p.id === 'young') ?? false;
+      return {
+        a:{top2:0,top4:0,top5:0,champ:traded ? future ? 14 : 5 : 10},
+        b:{top2:0,top4:0,top5:0,champ:traded ? future ? 5 : 14 : 10},
+      };
+    };
+    const trades = findStrategicTrades(a,[a,b],6,emptySchedule,4,new Set(['veteran']),'rebuild',evaluateOdds);
+    expect(trades.length).toBe(1);
+    expect(trades[0]?.rosGain).toBeLessThan(0);
+    expect(trades[0]?.currentOddsGain).toBe(-5);
+    expect(trades[0]?.futureOddsGain).toBe(4);
+    expect(trades[0]?.partnerStrategy).toBe('win-now');
+  });
   test('strategic search preserves protected outgoing players and requested +4% Trade Value filter', () => {
     const a: StrategyTeam={id:'a',name:'A',roster:[...base('a').map(p => p.position === 'QB' ? {...p,ppg:27,basePpg:27,futurePpg:27} : p),player('op','QB',26,28),player('spare','QB',25,28)]};
     const b: StrategyTeam={id:'b',name:'B',roster:[...base('b').map(p=>({...p,value:52,ppg:p.position==='WR'?22:p.ppg,basePpg:p.position==='WR'?22:p.ppg,futurePpg:p.position==='WR'?22:p.ppg})),player('spareWR','WR',18,24,52)]};
