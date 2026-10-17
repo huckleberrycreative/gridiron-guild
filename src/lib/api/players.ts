@@ -123,11 +123,18 @@ export const salariesApi = {
 
   // Create or update salary
   async upsert(salary: Omit<PlayerSalary, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabase
+    const payload = { ...salary, updated_at: new Date().toISOString() };
+    // Update the player's existing salary row instead of creating a duplicate.
+    const { data: existing } = await supabase
       .from('player_salaries')
-      .upsert([{ ...salary, updated_at: new Date().toISOString() }])
-      .select()
-      .single();
+      .select('id')
+      .eq('player_id', salary.player_id)
+      .order('created_at', { ascending: true })
+      .limit(1);
+    const existingId = existing?.[0]?.id;
+    const { data, error } = existingId
+      ? await supabase.from('player_salaries').update(payload).eq('id', existingId).select().single()
+      : await supabase.from('player_salaries').insert([payload]).select().single();
 
     if (error) throw error;
     return data;

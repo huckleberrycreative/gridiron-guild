@@ -72,8 +72,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) console.error('Error ensuring profile:', error);
     };
 
+    let lastUserId: string | null | undefined = undefined;
     const applySession = async (nextSession: Session | null) => {
       if (cancelled) return;
+      const nextUserId = nextSession?.user?.id ?? null;
+      // Token refreshes (e.g. returning to the tab) keep the same user:
+      // update the session silently so open editors aren't unmounted.
+      if (nextUserId === lastUserId) {
+        setSession(nextSession);
+        return;
+      }
+      lastUserId = nextUserId;
 
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
