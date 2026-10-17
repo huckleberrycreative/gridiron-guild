@@ -264,7 +264,7 @@ export default function AdminRosters() {
             <TableCell>
               <Badge variant="outline">{row.position}</Badge>
             </TableCell>
-            {(['salary_2026', 'salary_2027', 'salary_2028', 'salary_2029'] as const).map((k) => (
+            {(['salary_2027', 'salary_2028', 'salary_2029'] as const).map((k) => (
               <TableCell key={k}>
                 <Input
                   className="w-20"
@@ -396,7 +396,7 @@ export default function AdminRosters() {
                     </SelectContent>
                   </Select>
                 </div>
-                {(['salary_2026', 'salary_2027', 'salary_2028', 'salary_2029'] as const).map((k) => (
+                {(['salary_2027', 'salary_2028', 'salary_2029'] as const).map((k) => (
                   <div key={k}>
                     <Label>{k.replace('salary_', '')} Salary</Label>
                     <Input

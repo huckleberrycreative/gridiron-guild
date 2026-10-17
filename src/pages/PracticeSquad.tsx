@@ -22,8 +22,7 @@ const PracticeSquad = () => {
         .from('player_salaries')
         .select(`
           id,
-          salary_2025,
-          salary_2026,
+          salary_2027,
           players!inner (
             id,
             full_name,
@@ -44,7 +43,7 @@ const PracticeSquad = () => {
         playerName: ps.players?.full_name || 'Unknown',
         position: ps.players?.position || '-',
         teamName: ps.teams?.name || 'Free Agent',
-        salary: ps.salary_2026 || ps.salary_2025 || '-',
+        salary: ps.salary_2027 || '-',
       })) as PracticeSquadPlayer[];
     },
   });

@@ -298,7 +298,6 @@ export function usePowerRankRows() {
           const name = `${s.firstName} ${s.lastName}`;
           const projected = proj[normalize(name)];
           const salary = Math.max(
-            toNum(s.salary2026),
             toNum(s.salary2027),
             s.franchiseTag ? 100 : 0
           );
