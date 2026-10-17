@@ -29,6 +29,7 @@ import RivalryWeek from "./pages/RivalryWeek";
 import RookieDraft from "./pages/RookieDraft";
 import OfficialRosters2026 from "./pages/OfficialRosters2026";
 import TradeAnalyzer from "./pages/TradeAnalyzer";
+import TradeFinder from "./pages/TradeFinder";
 import WaiverWire from "./pages/WaiverWire";
 import PowerRanks from "./pages/PowerRanks";
 import TradeValueChart from "./pages/TradeValueChart";
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/rookie-draft" element={<RookieDraft />} />
               <Route path="/official-rosters-2026" element={<OfficialRosters2026 />} />
               <Route path="/trade-analyzer" element={<TradeAnalyzer />} />
+              <Route path="/trade-finder" element={<TradeFinder />} />
               <Route path="/waiver-wire" element={<WaiverWire />} />
               <Route path="/power-ranks" element={<PowerRanks />} />
               <Route path="/trade-value-chart" element={<TradeValueChart />} />

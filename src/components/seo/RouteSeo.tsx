@@ -10,6 +10,10 @@ interface RouteMeta {
 }
 
 const routeMeta: Record<string, RouteMeta> = {
+  '/trade-finder': {
+    title: "Trade Finder — Men's League Fantasy Football",
+    description: 'Roster vulnerabilities, bye-week exposure, and balanced trade opportunities that improve both teams.',
+  },
   '/': {
     title: "Men's League — Dynasty Fantasy Football Standings and Recaps",
     description:
