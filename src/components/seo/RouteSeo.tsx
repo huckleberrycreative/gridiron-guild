@@ -10,6 +10,10 @@ interface RouteMeta {
 }
 
 const routeMeta: Record<string, RouteMeta> = {
+  '/roast-my-team': {
+    title: "Roast My Team — Men's League Fantasy Football",
+    description: 'Candid team assessments, current and dynasty rankings, season outlooks and a five-step turnaround plan.',
+  },
   '/trade-finder': {
     title: "Trade Finder — Men's League Fantasy Football",
     description: 'Roster vulnerabilities, bye-week exposure, and balanced trade opportunities that improve both teams.',
