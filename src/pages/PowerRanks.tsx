@@ -14,7 +14,7 @@ import { Loader2, TrendingUp, Shield, Activity } from 'lucide-react';
 import { DynastyRanks } from '@/components/DynastyRanks';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import brockPartyHexed from '@/assets/brock-party-hexed.png.asset.json';
+import { deductionFor } from '@/lib/powerRanksDeductions';
 
 const pct = (v: number) => (v >= 99.5 ? '>99%' : v < 0.5 && v > 0 ? '<1%' : `${Math.round(v)}%`);
 
@@ -224,10 +224,12 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
     () =>
       rows.map((r) => {
         const starterIds = new Set(r.starters.map((s) => s.id));
-        const deduction = /brock party/i.test(r.team.name) ? 10 : 0;
+        const hexed = deductionFor(r.team.name);
+        const deduction = hexed?.amount ?? 0;
         return {
           r,
           deduction,
+          hexed,
           score: r.score - deduction,
           starterTv: avg(r.starters),
           benchTv: avg(r.roster.filter((p) => !starterIds.has(p.id))),
@@ -371,15 +373,15 @@ export function PowerRanksTable({ rows, compact = false }: { rows: PowerRankRow[
                             variant="outline"
                             size="sm"
                             className="h-7 border-accent/40 bg-accent/10 px-1.5 font-body text-xs font-bold text-accent hover:bg-accent/20 hover:text-accent"
-                            aria-label="View Brock Party −10 deduction photo"
-                            title={`Original grade ${r.score}; −10 deduction`}
+                            aria-label={`View ${e.hexed!.label} −${e.hexed!.amount} deduction photo`}
+                            title={`Original grade ${r.score}; −${e.hexed!.amount} deduction`}
                           >
-                            −10
+                            −{e.hexed!.amount}
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="w-[calc(100%-2rem)] max-w-5xl gap-3 p-3 pt-10" aria-describedby={undefined}>
-                          <DialogTitle className="sr-only">Brock Party: Hexed. −10 deduction</DialogTitle>
-                          <img src={brockPartyHexed.url} alt="Hexed — Brock Party's −10 deduction photo" className="max-h-[80vh] w-full rounded object-contain" />
+                          <DialogTitle className="sr-only">{e.hexed!.label}: Hexed. −{e.hexed!.amount} deduction</DialogTitle>
+                          <img src={e.hexed!.image} alt={`Hexed — ${e.hexed!.label}'s −${e.hexed!.amount} deduction photo`} className="max-h-[80vh] w-full rounded object-contain" />
                         </DialogContent>
                       </Dialog>
                     )}
