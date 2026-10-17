@@ -19,11 +19,15 @@ const tradeReason = (team: FinderTeam, outgoing: FinderPlayer[], incoming: Finde
   const after = [...team.roster.filter(p => !outgoingIds.has(p.id)), ...incoming];
   const starterIds = new Set(bestLineup(healthyRoster(after)).map(p => p.id));
   const additions = incoming.map(p => `${p.name}${p.position === 'TE' ? ' (FLEX)' : ''}`).join(' and ');
-  const role = incoming.some(p => starterIds.has(p.id)) ? 'for the best nine' : 'as replacement options';
-  const benefit = scoringGain >= 0.05
-    ? `lifting expected weekly scoring by ${num(scoringGain)} PPG${coverGain >= 0.05 ? ` and injury cover by ${num(coverGain)} PPG` : ''}`
-    : `improving injury cover by ${num(coverGain)} PPG without materially reducing expected weekly scoring`;
-  return `${team.name} gets ${additions} ${role}, ${benefit}.`;
+  const starters = incoming.filter(p => starterIds.has(p.id));
+  if (scoringGain < 0.05) {
+    return `Make this move for protection, not a scoring splash: ${additions} gives you stronger fallback options if a starter gets injured, improving replacement scoring by ${num(coverGain)} points per week while keeping expected weekly output essentially intact.`;
+  }
+  const role = starters.length
+    ? `${starters.map(p => p.name).join(' and ')} can strengthen your starting lineup`
+    : `${additions} gives you more options when injuries or bye weeks leave gaps`;
+  const protection = coverGain >= 0.05 ? `, with another ${num(coverGain)} points of improved injury-replacement scoring` : '';
+  return `This is ${scoringGain < 0.5 ? 'a small but useful' : 'a worthwhile'} roster-fit upgrade: ${role}, adding an expected ${num(scoringGain)} points per week${protection}.`;
 };
 const FinderLogo = ({ name, large = false }: { name: string; large?: boolean }) => {
   const [failed, setFailed] = useState(false);
@@ -96,10 +100,10 @@ const TradeFinder = () => {
             <div><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Send · {num(s.valueSent)} TV</p>{s.send.map(p => <div key={p.id} className="mb-2"><p className="break-words text-sm font-semibold">{p.name} <span className="text-xs font-normal text-muted-foreground">{p.position}</span></p><p className="text-xs text-muted-foreground">{num(p.value)} TV · ${num(p.salary)} in 2027</p></div>)}</div>
             <ArrowDown className="my-2 h-4 w-4 text-accent" aria-hidden="true" />
             <div className="mb-4"><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Receive · {num(s.valueReceived)} TV</p>{s.receive.map(p => <div key={p.id} className="mb-2"><p className="break-words text-sm font-semibold">{p.name} <span className="text-xs font-normal text-muted-foreground">{p.position}</span></p><p className="text-xs text-muted-foreground">{num(p.value)} TV · ${num(p.salary)} in 2027</p></div>)}</div>
-            <p className="mb-4 break-words text-sm leading-relaxed text-muted-foreground" data-trade-reason>
-              {tradeReason(team, s.send, s.receive, s.rosGain, s.depthGain)}{' '}
-              {tradeReason(s.partner, s.receive, s.send, s.partnerRosGain, s.partnerDepthGain)}
-            </p>
+            <div className="mb-4 space-y-3" data-trade-reason>
+              <div><h4 className="mb-1 text-xs font-semibold text-primary">Why {team.name} should do it</h4><p className="break-words text-sm leading-relaxed text-muted-foreground">{tradeReason(team, s.send, s.receive, s.rosGain, s.depthGain)}</p></div>
+              <div><h4 className="mb-1 text-xs font-semibold text-primary">Why {s.partner.name} should do it</h4><p className="break-words text-sm leading-relaxed text-muted-foreground">{tradeReason(s.partner, s.receive, s.send, s.partnerRosGain, s.partnerDepthGain)}</p></div>
+            </div>
             <div className="mt-auto border-t border-border pt-3 text-xs">
               <div className="flex justify-between gap-2"><span className="text-muted-foreground">Your weekly gain</span><span className="font-semibold text-win">{signed(s.rosGain)} PPG</span></div>
               <div className="mt-1 flex justify-between gap-2"><span className="text-muted-foreground">Partner’s weekly gain</span><span className="font-semibold text-win">{signed(s.partnerRosGain)} PPG</span></div>
