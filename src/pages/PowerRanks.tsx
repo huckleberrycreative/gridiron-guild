@@ -96,29 +96,8 @@ const PowerRanks = () => {
 
             <PowerRanksTable rows={rows} />
 
-            <section className="mt-8 border-t border-border pt-6">
-              <h2 className="font-serif text-xl font-semibold text-primary">The road to the Shield</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {scheduleError ? 'NFL opponent data unavailable; matchup effects are neutral. Saved bye weeks still apply.' : `Playoff matchup estimates use scoring allowed across ${schedule.completedGames} completed NFL games; this is a defense proxy, not position-specific fantasy points allowed. If ESPN is unavailable, the verified October 17 schedule snapshot is used.`}
-              </p>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {rows.map(r => (
-                  <div key={r.team.id} className="rounded-md border border-border bg-card p-4">
-                    <h3 className="truncate font-serif font-semibold text-primary">{r.team.name}</h3>
-                    <dl className="mt-3 space-y-2 text-xs">
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Biggest injury drop</dt><dd className="text-right tabular-nums" title={r.risks?.largestLoss?.name}>{r.risks?.largestLoss?.name ?? '—'}: −{(r.risks?.largestLoss?.loss ?? 0).toFixed(1)} PPW</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Estimated injury exposure</dt><dd className="tabular-nums">−{(r.risks?.injuryExposure ?? 0).toFixed(1)} PPW</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Worst remaining bye</dt><dd className="tabular-nums">{r.risks?.worstBye ? `W${r.risks.worstBye.week}: −${r.risks.worstBye.loss.toFixed(1)} PPW` : 'None'}</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Week 14 starter byes</dt><dd className="tabular-nums" title={r.risks?.week14Byes.join(', ')}>{r.risks?.week14Byes.length ?? 0}</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Playoff matchup effect</dt><dd className="tabular-nums">{(r.risks?.playoffMatchupPpw ?? 0) >= 0 ? '+' : ''}{(r.risks?.playoffMatchupPpw ?? 0).toFixed(1)} PPW</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Weekly standard deviation</dt><dd className="tabular-nums">{(r.weeklySd ?? 24).toFixed(1)} pts</dd></div>
-                    </dl>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             <div className="mt-6 rounded-lg border border-neutral-200 bg-neutral-50 p-5 text-sm text-neutral-600">
+              <p className="mb-3 text-xs text-muted-foreground">{scheduleError ? 'NFL opponent data unavailable; matchup effects are neutral. Saved bye weeks still apply.' : `Defense estimates use ${schedule.completedGames} completed NFL games; the verified October 17 snapshot is used if ESPN is unavailable.`}</p>
               <h2 className="mb-2 font-serif text-lg font-semibold text-[#1a2b4d]">
                 How the grade is built
               </h2>
@@ -157,7 +136,7 @@ const PowerRanks = () => {
                   use the best week for seeds 1–2, average for 3–4, and worst for 5; Weeks 16–17
                   are summed. Week 14 byes therefore hurt the lower seeds more.
                 </li>
-                <li><strong>Byes &amp; matchups:</strong> the saved 2026 bye schedule removes players on their actual bye, including Week 14. ESPN opponents and opponent scoring allowed adjust weekly PPG by at most 8%, shrunk toward average because the season is still young.</li>
+                <li><strong>Byes &amp; matchups:</strong> the saved 2026 bye schedule removes players on their actual bye, including Week 14. ESPN opponents and opponent scoring allowed adjust weekly PPG by at most 8%, shrunk toward average because the season is still young. This is a defense proxy, not ESPN’s position-specific OPRK.</li>
                 <li><strong>Variance:</strong> team standard deviations blend actual weekly swings with a 24-point baseline. Heavy-tailed weekly results, 7% season-long talent uncertainty and a shared playoff hot/cold streak allow both upsets and blowouts.</li>
                 <li><strong>Risk assumptions:</strong> new injury rates are estimated at QB 2.5%, RB 5%, WR/TE 3.5% per active week—not verified individual historical probabilities. Team scoring history is capped at 20% of the forecast; player scoring is also tempered by preseason expectations. Unavailable opponent data stays neutral.</li>
               </ul>
