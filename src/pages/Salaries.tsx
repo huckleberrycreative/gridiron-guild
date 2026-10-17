@@ -98,23 +98,12 @@ const Salaries = () => {
       ),
     },
     {
-      key: 'salary2026',
-      label: '2026',
-      sortable: true,
-      align: 'right',
-      render: (value, row) => (
-        <span className={cn('font-mono', row.franchiseTag && 'text-gold font-semibold')}>
-          {value ? `$${value}` : '-'}
-        </span>
-      ),
-    },
-    {
       key: 'salary2027',
       label: '2027',
       sortable: true,
       align: 'right',
-      render: (value) => (
-        <span className="font-mono">
+      render: (value, row) => (
+        <span className={cn('font-mono', row.franchiseTag && 'text-gold font-semibold')}>
           {value ? `$${value}` : '-'}
         </span>
       ),

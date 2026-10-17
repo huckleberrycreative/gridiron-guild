@@ -52,8 +52,6 @@ export default function PlayerSalaries() {
     team_id: '',
     number: 0,
     contract_year: '',
-    salary_2025: '',
-    salary_2026: '',
     salary_2027: '',
     salary_2028: '',
     franchise_tag: false,
@@ -168,8 +166,6 @@ export default function PlayerSalaries() {
       team_id: '',
       number: 0,
       contract_year: '',
-      salary_2025: '',
-      salary_2026: '',
       salary_2027: '',
       salary_2028: '',
       franchise_tag: false,
@@ -196,8 +192,6 @@ export default function PlayerSalaries() {
       team_id: salary.team_id || '',
       number: salary.number || 0,
       contract_year: salary.contract_year || '',
-      salary_2025: salary.salary_2025 || '',
-      salary_2026: salary.salary_2026 || '',
       salary_2027: salary.salary_2027 || '',
       salary_2028: salary.salary_2028 || '',
       franchise_tag: salary.franchise_tag,
@@ -321,23 +315,7 @@ export default function PlayerSalaries() {
                       </Select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <Label>2025</Label>
-                      <Input
-                        value={salaryForm.salary_2025}
-                        onChange={(e) => setSalaryForm({ ...salaryForm, salary_2025: e.target.value })}
-                        placeholder="$0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>2026</Label>
-                      <Input
-                        value={salaryForm.salary_2026}
-                        onChange={(e) => setSalaryForm({ ...salaryForm, salary_2026: e.target.value })}
-                        placeholder="$0"
-                      />
-                    </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>2027</Label>
                       <Input
@@ -409,9 +387,7 @@ export default function PlayerSalaries() {
                   <TableRow>
                     <TableHead>Player</TableHead>
                     <TableHead>Team</TableHead>
-                    <TableHead>2025</TableHead>
-                    <TableHead>2026</TableHead>
-                    <TableHead>2027</TableHead>
+                                                            <TableHead>2027</TableHead>
                     <TableHead>2028</TableHead>
                     <TableHead>Tags</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -422,8 +398,6 @@ export default function PlayerSalaries() {
                     <TableRow key={salary.id}>
                       <TableCell className="font-medium">{getPlayerName(salary.player_id)}</TableCell>
                       <TableCell>{getTeamName(salary.team_id)}</TableCell>
-                      <TableCell>{salary.salary_2025 || '—'}</TableCell>
-                      <TableCell>{salary.salary_2026 || '—'}</TableCell>
                       <TableCell>{salary.salary_2027 || '—'}</TableCell>
                       <TableCell>{salary.salary_2028 || '—'}</TableCell>
                       <TableCell>

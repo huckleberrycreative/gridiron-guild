@@ -51,7 +51,7 @@ const OfficialRosters2026 = () => {
         ft: s.franchiseTag,
         ps: s.practiceSquad,
         isRookie: !!s.rookieDraftRound,
-        s2026: toNum(s.salary2026),
+        s2026: toNum(s.salary2027),
         s2027: toNum(s.salary2027),
         s2028: toNum(s.salary2028),
         s2029: toNum(s.salary2029),
@@ -184,7 +184,6 @@ const OfficialRosters2026 = () => {
                       <th className="text-left px-4 py-3 font-display uppercase tracking-wider text-xs">Player</th>
                       <th className="text-center px-3 py-3 font-display uppercase tracking-wider text-xs">Pos</th>
                       <th className="text-center px-3 py-3 font-display uppercase tracking-wider text-xs">FT</th>
-                      <th className="text-right px-3 py-3 font-display uppercase tracking-wider text-xs">2026</th>
                       <th className="text-right px-3 py-3 font-display uppercase tracking-wider text-xs">2027</th>
                       <th className="text-right px-3 py-3 font-display uppercase tracking-wider text-xs">2028</th>
                       <th className="text-right px-3 py-3 font-display uppercase tracking-wider text-xs">2029</th>
@@ -192,7 +191,7 @@ const OfficialRosters2026 = () => {
                   </thead>
                   <tbody>
                     <tr className="bg-primary/10">
-                      <td colSpan={8} className="px-4 py-2 font-display uppercase tracking-wider text-xs font-bold">
+                      <td colSpan={7} className="px-4 py-2 font-display uppercase tracking-wider text-xs font-bold">
                         Starting Lineup
                       </td>
                     </tr>
@@ -200,7 +199,7 @@ const OfficialRosters2026 = () => {
                       if (slot === null) {
                         return (
                           <tr key="bench-header" className="bg-primary/10">
-                            <td colSpan={8} className="px-4 py-2 font-display uppercase tracking-wider text-xs font-bold">
+                            <td colSpan={7} className="px-4 py-2 font-display uppercase tracking-wider text-xs font-bold">
                               Bench
                             </td>
                           </tr>
@@ -237,10 +236,7 @@ const OfficialRosters2026 = () => {
                           <td className="text-center px-3 py-3">
                             {r?.ft ? <Star size={16} className="inline text-gold fill-gold" /> : <span className="text-muted-foreground">-</span>}
                           </td>
-                          <td className={cn('text-right px-3 py-3 font-mono', r?.ft && 'text-gold font-semibold')}>
-                            {r?.s2026 != null ? `$${r.s2026}` : '-'}
-                          </td>
-                          <td className="text-right px-3 py-3 font-mono">{r?.s2027 != null ? `$${r.s2027}` : '-'}</td>
+                          <td className={cn('text-right px-3 py-3 font-mono', r?.ft && 'text-gold font-semibold')}>{r?.s2027 != null ? `$${r.s2027}` : '-'}</td>
                           <td className="text-right px-3 py-3 font-mono">{r?.s2028 != null ? `$${r.s2028}` : '-'}</td>
                           <td className="text-right px-3 py-3 font-mono">{r?.s2029 != null ? `$${r.s2029}` : '-'}</td>
                         </tr>
@@ -248,7 +244,7 @@ const OfficialRosters2026 = () => {
                     })}
                     <tr className="bg-muted/40 font-semibold">
                       <td className="px-4 py-3" colSpan={4}>
-                        <span className="font-display uppercase tracking-wider text-xs">2026 Total Committed</span>
+                        <span className="font-display uppercase tracking-wider text-xs">2027 Total Committed</span>
                       </td>
                       <td className="text-right px-3 py-3 font-mono">${totalSpent}</td>
                       <td colSpan={3}></td>
@@ -308,7 +304,7 @@ const OfficialRosters2026 = () => {
               </motion.div>
 
               <p className="mt-4 text-xs text-muted-foreground">
-                Starting lineups are auto-arranged by 2026 salary as a proxy for player value.
+                Starting lineups are auto-arranged by 2027 salary as a proxy for player value.
               </p>
             </>
           )}
