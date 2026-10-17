@@ -3,6 +3,34 @@ import { assessRoster, findTrades, isIdealTrade, tradeImbalance, tradeValueUpgra
 const p = (id: string, position: string, ppg: number, value = 50): FinderPlayer => ({ id, name: id, position, ppg, value, salary: 1, franchiseTag: false, projected: false });
 const base = (prefix: string) => [p(prefix+'qb','QB',20), p(prefix+'rb1','RB',15), p(prefix+'rb2','RB',14), ...Array.from({length:6},(_,i)=>p(prefix+'wr'+i,'WR',12-i))];
 describe('Trade Finder', () => {
+  test('unchecked players never appear in outgoing trades while protected starters remain in the assessment', () => {
+    const a: FinderTeam = {id:'a', name:'A', roster:[...base('a'),p('opQB','QB',21),p('spareQB','QB',19)]};
+    const b: FinderTeam = {id:'b', name:'B', roster:[...base('b').map(p => ({...p, value:52, ppg:p.position==='WR' ? 22 : p.ppg})),p('spareWR','WR',18,52)]};
+    const results = findTrades(a, [a,b], 6, undefined, 4, new Set(['spareQB']));
+    expect(results.length).toBeGreaterThan(0);
+    for (const result of results) {
+      expect(result.send.map(p => p.id)).toEqual(['spareQB']);
+      const after = [...a.roster.filter(p => p.id !== 'spareQB'), ...result.receive];
+      expect(result.rosGain).toBeCloseTo(rosterUtility(after, 6).ros - rosterUtility(a.roster, 6).ros, 8);
+    }
+  });
+  test('the full roster defaults to eligible and explicitly protecting every player yields no suggestions', () => {
+    const a: FinderTeam = {id:'a', name:'A', roster:[...base('a'),p('opQB','QB',21),p('spareQB','QB',19)]};
+    const b: FinderTeam = {id:'b', name:'B', roster:[...base('b').map(p => ({...p, value:52, ppg:p.position==='WR' ? 22 : p.ppg})),p('spareWR','WR',18,52)]};
+    const defaults = findTrades(a, [a,b], 6, undefined, 4);
+    expect(defaults.length).toBeGreaterThan(0);
+    expect(findTrades(a, [a,b], 6, undefined, 4, new Set(a.roster.map(p => p.id)))).toEqual(defaults);
+    expect(findTrades(a, [a,b], 6, undefined, 4, new Set())).toEqual([]);
+  });
+  test('assigned Practice Squad players can be offered without inflating the current starting lineup', () => {
+    const a: FinderTeam = {id:'a', name:'A', roster:[...base('a'), {...p('rookieQB','QB',25),practiceSquad:true}]};
+    const b: FinderTeam = {id:'b', name:'B', roster:[...base('b').map(p => ({...p, value:52, ppg:p.position==='WR' ? 22 : p.ppg})),p('spareWR','WR',18,52)]};
+    expect(rosterUtility(a.roster, 6).ros).toBe(rosterUtility(base('a'), 6).ros);
+    const results = findTrades(a, [a,b], 6, undefined, 4, new Set(['rookieQB']));
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every(r => r.send.length === 1 && r.send[0]?.id === 'rookieQB')).toBe(true);
+    expect(findTrades(a, [a,b], 6, undefined, 4, new Set(base('a').map(p => p.id))).some(r => r.send.some(p => p.id === 'rookieQB'))).toBe(false);
+  });
   test('zero TEs is legal and never creates a standalone position or depth weakness', () => {
     const a: FinderTeam = {id:'a', name:'A', roster:base('a')};
     const b: FinderTeam = {id:'b', name:'B', roster:[...base('b'),p('eliteTE','TE',30)]};
