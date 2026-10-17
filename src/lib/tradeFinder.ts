@@ -6,6 +6,9 @@ export type FinderTeam = { id: string; name: string; roster: FinderPlayer[] };
 const total = (r: SimPlayer[]) => r.reduce((s, p) => s + p.ppg, 0);
 export const tradeImbalance = (a: number, b: number) => a + b > 0 ? Math.abs(a - b) / ((a + b) / 2) * 100 : Infinity;
 export const isIdealTrade = (a: number, b: number) => tradeImbalance(a, b) <= 2;
+export const tradeValueUpgrade = (sent: number, received: number) => sent > 0 ? (received - sent) / sent * 100 : NaN;
+export const matchesUpgradeTarget = (sent: number, received: number, target: number) =>
+  Number.isInteger(target) && target >= 1 && target <= 5 && Math.abs(tradeValueUpgrade(sent, received) - target) <= 0.5 + 1e-9;
 const positions = ['QB', 'RB', 'WR', 'TE'];
 const required: Record<string, number> = { QB: 1, RB: 2, WR: 2, TE: 1 };
 
@@ -46,7 +49,7 @@ export function rosterUtility(roster: FinderPlayer[], startWeek: number, schedul
 }
 export type TradeSuggestion = {
   partner: FinderTeam; send: FinderPlayer[]; receive: FinderPlayer[]; imbalance: number;
-  valueSent: number; valueReceived: number; gain: number; partnerGain: number;
+  valueSent: number; valueReceived: number; valueUpgrade: number; gain: number; partnerGain: number;
   rosGain: number; partnerRosGain: number; depthGain: number; partnerDepthGain: number;
   salaryChange: number; partnerSalaryChange: number;
 };
@@ -55,7 +58,7 @@ const packages = (roster: FinderPlayer[]) => {
   const pool = roster.filter(p => !p.franchiseTag && p.value > 0);
   return [...pool.map(p => [p]), ...pool.flatMap((p, i) => pool.slice(i + 1).map(q => [p, q]))];
 };
-export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: number, schedule: ScheduleContext = emptySchedule): TradeSuggestion[] {
+export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: number, schedule: ScheduleContext = emptySchedule, upgradeTarget?: number): TradeSuggestion[] {
   const own = packages(team.roster);
   const before = rosterUtility(team.roster, startWeek, schedule);
   const results: TradeSuggestion[] = [];
@@ -69,7 +72,9 @@ export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: nu
         const imbalance = tradeImbalance(valueSent, valueReceived);
         const sentPos = send.map(p => p.position).sort().join(',');
         const receivedPos = receive.map(p => p.position).sort().join(',');
-        return imbalance <= 10 && sentPos !== receivedPos ? [{ send, receive, valueSent, valueReceived, imbalance }] : [];
+        const valueUpgrade = tradeValueUpgrade(valueSent, valueReceived);
+        const balanced = upgradeTarget === undefined ? imbalance <= 10 : matchesUpgradeTarget(valueSent, valueReceived, upgradeTarget);
+        return balanced && sentPos !== receivedPos ? [{ send, receive, valueSent, valueReceived, valueUpgrade, imbalance }] : [];
       });
     }).sort((a, b) => a.imbalance - b.imbalance).slice(0, 450);
     for (const c of candidates) {
@@ -84,7 +89,10 @@ export function findTrades(team: FinderTeam, league: FinderTeam[], startWeek: nu
       results.push({ ...c, partner, gain, partnerGain, rosGain: after.ros - before.ros, partnerRosGain: partnerAfter.ros - partnerBefore.ros, depthGain: after.depth - before.depth, partnerDepthGain: partnerAfter.depth - partnerBefore.depth, salaryChange: after.salary - before.salary, partnerSalaryChange: partnerAfter.salary - partnerBefore.salary });
     }
   }
-  results.sort((a, b) => Number(b.imbalance <= 2) - Number(a.imbalance <= 2) || Math.min(b.gain, b.partnerGain) - Math.min(a.gain, a.partnerGain) || a.imbalance - b.imbalance);
+  results.sort((a, b) => (upgradeTarget === undefined
+    ? Number(b.imbalance <= 2) - Number(a.imbalance <= 2)
+    : Math.abs(a.valueUpgrade - upgradeTarget) - Math.abs(b.valueUpgrade - upgradeTarget))
+    || Math.min(b.gain, b.partnerGain) - Math.min(a.gain, a.partnerGain) || a.imbalance - b.imbalance);
   const chosen: TradeSuggestion[] = [];
   const perPartner = new Map<string, number>();
   for (const r of results) {

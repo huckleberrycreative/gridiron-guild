@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Redesign Trade Finder with blank initial results and compact left-to-right trade widgets
+- [x] Add +1% to +5% received Trade Value targets; test filtering and verify the live selection flow
+
 - [x] Add Trade Finder roster assessment and balanced, mutually beneficial suggestions
 - [x] Connect GM Tools and Trade Analyzer; test rules and verify team selection and suggestions
 
