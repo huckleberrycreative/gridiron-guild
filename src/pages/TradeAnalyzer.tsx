@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
@@ -125,13 +126,14 @@ const handcuffStarter = (p: { name: string; position: string }, roster: { name: 
 const HANDCUFF_BONUS = 20;
 
 const TradeAnalyzer = () => {
+  const [searchParams] = useSearchParams();
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
   const { data: salaries = [], isLoading: salariesLoading } = usePlayerSalaries();
   const [proj, setProj] = useState<Record<string, number>>({});
-  const [teamA, setTeamA] = useState<string>('');
-  const [teamB, setTeamB] = useState<string>('');
-  const [selA, setSelA] = useState<Set<string>>(new Set());
-  const [selB, setSelB] = useState<Set<string>>(new Set());
+  const [teamA, setTeamA] = useState<string>(searchParams.get('teamA') ?? '');
+  const [teamB, setTeamB] = useState<string>(searchParams.get('teamB') ?? '');
+  const [selA, setSelA] = useState<Set<string>>(new Set(searchParams.get('send')?.split(',').filter(Boolean)));
+  const [selB, setSelB] = useState<Set<string>>(new Set(searchParams.get('receive')?.split(',').filter(Boolean)));
   const { rows: powerRows, weeksPlayed } = usePowerRankRows();
   const { byId: tv } = useTradeValues();
   const valueOf = (id: string) => tv.get(id)?.value ?? 0;

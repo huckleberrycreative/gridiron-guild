@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Trade Finder uses a pure tradeFinder module with Trade Value Chart exchange values and roster-aware weekly lineup gains; isolate search and assessment rules for deterministic testing without changing Trade Analyzer valuation.
+
 - Apply display-only Power Ranks deductions in the table before ranking and sorting; preserve the shared projection and simulation model for trade and waiver calculations.
 - Season odds use the pure roster-aware seasonSimulation module with seeded player availability paths and live NFL schedule context; keeping it separate makes injury, bye and playoff rules independently testable and before/after scenarios reproducible.
 - Power Ranks selects the actual-average strength mode explicitly; trade and waiver callers retain the shared blended default so forecast presentation changes do not silently change asset valuation.
