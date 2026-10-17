@@ -71,7 +71,7 @@ export function findStrategicTrades(team: StrategyTeam, league: StrategyTeam[], 
       const efficiency = futureEfficiency(team.roster, afterTeam.roster);
       const proxy = strategy === 'win-now' ? now : strategy === 'rebuild' ? next + efficiency.ageGain * 0.5 + efficiency.salarySaving / 100 : (now + next + efficiency.ageGain * 0.5 + efficiency.salarySaving / 100) / 2;
       // Shortlist by the selected horizon, allowing partners to benefit on the opposite horizon.
-      if (proxy <= 0.01 || (strategy === 'rebuild' && next <= 0) || (strategy === 'balanced' && (now < 0 || next < 0)) || Math.max(partnerNow, partnerNext) <= 0.01) continue;
+      if ((strategy !== 'win-now' && proxy <= 0.01) || (strategy === 'rebuild' && next <= 0) || (strategy === 'balanced' && (now < 0 || next < 0)) || Math.max(partnerNow, partnerNext) <= 0.01) continue;
       candidates.push({ partner, send, receive, valueSent, valueReceived, valueUpgrade: tradeValueUpgrade(valueSent,valueReceived), imbalance: tradeImbalance(valueSent,valueReceived), gain: now, partnerGain: partnerNow, rosGain: after.ros-before.ros, partnerRosGain: partnerAfter.ros-partnerBefore.ros, depthGain: after.depth-before.depth, partnerDepthGain: partnerAfter.depth-partnerBefore.depth, salaryChange: after.salary-before.salary, partnerSalaryChange: partnerAfter.salary-partnerBefore.salary, after: afterTeam, partnerAfter: afterPartner, proxy });
     }
   }

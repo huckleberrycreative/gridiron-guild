@@ -35,7 +35,7 @@ describe('Trade Finder strategies', () => {
     expect(futureRoster([{...player('rookie','WR',10,22),practiceSquad:true}])[0]?.practiceSquad).toBe(false);
   });
   test('strategic search preserves protected outgoing players and requested +4% Trade Value filter', () => {
-    const a: StrategyTeam={id:'a',name:'A',roster:[...base('a'),player('spare','QB',19,28)]};
+    const a: StrategyTeam={id:'a',name:'A',roster:[...base('a').map(p => p.position === 'QB' ? {...p,ppg:27,basePpg:27,futurePpg:27} : p),player('op','QB',26,28),player('spare','QB',25,28)]};
     const b: StrategyTeam={id:'b',name:'B',roster:[...base('b').map(p=>({...p,value:52,ppg:p.position==='WR'?22:p.ppg,basePpg:p.position==='WR'?22:p.ppg,futurePpg:p.position==='WR'?22:p.ppg})),player('spareWR','WR',18,24,52)]};
     const found=findStrategicTrades(a,[a,b],6,emptySchedule,4,new Set(['spare']),'win-now');
     expect(found.length).toBeGreaterThan(0);
