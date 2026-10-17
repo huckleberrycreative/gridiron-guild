@@ -1,5 +1,8 @@
 # Architecture rules
 
+- Roast My Team composes deterministic written assessments from live standings, actual-average season Power Ranks and shared dynasty rankings; keep its forecast ordering separate from simulated odds so editorial predictions do not silently change valuation.
+- Dynasty table and Roast My Team share the pure dynastyRanks module with seeded simulations to keep reported dynasty positions reproducible across pages without altering the existing strength and cap formulas.
+
 - Trade Finder uses a pure tradeFinder module with Trade Value Chart exchange values, directional received-versus-sent value targets and roster-aware weekly lineup gains; isolate search and assessment rules for deterministic testing without changing Trade Analyzer valuation.
 - Trade Finder applies submitted player IDs only to outgoing candidates, never to the retained roster; assigned Practice Squad players are selectable assets but count toward lineup utility only as active incoming additions, preventing protected-player and bench-strength distortions.
 - Strategy-driven Trade Finder uses a dedicated pure strategy module and a cancellable web worker for paired championship simulations; preserve shared analyzer values and clearly disclose schedule-neutral next-season forecasts so search stays responsive without presenting unknown future schedules as facts.
