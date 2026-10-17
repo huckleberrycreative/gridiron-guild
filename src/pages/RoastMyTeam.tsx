@@ -71,14 +71,14 @@ export default function RoastMyTeam() {
             <p className="text-base leading-8 text-foreground">{section.text}</p>
           </section>)}
           <section>
-            <div className="mb-6 flex items-baseline gap-3"><span className="font-display text-xl font-bold text-accent">04</span><h3 className="font-display text-xl font-bold text-primary">The five-step turnaround plan</h3></div>
+            <div className="mb-6 flex items-baseline gap-3"><span className="font-display text-xl font-bold text-accent">04</span><h3 className="font-display text-xl font-bold text-primary">The five-step plan for {report.horizon === 'dynasty' ? 'dynasty #1' : 'this year’s #1'}</h3></div>
             <ol className="space-y-7">
               {report.steps.map((step,i)=><li key={step.title} className="border-l-2 border-accent pl-5"><h4 className="mb-2 font-display text-lg font-bold text-primary">{i+1}. {step.title}</h4><p className="leading-8 text-foreground">{step.body}</p></li>)}
             </ol>
             <div className="mt-8 flex flex-wrap gap-3"><Button variant="accent" asChild><Link to="/trade-finder">Find a trade <ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button><Button variant="outline" asChild><Link to="/waiver-wire">Waiver Wire <ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button></div>
           </section>
           <footer className="mt-10 border-t border-border pt-5 text-xs leading-6 text-muted-foreground">
-            The Week 13 finish is an approximate expected-points ordering using earned points, actual player averages, saved injuries, byes and weekly scoring variance; it is separate from the simulated playoff and title probabilities. Projection fallbacks apply only where actual player averages are missing. Dynasty forecasts use age-adjusted projections, 2027 salaries and hypothetical cap cuts; unknown next-season schedules and future acquisitions are not included. Injury probabilities and scoring volatility are modeling assumptions, not verified individual forecasts. {scheduleError ? 'Opponent data is unavailable; matchup effects are neutral.' : 'Opponent adjustments use scoring allowed, not ESPN position-specific OPRK; cached schedule data may be used.'} No finish or path to #1 is guaranteed.
+            The season prediction selects a real run from your most common seed-and-playoff-exit combination in the same simulations that produce Power Ranks odds. Different teams’ representative runs need not describe the same league-wide future. Proposed trades are sequential, not agreed deals; partners must gain current-season or cap-compliant dynasty strength, and unpaired franchise tags are excluded. Projection fallbacks apply only where actual player averages are missing. Dynasty forecasts use age-adjusted projections, 2027 salaries and hypothetical cap cuts; unknown next-season schedules and future acquisitions are not included. Injury probabilities and scoring volatility are modeling assumptions, not verified individual forecasts. {scheduleError ? 'Opponent data is unavailable; matchup effects are neutral.' : 'Opponent adjustments use scoring allowed, not ESPN position-specific OPRK; cached schedule data may be used.'} No finish or path to #1 is guaranteed.
           </footer>
         </article>}
     </main>
