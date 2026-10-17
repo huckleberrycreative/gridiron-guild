@@ -6,10 +6,12 @@ import { Loader2 } from 'lucide-react';
 
 import { useTradeValues, type TradeValueRow as Row } from '@/hooks/useTradeValues';
 import { rankBestSalaries, type salaryEfficiency } from '@/lib/bestSalaries';
+import { usePlayerSalaries } from '@/hooks/usePlayerSalaries';
 type SalaryRow = ReturnType<typeof salaryEfficiency>;
 
 const TradeValueChart = () => {
   const { rows: all, isLoading } = useTradeValues();
+  const { data: contracts = [] } = usePlayerSalaries();
   const [tab, setTab] = useState<'value' | 'salary'>('value');
   const [onlyFA, setOnlyFA] = useState(false);
   const [pos, setPos] = useState('ALL');
@@ -20,8 +22,14 @@ const TradeValueChart = () => {
     [all, onlyFA, pos]
   );
   const salaryRows = useMemo<SalaryRow[]>(() => {
-    return rankBestSalaries(all.filter(r => (onlyFA ? !r.teamId : !!r.teamId) && (pos === 'ALL' || r.group === pos)));
-  }, [all, onlyFA, pos]);
+    const byId=new Map(contracts.map(p=>[p.id,p]));
+    const amount=(value?:string)=>Number(value?.replace(/[$,]/g,'') ?? 0);
+    return rankBestSalaries(all.filter(r => (onlyFA ? !r.teamId : !!r.teamId) && (pos === 'ALL' || r.group === pos)).map(r=>{
+      const contract=byId.get(r.id);
+      const s27=amount(contract?.salary2027);
+      return {...r,s27,s28:amount(contract?.salary2028),s29:amount(contract?.salary2029),contractKnown:s27>0};
+    }));
+  }, [all, contracts, onlyFA, pos]);
 
   const salaryColumns: Column<SalaryRow>[] = [
     { key: 'rank', label: '#', sortable: true, align: 'center' },
@@ -164,7 +172,7 @@ const TradeValueChart = () => {
           <p className="mb-4 text-sm text-muted-foreground">
             Estimated total scoring per $10 of 2027–2029 salary, starting with actual current-season averages
             and applying age-related decline. Dynasty reputation does not alter this contract-efficiency rank.
-            * marks a projected fallback where no actual average is recorded. Cheap depth can rank well here
+            Players without a recorded 2027 salary are excluded; missing later years follow salary progression, not a repeated $1. * marks a projected fallback where no actual average is recorded. Cheap depth can rank well here
             without being a better starter or trade asset; these are scoring-efficiency estimates, not guaranteed future totals.
           </p>
         )}

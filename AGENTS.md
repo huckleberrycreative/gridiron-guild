@@ -1,6 +1,6 @@
 # Architecture rules
 
-- Best Salaries uses an isolated pure bestSalaries scoring-per-dollar model with observed PPG, explicit projection fallbacks and all forward contract years; do not let contract-efficiency presentation change shared Trade Analyzer valuation.
+- Best Salaries uses an isolated pure bestSalaries scoring-per-dollar model with observed PPG, explicit projection fallbacks and all forward contract years; join original salary records to exclude unknown starting contracts and infer missing later years with progression rather than shared repeated-cost fallbacks, without changing Trade Analyzer valuation.
 
 - Roast My Team reads representative modal seed-and-exit scenarios from an observational season-simulation callback that never changes random draws or shared odds; its sequential named trade plans use actual roster utility or shared cap-compliant dynasty strength, require a partner benefit and exclude unpaired tags so editorial advice does not change valuation.
 - Dynasty roster strength is exposed as a pure helper using the table’s age adjustments, cap cuts and strength formula so Roast trade plans measure the same next-year benchmark without rerunning odds for every candidate.
