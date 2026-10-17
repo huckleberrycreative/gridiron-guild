@@ -23,14 +23,6 @@ export type ScheduleContext = {
 };
 export type SimTeam = { id: string; meanPpw: number; accumulated: number; roster?: SimPlayer[]; weeklySd?: number };
 export type Odds = { top2: number; top4: number; top5: number; champ: number };
-export type SeasonScenario = {
-  standings: { id: string; points: number; seed: number }[];
-  weeks: Record<string, number[]>;
-  semifinals: { id: string; seed: number; week14: number; week15: number; score: number }[];
-  finalists: { id: string; week16: number; week17: number; score: number }[];
-  winner: string;
-};
-export type TeamSeasonScenario = SeasonScenario & { finish: number; outcome: 'miss' | 'semifinal' | 'runner-up' | 'champion'; frequency: number };
 export const SIMS = 3000;
 export const REG_SEASON_WEEKS = 13;
 // Estimated NEW injury onsets per active week, not verified individual medical probabilities.
@@ -103,7 +95,7 @@ export const observedWeeklySd = (scores: number[]) => {
   return Math.max(20, Math.min(38, Math.sqrt((variance * scores.length + 24 ** 2 * 8) / (scores.length + 8))));
 };
 
-export function simulateSeason(teams: SimTeam[], weeksPlayed: number, schedule = emptySchedule, simulations = SIMS, observe?: (scenario: SeasonScenario) => void): Record<string, Odds> {
+export function simulateSeason(teams: SimTeam[], weeksPlayed: number, schedule = emptySchedule, simulations = SIMS): Record<string, Odds> {
   const counts = Object.fromEntries(teams.map(t => [t.id, { top2: 0, top4: 0, top5: 0, champ: 0 }]));
   if (teams.length < 2) return counts;
   const startWeek = Math.min(18, weeksPlayed + 1);
@@ -150,38 +142,7 @@ export function simulateSeason(teams: SimTeam[], weeksPlayed: number, schedule =
     finalists.sort((a, b) => selected[b.i][16] + selected[b.i][17] - selected[a.i][16] - selected[a.i][17]);
     const winner = finalists[0];
     if (winner) counts[teams[winner.i].id].champ++;
-    if (observe && winner) observe({
-      standings: order.map((i, seed) => ({ id: teams[i].id, points: totals[i], seed: seed + 1 })),
-      weeks: Object.fromEntries(teams.map((t, i) => [t.id, selected[i]])),
-      semifinals: order.slice(0, 5).map((i, seed) => ({ id: teams[i].id, seed: seed + 1, week14: selected[i][14], week15: selected[i][15], score: semifinalScore(seed + 1, selected[i][14], selected[i][15]) })).sort((a,b) => b.score-a.score),
-      finalists: finalists.map(f => ({ id: teams[f.i].id, week16: selected[f.i][16], week17: selected[f.i][17], score: selected[f.i][16]+selected[f.i][17] })),
-      winner: teams[winner.i].id,
-    });
   }
   return Object.fromEntries(Object.entries(counts).map(([id, c]) => [id, Object.fromEntries(Object.entries(c).map(([k, v]) => [k, v / simulations * 100])) as Odds]));
 }
 
-// Select a real run from the modal joint (seed, playoff exit) bucket, nearest its average scores.
-// This reads the same runs as the odds; observing never consumes random draws or alters valuation.
-export function simulateSeasonDetails(teams: SimTeam[], weeksPlayed: number, schedule = emptySchedule, simulations = SIMS) {
-  const runs: SeasonScenario[] = [];
-  const odds = simulateSeason(teams, weeksPlayed, schedule, simulations, run => runs.push(run));
-  const scenarios: Record<string, TeamSeasonScenario> = {};
-  for (const team of teams) {
-    const buckets = new Map<string, { run: SeasonScenario; finish: number; outcome: TeamSeasonScenario['outcome'] }[]>();
-    for (const run of runs) {
-      const finish = run.standings.find(t => t.id === team.id)?.seed ?? teams.length;
-      const outcome = finish > 5 ? 'miss' : run.winner === team.id ? 'champion' : run.finalists.some(t => t.id === team.id) ? 'runner-up' : 'semifinal';
-      const key = `${finish}:${outcome}`;
-      const bucket = buckets.get(key) ?? [];
-      bucket.push({ run, finish, outcome }); buckets.set(key, bucket);
-    }
-    const bucket = [...buckets.values()].sort((a,b) => b.length-a.length)[0];
-    if (!bucket?.length) continue;
-    const average = Array.from({length:18}, (_,week) => bucket.reduce((sum,r) => sum+r.run.weeks[team.id][week],0)/bucket.length);
-    const distance = (run: SeasonScenario) => average.reduce((sum,score,week) => sum+(run.weeks[team.id][week]-score)**2,0);
-    const selected = bucket.reduce((best,r) => distance(r.run)<distance(best.run) ? r : best);
-    scenarios[team.id] = { ...selected.run, finish: selected.finish, outcome: selected.outcome, frequency: bucket.length / Math.max(1, runs.length) * 100 };
-  }
-  return { odds, scenarios };
-}

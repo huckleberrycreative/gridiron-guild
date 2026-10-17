@@ -105,7 +105,6 @@ export type PowerRankRow = {
   standN: number;
   risks?: ReturnType<typeof rosterRisks>;
   weeklySd?: number;
-  scenario?: TeamSeasonScenario;
 };
 
 /* ------------------------------------------------------------------ */

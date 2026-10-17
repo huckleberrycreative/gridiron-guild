@@ -6,7 +6,7 @@ const PRIME: Record<string, number> = { QB: 32, RB: 26, WR: 29, TE: 30 };
 type P = { id: string; name: string; position: string; ppg: number; s27: number; value: number };
 
 // Next-season PPG: age decline past prime, growth for young players
-export const nextPpg = (r: DynastyInput) => {
+const nextPpg = (r: DynastyInput) => {
   const age = r.age as number | null;
   let m = 1;
   if (age != null) {
@@ -17,21 +17,6 @@ export const nextPpg = (r: DynastyInput) => {
   }
   return r.ppg * m;
 };
-
-export function dynastyRosterStrength(rows: DynastyInput[]) {
-  let kept = rows.map(r => ({ ...r, ppg: nextPpg(r) }));
-  const cut: typeof kept = [];
-  let payroll = kept.reduce((sum,p) => sum+p.s27,0);
-  while (payroll > CAP && kept.length) {
-    kept.sort((a,b) => a.ppg/Math.max(1,a.s27)-b.ppg/Math.max(1,b.s27));
-    const worst = kept.find(p => p.s27 > 1) ?? kept[0];
-    kept = kept.filter(p => p.id !== worst.id); cut.push(worst); payroll -= worst.s27;
-  }
-  const ppw = bestNine(kept);
-  const avgTv = kept.length ? kept.reduce((sum,p) => sum+p.value,0)/kept.length : 0;
-  const space = CAP-payroll;
-  return { ppw, payroll, space, cut, avgTv, strength: ppw+Math.max(0,space)*0.02+avgTv*0.1 };
-}
 
 // Best legal nine: QB, RB, RB, WR, WR, 3 FLEX (RB/WR/TE), OP (any)
 const bestNine = (list: P[]) => {
