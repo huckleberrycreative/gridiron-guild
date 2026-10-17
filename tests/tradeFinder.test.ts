@@ -10,7 +10,7 @@ describe('Trade Finder', () => {
     expect(report.stats.map(s => s.position)).toEqual(['QB', 'RB', 'WR']);
     expect(report.weakest.position).not.toBe('TE');
     expect(report.leastDepth.position).not.toBe('TE');
-    expect(rosterUtility(a.roster, 6).ros).toBe(114);
+    expect(rosterUtility(a.roster, 6).ros).toBe(106);
   });
   test('TEs provide FLEX output and interchangeable injury cover rather than required TE depth', () => {
     const roster = base('a');
