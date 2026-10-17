@@ -3,6 +3,22 @@ import { assessRoster, findTrades, isIdealTrade, tradeImbalance, tradeValueUpgra
 const p = (id: string, position: string, ppg: number, value = 50): FinderPlayer => ({ id, name: id, position, ppg, value, salary: 1, franchiseTag: false, projected: false });
 const base = (prefix: string) => [p(prefix+'qb','QB',20), p(prefix+'rb1','RB',15), p(prefix+'rb2','RB',14), ...Array.from({length:6},(_,i)=>p(prefix+'wr'+i,'WR',12-i))];
 describe('Trade Finder', () => {
+  test('zero TEs is legal and never creates a standalone position or depth weakness', () => {
+    const a: FinderTeam = {id:'a', name:'A', roster:base('a')};
+    const b: FinderTeam = {id:'b', name:'B', roster:[...base('b'),p('eliteTE','TE',30)]};
+    const report = assessRoster(a, [a,b], 6);
+    expect(report.stats.map(s => s.position)).toEqual(['QB', 'RB', 'WR']);
+    expect(report.weakest.position).not.toBe('TE');
+    expect(report.leastDepth.position).not.toBe('TE');
+    expect(rosterUtility(a.roster, 6).ros).toBe(106);
+  });
+  test('TEs provide FLEX output and interchangeable injury cover rather than required TE depth', () => {
+    const roster = base('a');
+    const withTE = [...roster, p('flexTE','TE',25)];
+    const withWR = [...roster, p('flexWR','WR',25)];
+    expect(rosterUtility(withTE, 6).ros).toBeGreaterThan(rosterUtility(roster, 6).ros);
+    expect(rosterUtility(withTE, 6)).toEqual(rosterUtility(withWR, 6));
+  });
   test('a +4% upgrade means receiving 104 Trade Value for 100 sent, not the reverse', () => {
     expect(tradeValueUpgrade(100, 104)).toBeCloseTo(4, 8);
     expect(matchesUpgradeTarget(100, 104, 4)).toBe(true);
