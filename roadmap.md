@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Add checked roster and Practice Squad selection with Submit-driven suggestions
-- [ ] Test protected-player filtering and verify the live submission flow
+- [x] Add checked roster and Practice Squad selection with Submit-driven suggestions
+- [x] Test protected-player filtering and verify the live submission flow
 
 - [x] Redesign Trade Finder with blank initial results and compact left-to-right trade widgets
 - [x] Add +1% to +5% received Trade Value targets; test filtering and verify the live selection flow
