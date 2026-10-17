@@ -52,7 +52,8 @@ export function buildTeamRoast(teamId: string, standings: TeamWithStandings[], p
   const currentStarter=current.roster.filter(p=>lockedIds.has(p.id) && !starters.some(s=>s.id===p.id)).sort((a,b)=>a.ppg-b.ppg)[0];
   const partners=league.filter(t=>t.id!==teamId).map(t=>({team:t,report:assessRoster(t,league,startWeek)}));
   const partner=partners.filter(t=>t.report.strongest.position===weakest.position).sort((a,b)=>b.report.strongest.strength-a.report.strongest.strength)[0];
-  const target=partner?.team.roster.filter(p=>p.position===weakest.position && !p.out).sort((a,b)=>b.ppg-a.ppg)[1] ?? partner?.report.strongest.players[0];
+  const targets=partner?.team.roster.filter(p=>p.position===weakest.position && !p.out && p.ppg>weakest.strength).sort((a,b)=>b.ppg-a.ppg) ?? [];
+  const target=targets[1] ?? targets[0];
   const risk=current.risks?.largestLoss;
   const bye=assessment.byes.sort((a,b)=>b.loss-a.loss)[0];
   const actualText=standingsRank<=2 ? 'You have earned a front-row seat, not a trophy. Stop treating a good start as proof that the roster is finished.' : standingsRank<=4 ? 'You are in the useful part of the table, but useful is not dominant. The teams above you do not owe you a collapse.' : standingsRank===5 ? 'Fifth is purgatory, not a victory lap. You are asking the playoff format to rescue a roster that has not separated itself.' : 'The table is not being unfair to you. You have not banked enough weekly points to make anyone fear this team.';

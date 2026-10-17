@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Flame, Loader2, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import { TeamLogo } from '@/components/TeamLogo';
+import { getTeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
@@ -12,6 +12,14 @@ import { useTradeValues } from '@/hooks/useTradeValues';
 import { calculateDynastyRanks } from '@/lib/dynastyRanks';
 import { buildTeamRoast } from '@/lib/teamRoast';
 import leagueShield from '@/assets/shield.png';
+
+function RoastLogo({name}: {name:string}) {
+  const [failed,setFailed]=useState(false);
+  const url=getTeamLogo(name);
+  return <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-secondary font-display font-bold text-primary">
+    {url && !failed ? <img src={url} alt={`${name} logo`} className="h-full w-full object-contain" onError={()=>setFailed(true)} /> : name.split(' ').map(word=>word[0]).join('').slice(0,2)}
+  </span>;
+}
 
 export default function RoastMyTeam() {
   const [selected, setSelected] = useState('');
@@ -47,11 +55,11 @@ export default function RoastMyTeam() {
     <main className="container mx-auto px-4 py-10" aria-live="polite">
       {error ? <p role="alert" className="text-accent">The league data could not be loaded. Refresh this page to try again.</p> : loading ? <div className="flex items-center gap-3 py-10 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Reading the league…</div> : !selected ?
         <div className="flex flex-wrap items-center justify-center gap-5 border-b border-border pb-10 pt-4">
-          {standings.map(t=><Button key={t.id} variant="ghost" className="h-20 w-20 p-2" onClick={()=>setSelected(t.id)} aria-label={`Roast ${t.name}`} title={t.name}><TeamLogo teamName={t.name} size="lg" /></Button>)}
+          {standings.map(t=><Button key={t.id} variant="ghost" className="h-20 w-20 p-2" onClick={()=>setSelected(t.id)} aria-label={`Roast ${t.name}`} title={t.name}><RoastLogo name={t.name} /></Button>)}
         </div> : !report ? <p className="text-muted-foreground">There is not enough roster and ranking data to give this team an honest assessment yet.</p> :
         <article className="mx-auto max-w-4xl" key={selected}>
           <header className="mb-8 flex items-center gap-4 border-b border-border pb-6">
-            <TeamLogo teamName={report.name} size="lg" />
+            <RoastLogo key={report.name} name={report.name} />
             <div className="min-w-0"><p className="mb-1 text-xs font-semibold uppercase text-accent">The verdict · through Week {weeksPlayed}</p><h2 className="font-display text-2xl font-bold text-primary break-words">{report.name}</h2></div>
           </header>
           {[
