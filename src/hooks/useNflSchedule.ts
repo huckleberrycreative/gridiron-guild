@@ -33,8 +33,14 @@ export function useNflSchedule() {
     queryKey: ['nfl-schedule-defense', 2026], staleTime: 60 * 60 * 1000, retry: 1,
     queryFn: async () => {
       const { data: json, error } = await supabase.functions.invoke('nfl-schedule');
-      if (error || json?.error) throw new Error('NFL schedule unavailable');
-      const result = parseSchedule(json.events ?? []);
+      let events = json?.events;
+      if (error || json?.error) {
+        const backup = await fetch('/data/nfl-schedule-2026.json');
+        if (!backup.ok) throw new Error('NFL schedule unavailable');
+        const snapshot = await backup.json();
+        events = snapshot.events;
+      }
+      const result = parseSchedule(events ?? []);
       if (!Object.keys(result.opponents).length) throw new Error('NFL schedule empty');
       return result;
     },

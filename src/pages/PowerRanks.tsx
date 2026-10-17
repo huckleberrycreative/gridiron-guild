@@ -99,7 +99,7 @@ const PowerRanks = () => {
             <section className="mt-8 border-t border-border pt-6">
               <h2 className="font-serif text-xl font-semibold text-primary">The road to the Shield</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                {scheduleError ? 'NFL opponent data unavailable; matchup effects are neutral. Saved bye weeks still apply.' : `Playoff matchup estimates use scoring allowed across ${schedule.completedGames} completed NFL games; this is a defense proxy, not position-specific fantasy points allowed.`}
+                {scheduleError ? 'NFL opponent data unavailable; matchup effects are neutral. Saved bye weeks still apply.' : `Playoff matchup estimates use scoring allowed across ${schedule.completedGames} completed NFL games; this is a defense proxy, not position-specific fantasy points allowed. If ESPN is unavailable, the verified October 17 schedule snapshot is used.`}
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {rows.map(r => (
