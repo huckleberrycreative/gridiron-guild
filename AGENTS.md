@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Best Salaries uses an isolated pure bestSalaries scoring-per-dollar model with observed PPG, explicit projection fallbacks and all forward contract years; do not let contract-efficiency presentation change shared Trade Analyzer valuation.
+
 - Roast My Team composes deterministic written assessments from live standings, actual-average season Power Ranks and shared dynasty rankings; keep its forecast ordering separate from simulated odds so editorial predictions do not silently change valuation.
 - Dynasty table and Roast My Team share the pure dynastyRanks module with seeded simulations to keep reported dynasty positions reproducible across pages without altering the existing strength and cap formulas.
 
