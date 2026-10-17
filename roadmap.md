@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Add prominent team, improvement and strategy selections
+- [x] Implement championship-focused Win Now, future-focused Rebuild and balanced trade search
+- [x] Test strategy rules and verify live submissions and layouts
+
 - [x] Add checked roster and Practice Squad selection with Submit-driven suggestions
 - [x] Test protected-player filtering and verify the live submission flow
 
