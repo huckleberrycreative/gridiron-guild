@@ -11,9 +11,7 @@ import { useTradeValues } from '@/hooks/useTradeValues';
 import { useWeeklyScores } from '@/hooks/useWeeklyScores';
 import { useActiveSeasonStandings } from '@/hooks/useLeagueData';
 import { useNflSchedule, emptySchedule } from '@/hooks/useNflSchedule';
-import { type FinderPlayer, type FinderTeam } from '@/lib/tradeFinder';
 import { type StrategicTrade, type StrategyTeam, type TradeStrategy } from '@/lib/tradeFinderStrategy';
-import { bestLineup, healthyRoster } from '@/lib/seasonSimulation';
 
 const num = (v: number) => v.toFixed(1);
 const signed = (v: number) => `${v >= 0 ? '+' : ''}${num(v)}`;
@@ -39,53 +37,6 @@ const strategyArgument = (s: StrategicTrade, own: boolean, strategy: TradeStrate
   const salaryArgument = savings > 0.05 ? ` The deal also frees up $${num(savings)} in average annual 2027–2029 salary.` : savings < -0.05 ? ` The added future strength costs $${num(-savings)} more in average annual salary.` : '';
   if (strategy === 'rebuild') return futureArgument + salaryArgument;
   return `${names} keeps the championship push alive: ${signed(now)} percentage points this year and ${signed(future)} in the next-season estimate.${salaryArgument}`;
-};
-const tradeReason = (team: FinderTeam, outgoing: FinderPlayer[], incoming: FinderPlayer[], scoringGain: number, coverGain: number) => {
-  const outgoingIds = new Set(outgoing.map(p => p.id));
-  const after = [...team.roster.filter(p => !outgoingIds.has(p.id) && !p.practiceSquad), ...incoming];
-  const starterIds = new Set(bestLineup(healthyRoster(after)).map(p => p.id));
-  const additions = incoming.map(p => `${p.name}${p.position === 'TE' ? ' (FLEX)' : ''}`).join(' and ');
-  const starters = incoming.filter(p => starterIds.has(p.id));
-  const beforeIds = new Set(bestLineup(healthyRoster(team.roster.filter(p => !p.practiceSquad))).map(p => p.id));
-  const sparePlayers = outgoing.filter(p => !beforeIds.has(p.id)).map(p => p.name).join(' and ');
-  const sentNames = outgoing.map(p => p.name).join(' and ');
-  const starterNames = starters.map(p => p.name).join(' and ');
-  const variant = [...team.id + incoming.map(p => p.id).join('')].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 4;
-  const pick = (options: string[]) => options[variant] ?? options[0] ?? '';
-  const saving = outgoing.reduce((sum, p) => sum + p.salary, 0) - incoming.reduce((sum, p) => sum + p.salary, 0);
-  let argument: string;
-  if (scoringGain < 0.05) {
-    argument = pick([
-      `${additions} makes an injury less costly: replacement scoring improves by ${num(coverGain)} points without a meaningful drop in weekly output.`,
-      `The case for ${additions} is insurance rather than extra points today—this swap improves injury cover by ${num(coverGain)} points while preserving expected scoring.`,
-      `Giving up ${sentNames} buys a stronger safety net in ${additions}, worth ${num(coverGain)} more points when a starter is missing.`,
-      `Take ${additions} to protect the lineup rather than chase a tiny scoring gain; the return improves injury-replacement output by ${num(coverGain)} points.`,
-    ]);
-  } else if (sparePlayers && starters.length) {
-    argument = pick([
-      `Put spare depth to work: ${sparePlayers} leaves the bench, while ${starterNames} earns a place in your starting lineup for an expected ${num(scoringGain)} extra points per week.`,
-      `${starterNames} turns depth into usable scoring; moving ${sparePlayers} helps fund a starting-lineup addition worth about ${num(scoringGain)} points per week.`,
-      `The appeal is getting more out of your roster: trade away bench option ${sparePlayers} and bring in ${starterNames} to raise expected weekly scoring by ${num(scoringGain)} points.`,
-      `This gives ${starterNames} a starting role instead of leaving value tied up in ${sparePlayers} on the bench, with a modeled ${num(scoringGain)}-point weekly lift.`,
-    ]);
-  } else if (starters.length) {
-    argument = pick([
-      `${starterNames} belongs in your starting lineup after this deal, making the swap of ${sentNames} worthwhile for an expected ${num(scoringGain)}-point weekly gain.`,
-      `Back this deal for the lineup change: ${starterNames} steps into a starting spot and lifts expected scoring by ${num(scoringGain)} points per week.`,
-      `Accepting ${additions} gives you a better-scoring lineup despite losing ${sentNames}; the expected improvement is ${num(scoringGain)} points per week.`,
-      `The reason to move ${sentNames} is the return: ${starterNames} can start for you, adding roughly ${num(scoringGain)} points to weekly output.`,
-    ]);
-  } else {
-    argument = pick([
-      `${additions} gives you more ways to handle missing starters, with the remaining schedule showing an expected ${num(scoringGain)}-point weekly benefit.`,
-      `You do not need ${additions} to start every week for this to pay off; the extra options improve scheduled scoring by ${num(scoringGain)} points per week.`,
-      `Move ${sentNames} for a more useful set of alternatives in ${additions}, worth an expected ${num(scoringGain)} extra points per week across the remaining schedule.`,
-      `This is a flexibility play: ${additions} can fill lineup gaps, and the scheduled scoring gain is about ${num(scoringGain)} points per week.`,
-    ]);
-  }
-  if (saving >= 0.1) return `${argument} It also frees up $${num(saving)} in 2027 salary.`;
-  if (scoringGain >= 0.05 && coverGain >= 0.5) return `${argument} There is a safety-net benefit too: ${num(coverGain)} more points of injury cover.`;
-  return argument;
 };
 const FinderLogo = ({ name, large = false }: { name: string; large?: boolean }) => {
   const [failed, setFailed] = useState(false);
