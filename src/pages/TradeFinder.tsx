@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftRight, ArrowRight, CalendarDays, Loader2, ShieldCheck } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
-import { TeamLogo } from '@/components/TeamLogo';
+import { getTeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePlayerSalaries, useTeams } from '@/hooks/usePlayerSalaries';
@@ -13,6 +13,13 @@ import { assessRoster, findTrades, type FinderPlayer, type FinderTeam } from '@/
 
 const num = (v: number) => v.toFixed(1);
 const signed = (v: number) => `${v >= 0 ? '+' : ''}${num(v)}`;
+const FinderLogo = ({ name, large = false }: { name: string; large?: boolean }) => {
+  const [failed, setFailed] = useState(false);
+  const url = getTeamLogo(name);
+  return <span className={`flex shrink-0 items-center justify-center rounded bg-secondary text-primary ${large ? 'h-12 w-12' : 'h-8 w-8'}`}>
+    {url && !failed ? <img src={url} alt={name} onError={() => setFailed(true)} className="h-full w-full object-contain" /> : <ShieldCheck className="h-5 w-5" aria-label={name} />}
+  </span>;
+};
 const TradeFinder = () => {
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
   const { data: salaries = [], isLoading: salariesLoading, isError } = usePlayerSalaries();
@@ -50,7 +57,7 @@ const TradeFinder = () => {
     </section>
     <div className="container mx-auto px-4 py-8">
       {loading ? <div className="flex items-center justify-center gap-3 py-20" role="status"><Loader2 className="h-6 w-6 animate-spin text-accent" />Assessing rosters…</div> : isError ? <p role="alert">Rosters could not be loaded. Please try again.</p> : !team?.roster.length ? <p className="py-12 text-muted-foreground">No active roster is available for this team.</p> : assessment && <>
-        <div className="mb-6 flex items-center gap-3"><TeamLogo teamName={team.name} size="lg" /><div><h2 className="font-display text-2xl font-semibold text-primary">{team.name}</h2><p className="text-sm text-muted-foreground">{team.roster.length} active-roster players · Week {startWeek} onward</p></div></div>
+        <div className="mb-6 flex items-center gap-3"><FinderLogo key={team.id} name={team.name} large /><div><h2 className="font-display text-2xl font-semibold text-primary">{team.name}</h2><p className="text-sm text-muted-foreground">{team.roster.length} active-roster players · Week {startWeek} onward</p></div></div>
         <div className="grid gap-5 border-y border-border py-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ['Weakest position', assessment.weakest, `${num(assessment.weakest.strength)} PPG · ${num(assessment.weakest.relative * 100)}% of league positional average`],
@@ -71,7 +78,7 @@ const TradeFinder = () => {
             const yourSalary = team.roster.reduce((v, p) => v + p.salary, 0) + s.salaryChange;
             const partnerSalary = s.partner.roster.reduce((v, p) => v + p.salary, 0) + s.partnerSalaryChange;
             return <article key={`${s.partner.id}-${i}`} className="rounded-md border border-border bg-card p-5">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><TeamLogo teamName={s.partner.name} /><h3 className="font-display text-xl font-semibold text-primary">{s.partner.name}</h3></div><span className={s.imbalance <= 2 ? 'text-win text-sm font-semibold' : 'text-muted-foreground text-sm'}>{num(s.imbalance)}% value gap{s.imbalance <= 2 ? ' · Ideal match' : ' · Wider match'}</span></div>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><FinderLogo name={s.partner.name} /><h3 className="font-display text-xl font-semibold text-primary">{s.partner.name}</h3></div><span className={s.imbalance <= 2 ? 'text-win text-sm font-semibold' : 'text-muted-foreground text-sm'}>{num(s.imbalance)}% value gap{s.imbalance <= 2 ? ' · Ideal match' : ' · Wider match'}</span></div>
               <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr]"><div><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">You send · {num(s.valueSent)} TV</p>{s.send.map(p => <div key={p.id} className="flex flex-wrap justify-between gap-2 py-1"><strong>{p.name} <span className="text-xs font-normal text-muted-foreground">{p.position}</span></strong><span className="text-sm text-muted-foreground">{num(p.value)} TV · ${num(p.salary)} in 2027</span></div>)}</div><ArrowLeftRight className="h-5 w-5 self-center text-accent" /><div><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">You receive · {num(s.valueReceived)} TV</p>{s.receive.map(p => <div key={p.id} className="flex flex-wrap justify-between gap-2 py-1"><strong>{p.name} <span className="text-xs font-normal text-muted-foreground">{p.position}</span></strong><span className="text-sm text-muted-foreground">{num(p.value)} TV · ${num(p.salary)} in 2027</span></div>)}</div></div>
               <div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-2"><div><p className="font-semibold">Your roster</p><p className="text-sm text-win">{signed(s.rosGain)} scheduled PPG · {signed(s.depthGain)} injury-cover PPG</p><p className="text-xs text-muted-foreground">2027 salary change: ${signed(s.salaryChange)}</p></div><div><p className="font-semibold">Partner’s roster</p><p className="text-sm text-win">{signed(s.partnerRosGain)} scheduled PPG · {signed(s.partnerDepthGain)} injury-cover PPG</p><p className="text-xs text-muted-foreground">2027 salary change: ${signed(s.partnerSalaryChange)}</p></div></div>
               <p className="mt-4 text-sm text-muted-foreground">You add {s.receive.map(p => p.position).filter((p, j, a) => a.indexOf(p) === j).join('/')} options; they add {s.send.map(p => p.position).filter((p, j, a) => a.indexOf(p) === j).join('/')} options. Your weakest position is {assessment.weakest.position}; theirs is {partnerReport.weakest.position}. The gains include injury returns, remaining byes and available opponent matchups.</p>
@@ -79,7 +86,7 @@ const TradeFinder = () => {
               <Button asChild variant="outline" className="mt-4"><Link to={`/trade-analyzer?${params}`}>Open in Trade Analyzer<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
             </article>;
           })}</div>}
-          <p className="mt-5 text-xs text-muted-foreground">Trade Value Chart values set exchange balance. Actual player averages drive scoring; projections fill missing averages. Injury cover is average output with any one starter missing. Equal-size one- and two-player deals avoid forced roster cuts; franchise-tagged and practice-squad players are excluded. Future cap concerns are flagged separately; scoring gains are not a guarantee of cap compliance. Wider matches are disclosed, never presented as within 2%.</p>
+          <p className="mt-5 text-xs text-muted-foreground">Trade Value Chart values set exchange balance. Actual player averages drive scoring; projections fill missing averages. Injury cover is average output with any one starter missing. Equal-size one- and two-player deals avoid forced roster cuts; franchise-tagged and practice-squad players are excluded. Future cap concerns are flagged separately; scoring gains are not a guarantee of cap compliance. Wider matches are disclosed, never presented as within 2%. Trade Analyzer retains its separate dynasty and projection-based grading, so its verdict may differ from these actual-average roster gains.</p>
         </section>
       </>}
     </div>

@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Add Trade Finder roster assessment and balanced, mutually beneficial suggestions
-- [ ] Connect GM Tools and Trade Analyzer; test rules and verify team selection and suggestions
+- [x] Add Trade Finder roster assessment and balanced, mutually beneficial suggestions
+- [x] Connect GM Tools and Trade Analyzer; test rules and verify team selection and suggestions
 
 - [x] Base future scoring on the best nine's actual player averages without past team-total calibration
 - [x] Verify revised championship odds, volatility and live Power Ranks
