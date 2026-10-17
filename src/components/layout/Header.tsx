@@ -80,7 +80,6 @@ const navLinks: NavItem[] = [
       { href: '/trade-value-chart', label: 'Trade Value Chart', description: 'Every player valued 0-100 by talent and contract' },
       { href: '/trade-analyzer', label: 'Trade Analyzer', description: 'Grade any trade for both sides' },
       { href: '/trade-finder', label: 'Trade Finder', description: 'Find balanced trades for complementary roster needs' },
-      { href: '/roast-my-team', label: 'Roast My Team', description: 'An honest verdict and a five-step turnaround plan' },
       { href: '/waiver-wire', label: 'Waiver Wire', description: 'Rank free agents and test a pickup' },
     ],
   },

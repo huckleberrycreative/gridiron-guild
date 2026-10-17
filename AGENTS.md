@@ -2,9 +2,7 @@
 
 - Best Salaries uses an isolated pure bestSalaries scoring-per-dollar model with observed PPG, explicit projection fallbacks and all forward contract years; join original salary records to exclude unknown starting contracts and infer missing later years with progression rather than shared repeated-cost fallbacks, without changing Trade Analyzer valuation.
 
-- Roast My Team reads representative modal seed-and-exit scenarios from an observational season-simulation callback that never changes random draws or shared odds; its sequential named trade plans use actual roster utility or shared cap-compliant dynasty strength, require a partner benefit and exclude unpaired tags so editorial advice does not change valuation.
-- Dynasty roster strength is exposed as a pure helper using the table’s age adjustments, cap cuts and strength formula so Roast trade plans measure the same next-year benchmark without rerunning odds for every candidate.
-- Dynasty table and Roast My Team share the pure dynastyRanks module with seeded simulations to keep reported dynasty positions reproducible across pages without altering the existing strength and cap formulas.
+- Dynasty table uses the pure dynastyRanks module with seeded simulations to keep reported dynasty positions reproducible without altering the existing strength and cap formulas.
 
 - Trade Finder uses a pure tradeFinder module with Trade Value Chart exchange values, directional received-versus-sent value targets and roster-aware weekly lineup gains; isolate search and assessment rules for deterministic testing without changing Trade Analyzer valuation.
 - Trade Finder applies submitted player IDs only to outgoing candidates, never to the retained roster; assigned Practice Squad players are selectable assets but count toward lineup utility only as active incoming additions, preventing protected-player and bench-strength distortions.
