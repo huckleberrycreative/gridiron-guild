@@ -238,7 +238,7 @@ export function usePowerRankRows(strengthModel: 'blended' | 'actual' = 'blended'
     };
   }, [salaries, standings, proj, strengthModel]);
 
-  const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number, realPpw: Record<string, number>, tvOf: (id: string) => number | undefined) => {
+  const compute = useCallback((list: { team: (typeof standings)[number]; roster: Asset[] }[], weeksPlayed: number, realPpw: Record<string, number>, tvOf: (id: string) => number | undefined, skipOdds = false) => {
     if (!list.length) return [];
     const base = list.map(({ team, roster }) => {
       const available = roster.filter((p) => !p.out);
@@ -308,6 +308,7 @@ export function usePowerRankRows(strengthModel: 'blended' | 'actual' = 'blended'
       };
     });
 
+    if (skipOdds) return scored.map((b) => ({ ...b, odds: undefined as any, weeksPlayed, risks: [] as any, weeklySd: undefined })).sort((a, b) => b.score - a.score || b.starterPpw - a.starterPpw);
     const simTeams: SimTeam[] = scored.map((b) => {
       if (strengthModel === 'actual') return actualRosterForecast(b.roster, b.team.id, b.team.totalPoints);
       const healthy = b.roster.map(p => ({ ...p, ppg: p.basePpg ?? p.ppg }));
@@ -349,7 +350,7 @@ export function usePowerRankRows(strengthModel: 'blended' | 'actual' = 'blended'
 
   /** Re-run Power Ranks with one team's roster changed (drop ids, add assets). */
   const whatIf = useCallback(
-    (teamId: string, dropIds: Set<string>, adds: Asset[]) => {
+    (teamId: string, dropIds: Set<string>, adds: Asset[], skipOdds = false) => {
       const list = input.list.map((t) =>
         t.team.id === teamId ? { ...t, roster: [...t.roster.filter((p) => !dropIds.has(p.id)), ...adds] } : t
       );
@@ -358,7 +359,7 @@ export function usePowerRankRows(strengthModel: 'blended' | 'actual' = 'blended'
       const after = list.find((t) => t.team.id === teamId);
       const real = { ...lineupPpw };
       if (before && after && real[teamId] != null) real[teamId] += sum(after.roster) - sum(before.roster);
-      return compute(list, input.weeksPlayed, real, tvOf);
+      return compute(list, input.weeksPlayed, real, tvOf, skipOdds);
     },
     [compute, input, lineupPpw, tvOf]
   );
