@@ -384,7 +384,7 @@ const WaiverWire = () => {
                     {l}
                   </button>
                 ))}
-                <span className="ml-auto text-xs text-muted-foreground pr-2">{tableRows.length} available</span>
+                <span className="ml-auto text-xs text-muted-foreground pr-2">{teamId ? `Top ${impact.length} upgrades for your team` : `${tableRows.length} available`}</span>
               </div>
               {loading ? (
                 <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground" /></div>
