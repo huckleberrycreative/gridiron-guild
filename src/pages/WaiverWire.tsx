@@ -192,7 +192,7 @@ const WaiverWire = () => {
           rankDelta: before - idx,
           newRank: idx + 1,
           lineupDelta: row.starterPpw - oldRow.starterPpw,
-          champDelta: ((row as any).odds?.champion ?? 0) - ((oldRow as any).odds?.champion ?? 0),
+          champDelta: ((row as any).odds?.champ ?? 0) - ((oldRow as any).odds?.champ ?? 0),
         };
       })
       .filter((r) => r.gradeDelta > 0.05 || r.lineupDelta > 0.05)
