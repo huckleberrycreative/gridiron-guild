@@ -56,7 +56,7 @@ const TradeFinder = () => {
   const [selected, setSelected] = useState('');
   const [upgrade, setUpgrade] = useState('1');
   const [strategy, setStrategy] = useState<TradeStrategy>('balanced');
-  const [protectedIds, setProtectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [submission, setSubmission] = useState<{ teamId: string; upgrade: number; playerIds: Set<string>; strategy: TradeStrategy } | null>(null);
   const [suggestions, setSuggestions] = useState<StrategicTrade[]>([]);
   const [searching, setSearching] = useState(false);
@@ -94,18 +94,22 @@ const TradeFinder = () => {
   }, [team, league, startWeek, schedule, submission]);
   const changeTeam = (id: string) => {
     setSelected(id);
-    setProtectedIds(new Set());
+    setSelectedIds(new Set());
     setSubmission(null);
   };
   const togglePlayer = (id: string, checked: boolean) => {
-    setProtectedIds(previous => {
+    setSelectedIds(previous => {
       const next = new Set(previous);
-      if (checked) next.delete(id); else next.add(id);
+      if (checked) next.add(id); else next.delete(id);
       return next;
     });
     setSubmission(null);
   };
-  const eligibleCount = team?.roster.filter(p => !protectedIds.has(p.id)).length ?? 0;
+  const setAllPlayers = (selected: boolean) => {
+    setSelectedIds(() => selected ? new Set(team?.roster.map(p => p.id) ?? []) : new Set());
+    setSubmission(null);
+  };
+  const selectedCount = team?.roster.filter(p => selectedIds.has(p.id)).length ?? 0;
   const loading = teamsLoading || salariesLoading || valuesLoading || standingsLoading;
   return <Layout>
     <section className="border-b border-border bg-secondary">
@@ -145,22 +149,26 @@ const TradeFinder = () => {
       {selected && (loading ? <div className="flex items-center justify-center gap-3 py-20" role="status"><Loader2 className="h-5 w-5 animate-spin text-accent" />Loading roster…</div> : isError ? <p role="alert">Rosters could not be loaded. Please try again.</p> : !team?.roster.length ? <p className="text-muted-foreground">No roster is available for this team.</p> : <>
         <form className="mb-7 border-b border-border pb-6" onSubmit={event => {
           event.preventDefault();
-          setSubmission({ teamId: team.id, upgrade: Number(upgrade), playerIds: new Set(team.roster.filter(p => !protectedIds.has(p.id)).map(p => p.id)), strategy });
+          setSubmission({ teamId: team.id, upgrade: Number(upgrade), playerIds: new Set(team.roster.filter(p => selectedIds.has(p.id)).map(p => p.id)), strategy });
         }}>
-          <div className="mb-5 flex items-center gap-3"><FinderLogo key={team.id} name={team.name} /><h2 className="font-display text-xl font-semibold text-primary">Players available to trade</h2></div>
+          <div className="mb-5 flex items-center gap-3"><FinderLogo key={team.id} name={team.name} /><h2 className="font-display text-xl font-semibold text-primary">Players you're trying to trade</h2></div>
           <div className="space-y-5">{[{ label: 'Roster', practiceSquad: false }, { label: 'Practice Squad', practiceSquad: true }].map(group => {
             const players = team.roster.filter(p => Boolean(p.practiceSquad) === group.practiceSquad);
             return <fieldset key={group.label}>
               <legend className="mb-3 text-xs font-semibold uppercase text-muted-foreground">{group.label} · {players.length}</legend>
               {players.length ? <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{players.map(player => <label key={player.id} className="flex min-w-0 cursor-pointer items-center gap-3 rounded py-2">
-                <Checkbox aria-label={player.name} checked={!protectedIds.has(player.id)} onCheckedChange={checked => togglePlayer(player.id, checked === true)} />
+                <Checkbox aria-label={player.name} checked={selectedIds.has(player.id)} onCheckedChange={checked => togglePlayer(player.id, checked === true)} />
                 <span className="min-w-0 break-words text-sm font-medium">{player.name} <span className="text-xs font-normal text-muted-foreground">{player.position}</span></span>
               </label>)}</div> : <p className="text-sm text-muted-foreground">No Practice Squad players.</p>}
             </fieldset>;
           })}</div>
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">{eligibleCount} available · {team.roster.length - eligibleCount} protected</p>
-            <Button type="submit" disabled={!eligibleCount || searching}>{searching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}Submit</Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setAllPlayers(true)}>Select all</Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setAllPlayers(false)}>Deselect all</Button>
+              <p className="text-xs text-muted-foreground">{selectedCount} selected · {team.roster.length - selectedCount} not selected</p>
+            </div>
+            <Button type="submit" disabled={!selectedCount || searching}>{searching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}Submit</Button>
           </div>
         </form>
         {submission && (searching ? <div className="flex items-center gap-3 py-8 text-sm text-muted-foreground" role="status"><Loader2 className="h-5 w-5 animate-spin" />Comparing championship paths…</div> : searchError ? <p role="alert">{searchError}</p> : <>
