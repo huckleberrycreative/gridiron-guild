@@ -151,6 +151,56 @@ const WaiverWire = () => {
 
   const picked = tableRows.find((r) => r.key === pick) ?? null;
 
+  const toAsset = (p: (typeof tableRows)[number]): Asset => ({
+    id: `espn-${p.espnId}`,
+    name: p.name,
+    position: p.position,
+    ppg: (proj[normalize(p.name)] ?? p.ppg ?? p.avgPpg ?? 0) * (INJURY_MULTIPLIER[p.injuryStatus] ?? 1),
+    projected: true,
+    injuryStatus: p.injuryStatus,
+    weeksOut: OUT_STATUSES.includes(p.injuryStatus) ? 1 : 0,
+    out: OUT_STATUSES.includes(p.injuryStatus),
+    nflTeam: p.proTeam || null,
+  });
+
+  // Top 10 free agents ranked by how much they raise this team's Power Rank grade.
+  const impact = useMemo(() => {
+    if (!teamId || !myRoster.length) return [];
+    const before = prRows.findIndex((r) => r.team.id === teamId);
+    if (before < 0) return [];
+    const oldRow = prRows[before];
+    const kept = myRoster.filter((p) => !drops.has(p.id) && !p.out);
+    const base = bestLineup(kept).reduce((s, p) => s + p.ppg, 0);
+    // Cheap pre-screen by lineup gain + long-term value, then run the full Power Ranks model on the shortlist.
+    const screened = tableRows
+      .map((p) => {
+        const a = toAsset(p);
+        const gain = a.out ? 0 : bestLineup([...kept, a]).reduce((s, x) => s + x.ppg, 0) - base;
+        return { p, a, pre: gain * 3 + p.value / 10 };
+      })
+      .sort((x, y) => y.pre - x.pre)
+      .slice(0, 18);
+    return screened
+      .map(({ p, a }) => {
+        const after = whatIf(teamId, drops, [a]);
+        const idx = after.findIndex((r) => r.team.id === teamId);
+        const row = after[idx];
+        return {
+          p,
+          gradeDelta: (row.rawScore ?? row.score) - (oldRow.rawScore ?? oldRow.score),
+          newGrade: row.score,
+          rankDelta: before - idx,
+          newRank: idx + 1,
+          lineupDelta: row.starterPpw - oldRow.starterPpw,
+          champDelta: ((row as any).odds?.champ ?? 0) - ((oldRow as any).odds?.champ ?? 0),
+        };
+      })
+      .filter((r) => r.gradeDelta > 0.05 || r.lineupDelta > 0.05)
+      .sort((x, y) => y.gradeDelta - x.gradeDelta || y.lineupDelta - x.lineupDelta)
+      .slice(0, 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamId, myRoster, drops, prRows, tableRows, whatIf, proj]);
+
   const result = useMemo(() => {
     if (!teamId || !picked) return null;
     const before = prRows.findIndex((r) => r.team.id === teamId);
@@ -334,12 +384,58 @@ const WaiverWire = () => {
                     {l}
                   </button>
                 ))}
-                <span className="ml-auto text-xs text-muted-foreground pr-2">{tableRows.length} available</span>
+                <span className="ml-auto text-xs text-muted-foreground pr-2">{teamId ? `Top ${impact.length} upgrades for your team` : `${tableRows.length} available`}</span>
               </div>
               {loading ? (
                 <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground" /></div>
               ) : error ? (
                 <p className="p-6 text-center text-sm text-destructive">Couldn't reach ESPN right now. Try again in a minute.</p>
+              ) : teamId ? (
+                <div className="max-h-[640px] overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground border-b border-border uppercase">
+                      <tr>
+                        <th className="px-2 py-2 text-left">#</th>
+                        <th className="px-2 py-2 text-left">Player</th>
+                        <th className="px-2 py-2 text-right">Grade +</th>
+                        <th className="px-2 py-2 text-right">Rank</th>
+                        <th className="px-2 py-2 text-right">Lineup /wk</th>
+                        <th className="px-2 py-2 text-right">Title Odds</th>
+                        <th className="px-2 py-2 text-right">Value</th>
+                        <th className="px-2 py-2 text-right">Proj PPG</th>
+                        <th className="px-2 py-2 text-right">This Wk</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {impact.map((r, i) => {
+                        const p = r.p;
+                        const sign = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}`;
+                        return (
+                          <tr key={p.key} onClick={() => setPick(p.key)}
+                            className={cn('cursor-pointer', pick === p.key ? 'bg-primary/10' : 'hover:bg-muted/50')}>
+                            <td className="px-2 py-1.5 font-mono font-bold">{i + 1}</td>
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-2 whitespace-nowrap">
+                                <span className={cn('inline-flex w-7 justify-center rounded text-[10px] font-bold border shrink-0', posColors[p.position])}>{p.position}</span>
+                                <span className="font-medium">{p.name}</span>
+                                <span className="text-[11px] text-muted-foreground">{p.proTeam}</span>
+                                {p.injuryStatus !== 'healthy' && <span className="rounded px-1 text-[9px] font-bold border bg-amber-100 text-amber-700 border-amber-200">{injLabel[p.injuryStatus] ?? p.injuryStatus}</span>}
+                              </div>
+                            </td>
+                            <td className="px-2 py-1.5 text-right font-mono font-bold tabular-nums text-emerald-600">{sign(r.gradeDelta)}</td>
+                            <td className={cn('px-2 py-1.5 text-right font-mono tabular-nums', r.rankDelta > 0 ? 'text-emerald-600' : 'text-muted-foreground')}>#{r.newRank}{r.rankDelta ? ` (${r.rankDelta > 0 ? '+' : ''}${r.rankDelta})` : ''}</td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{sign(r.lineupDelta)}</td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{sign(r.champDelta)}%</td>
+                            <td className="px-2 py-1.5 text-right"><span className={cn('rounded px-1.5 text-[11px] font-bold tabular-nums', valueTone(p.value))}>{p.value}</span></td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{f1(p.ppg)}</td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{f1(p.weekProj)}</td>
+                          </tr>
+                        );
+                      })}
+                      {!impact.length && <tr><td colSpan={9} className="p-6 text-center text-sm text-muted-foreground">No available player improves this team right now.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <div className="max-h-[640px] overflow-y-auto">
                   <table className="w-full text-sm">
