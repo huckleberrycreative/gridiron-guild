@@ -151,6 +151,56 @@ const WaiverWire = () => {
 
   const picked = tableRows.find((r) => r.key === pick) ?? null;
 
+  const toAsset = (p: (typeof tableRows)[number]): Asset => ({
+    id: `espn-${p.espnId}`,
+    name: p.name,
+    position: p.position,
+    ppg: (proj[normalize(p.name)] ?? p.ppg ?? p.avgPpg ?? 0) * (INJURY_MULTIPLIER[p.injuryStatus] ?? 1),
+    projected: true,
+    injuryStatus: p.injuryStatus,
+    weeksOut: OUT_STATUSES.includes(p.injuryStatus) ? 1 : 0,
+    out: OUT_STATUSES.includes(p.injuryStatus),
+    nflTeam: p.proTeam || null,
+  });
+
+  // Top 10 free agents ranked by how much they raise this team's Power Rank grade.
+  const impact = useMemo(() => {
+    if (!teamId || !myRoster.length) return [];
+    const before = prRows.findIndex((r) => r.team.id === teamId);
+    if (before < 0) return [];
+    const oldRow = prRows[before];
+    const kept = myRoster.filter((p) => !drops.has(p.id) && !p.out);
+    const base = bestLineup(kept).reduce((s, p) => s + p.ppg, 0);
+    // Cheap pre-screen by lineup gain + long-term value, then run the full Power Ranks model on the shortlist.
+    const screened = tableRows
+      .map((p) => {
+        const a = toAsset(p);
+        const gain = a.out ? 0 : bestLineup([...kept, a]).reduce((s, x) => s + x.ppg, 0) - base;
+        return { p, a, pre: gain * 3 + p.value / 10 };
+      })
+      .sort((x, y) => y.pre - x.pre)
+      .slice(0, 18);
+    return screened
+      .map(({ p, a }) => {
+        const after = whatIf(teamId, drops, [a]);
+        const idx = after.findIndex((r) => r.team.id === teamId);
+        const row = after[idx];
+        return {
+          p,
+          gradeDelta: (row.rawScore ?? row.score) - (oldRow.rawScore ?? oldRow.score),
+          newGrade: row.score,
+          rankDelta: before - idx,
+          newRank: idx + 1,
+          lineupDelta: row.starterPpw - oldRow.starterPpw,
+          champDelta: ((row as any).odds?.champion ?? 0) - ((oldRow as any).odds?.champion ?? 0),
+        };
+      })
+      .filter((r) => r.gradeDelta > 0.05 || r.lineupDelta > 0.05)
+      .sort((x, y) => y.gradeDelta - x.gradeDelta || y.lineupDelta - x.lineupDelta)
+      .slice(0, 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamId, myRoster, drops, prRows, tableRows, whatIf, proj]);
+
   const result = useMemo(() => {
     if (!teamId || !picked) return null;
     const before = prRows.findIndex((r) => r.team.id === teamId);
