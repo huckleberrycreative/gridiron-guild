@@ -182,7 +182,7 @@ const WaiverWire = () => {
       .slice(0, 18);
     return screened
       .map(({ p, a }) => {
-        const after = whatIf(teamId, drops, [a]);
+        const after = whatIf(teamId, drops, [a], true);
         const idx = after.findIndex((r) => r.team.id === teamId);
         const row = after[idx];
         return {
@@ -192,7 +192,6 @@ const WaiverWire = () => {
           rankDelta: before - idx,
           newRank: idx + 1,
           lineupDelta: row.starterPpw - oldRow.starterPpw,
-          champDelta: ((row as any).odds?.champ ?? 0) - ((oldRow as any).odds?.champ ?? 0),
         };
       })
       .filter((r) => r.gradeDelta > 0.05 || r.lineupDelta > 0.05)
@@ -400,7 +399,6 @@ const WaiverWire = () => {
                         <th className="px-2 py-2 text-right">Grade +</th>
                         <th className="px-2 py-2 text-right">Rank</th>
                         <th className="px-2 py-2 text-right">Lineup /wk</th>
-                        <th className="px-2 py-2 text-right">Title Odds</th>
                         <th className="px-2 py-2 text-right">Value</th>
                         <th className="px-2 py-2 text-right">Proj PPG</th>
                         <th className="px-2 py-2 text-right">This Wk</th>
@@ -425,14 +423,13 @@ const WaiverWire = () => {
                             <td className="px-2 py-1.5 text-right font-mono font-bold tabular-nums text-emerald-600">{sign(r.gradeDelta)}</td>
                             <td className={cn('px-2 py-1.5 text-right font-mono tabular-nums', r.rankDelta > 0 ? 'text-emerald-600' : 'text-muted-foreground')}>#{r.newRank}{r.rankDelta ? ` (${r.rankDelta > 0 ? '+' : ''}${r.rankDelta})` : ''}</td>
                             <td className="px-2 py-1.5 text-right font-mono tabular-nums">{sign(r.lineupDelta)}</td>
-                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{sign(r.champDelta)}%</td>
                             <td className="px-2 py-1.5 text-right"><span className={cn('rounded px-1.5 text-[11px] font-bold tabular-nums', valueTone(p.value))}>{p.value}</span></td>
                             <td className="px-2 py-1.5 text-right font-mono tabular-nums">{f1(p.ppg)}</td>
                             <td className="px-2 py-1.5 text-right font-mono tabular-nums">{f1(p.weekProj)}</td>
                           </tr>
                         );
                       })}
-                      {!impact.length && <tr><td colSpan={9} className="p-6 text-center text-sm text-muted-foreground">No available player improves this team right now.</td></tr>}
+                      {!impact.length && <tr><td colSpan={8} className="p-6 text-center text-sm text-muted-foreground">No available player improves this team right now.</td></tr>}
                     </tbody>
                   </table>
                 </div>
