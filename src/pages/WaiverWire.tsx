@@ -390,6 +390,52 @@ const WaiverWire = () => {
                 <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground" /></div>
               ) : error ? (
                 <p className="p-6 text-center text-sm text-destructive">Couldn't reach ESPN right now. Try again in a minute.</p>
+              ) : teamId ? (
+                <div className="max-h-[640px] overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground border-b border-border uppercase">
+                      <tr>
+                        <th className="px-2 py-2 text-left">#</th>
+                        <th className="px-2 py-2 text-left">Player</th>
+                        <th className="px-2 py-2 text-right">Grade +</th>
+                        <th className="px-2 py-2 text-right">Rank</th>
+                        <th className="px-2 py-2 text-right">Lineup /wk</th>
+                        <th className="px-2 py-2 text-right">Title Odds</th>
+                        <th className="px-2 py-2 text-right">Value</th>
+                        <th className="px-2 py-2 text-right">Proj PPG</th>
+                        <th className="px-2 py-2 text-right">This Wk</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {impact.map((r, i) => {
+                        const p = r.p;
+                        const sign = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}`;
+                        return (
+                          <tr key={p.key} onClick={() => setPick(p.key)}
+                            className={cn('cursor-pointer', pick === p.key ? 'bg-primary/10' : 'hover:bg-muted/50')}>
+                            <td className="px-2 py-1.5 font-mono font-bold">{i + 1}</td>
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-2 whitespace-nowrap">
+                                <span className={cn('inline-flex w-7 justify-center rounded text-[10px] font-bold border shrink-0', posColors[p.position])}>{p.position}</span>
+                                <span className="font-medium">{p.name}</span>
+                                <span className="text-[11px] text-muted-foreground">{p.proTeam}</span>
+                                {p.injuryStatus !== 'healthy' && <span className="rounded px-1 text-[9px] font-bold border bg-amber-100 text-amber-700 border-amber-200">{injLabel[p.injuryStatus] ?? p.injuryStatus}</span>}
+                              </div>
+                            </td>
+                            <td className="px-2 py-1.5 text-right font-mono font-bold tabular-nums text-emerald-600">{sign(r.gradeDelta)}</td>
+                            <td className={cn('px-2 py-1.5 text-right font-mono tabular-nums', r.rankDelta > 0 ? 'text-emerald-600' : 'text-muted-foreground')}>#{r.newRank}{r.rankDelta ? ` (${r.rankDelta > 0 ? '+' : ''}${r.rankDelta})` : ''}</td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{sign(r.lineupDelta)}</td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{sign(r.champDelta)}%</td>
+                            <td className="px-2 py-1.5 text-right"><span className={cn('rounded px-1.5 text-[11px] font-bold tabular-nums', valueTone(p.value))}>{p.value}</span></td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{f1(p.ppg)}</td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums">{f1(p.weekProj)}</td>
+                          </tr>
+                        );
+                      })}
+                      {!impact.length && <tr><td colSpan={9} className="p-6 text-center text-sm text-muted-foreground">No available player improves this team right now.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <div className="max-h-[640px] overflow-y-auto">
                   <table className="w-full text-sm">
