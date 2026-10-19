@@ -455,10 +455,7 @@ Deno.serve(async (req) => {
       }
       const projRows: any[] = [];
       for (const m of league.schedule ?? []) {
-        if (m.matchupPeriodId !== curPeriod || m.winner !== 'UNDECIDED' || finalWeeks.has(curPeriod)) {
-          if (m.matchupPeriodId === curPeriod) console.log('dbg skip matchup', m.id, 'winner', m.winner, 'home', m.home?.teamId, 'away', m.away?.teamId);
-          continue;
-        }
+        if (m.matchupPeriodId !== curPeriod || m.winner !== 'UNDECIDED' || finalWeeks.has(curPeriod)) continue;
         for (const side of [m.home, m.away]) {
           if (!side) continue;
           const teamId = teamIdByEspn.get(side.teamId);
