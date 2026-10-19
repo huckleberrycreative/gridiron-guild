@@ -491,7 +491,6 @@ Deno.serve(async (req) => {
         for (const [espnId, teamId] of teamIdByEspn) {
           if (covered.has(teamId)) continue;
           const projected = rosterProj.get(espnId) || seasonAvg(teamId);
-          console.log('dbg fallback', espnId, teamId, 'rosterProj', rosterProj.get(espnId), 'seasonAvg', seasonAvg(teamId));
           if (!projected) continue;
           projRows.push({ season_year: SEASON, week: curPeriod, team_id: teamId, projected, live_score: null, updated_at: new Date().toISOString() });
         }
