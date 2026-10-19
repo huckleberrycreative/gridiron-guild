@@ -472,9 +472,6 @@ Deno.serve(async (req) => {
       if (!finalWeeks.has(curPeriod)) {
         const covered = new Set(projRows.map((r) => r.team_id));
         for (const [espnId, teamId] of teamIdByEspn) {
-          if (!covered.has(teamId)) console.log('proj-miss', espnId, teamId, 'rosterProj=', rosterProj.get(espnId));
-        }
-        for (const [espnId, teamId] of teamIdByEspn) {
           if (covered.has(teamId)) continue;
           const projected = rosterProj.get(espnId) ?? 0;
           if (!projected) continue;
