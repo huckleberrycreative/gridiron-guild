@@ -441,8 +441,14 @@ Deno.serve(async (req) => {
         for (const entry of t.roster?.entries ?? []) {
           if ([20, 21].includes(entry.lineupSlotId)) continue;
           const stats: any[] = entry.playerPoolEntry?.player?.stats ?? [];
-          const act = stats.find((s) => s.statSourceId === 0 && s.statSplitTypeId === 1 && s.scoringPeriodId === scoringPeriod);
-          const prj = stats.find((s) => s.statSourceId === 1 && s.statSplitTypeId === 1 && s.scoringPeriodId === scoringPeriod);
+          const weekly = stats.filter((s) => s.statSplitTypeId === 1);
+          const nearest = (sourceId: number) =>
+            weekly.find((s) => s.statSourceId === sourceId && s.scoringPeriodId === scoringPeriod) ??
+            weekly
+              .filter((s) => s.statSourceId === sourceId && s.scoringPeriodId <= scoringPeriod)
+              .sort((a, b) => b.scoringPeriodId - a.scoringPeriodId)[0];
+          const act = nearest(0);
+          const prj = nearest(1);
           sum += act && (act.appliedTotal ?? 0) !== 0 ? act.appliedTotal : (prj?.appliedTotal ?? 0);
         }
         rosterProj.set(t.id, sum);
@@ -458,6 +464,35 @@ Deno.serve(async (req) => {
           const live = side.totalPointsLive ?? side.totalPoints ?? null;
           if (!projected) continue;
           projRows.push({ season_year: SEASON, week: curPeriod, team_id: teamId, projected, live_score: live, updated_at: new Date().toISOString() });
+        }
+      }
+      // Fill in any mapped team missing from the schedule (bye, final matchup, or
+      // ESPN omitting live projections) using the roster-based fallback so all ten
+      // franchises appear in the projected grid.
+      if (!finalWeeks.has(curPeriod)) {
+        const covered = new Set(projRows.map((r) => r.team_id));
+        // Season-average fallback for teams ESPN omits from the roster/scoreboard
+        // payload (empty roster entries and no live projection).
+        const { data: seasonScores } = await admin
+          .from('weekly_scores')
+          .select('team_id, score')
+          .eq('season_year', SEASON);
+        const avgByTeam = new Map<string, number>();
+        for (const r of seasonScores ?? []) {
+          const agg = avgByTeam.get(r.team_id);
+          const scores = (agg as any)?.scores ?? [];
+          scores.push(Number(r.score));
+          avgByTeam.set(r.team_id, scores as any);
+        }
+        const seasonAvg = (teamId: string) => {
+          const scores = (avgByTeam.get(teamId) as any as number[]) ?? [];
+          return scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        };
+        for (const [espnId, teamId] of teamIdByEspn) {
+          if (covered.has(teamId)) continue;
+          const projected = rosterProj.get(espnId) || seasonAvg(teamId);
+          if (!projected) continue;
+          projRows.push({ season_year: SEASON, week: curPeriod, team_id: teamId, projected, live_score: null, updated_at: new Date().toISOString() });
         }
       }
       // Clear stale projections (finished weeks) then save current
