@@ -58,10 +58,9 @@ export const RIVALRY_WEEKS: Record<number, string[]> = {
   ],
 };
 
-/** Standings points for a team's weekly finish, honoring legacy Week 1 and rivalry weeks. */
+/** Standings points for a team's weekly finish, honoring rivalry weeks. */
 export const weeklyPoints = (week: number, teamId: string, place: number, fieldSize: number) => {
   const rivalry = RIVALRY_WEEKS[week];
   if (rivalry) return rivalry.includes(teamId) ? RIVALRY_WIN_POINTS : 0;
-  if (week === 1) return LEGACY_WEEK1_FINISH_POINTS[place] ?? 1;
   return pointsForFinish(place, fieldSize);
 };
