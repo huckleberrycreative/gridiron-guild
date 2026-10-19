@@ -33,9 +33,6 @@ export const useWeeklyScores = (seasonYear: number = SEASON_YEAR) =>
 // Points awarded by weekly finish: 1st = 20 ... 10th = 0
 export const WEEKLY_FINISH_POINTS = [20, 18, 16, 14, 8, 4, 3, 2, 1, 0];
 
-// 2026 Week 1 was played under the original scoring system (5th = 12 ... 10th = 1);
-// the new system takes effect Week 2.
-export const LEGACY_WEEK1_FINISH_POINTS = [20, 18, 16, 14, 12, 5, 4, 3, 2, 1];
 
 export const pointsForFinish = (place: number, fieldSize: number) => {
   if (fieldSize >= 10) return WEEKLY_FINISH_POINTS[place] ?? 0;
@@ -61,10 +58,9 @@ export const RIVALRY_WEEKS: Record<number, string[]> = {
   ],
 };
 
-/** Standings points for a team's weekly finish, honoring legacy Week 1 and rivalry weeks. */
+/** Standings points for a team's weekly finish, honoring rivalry weeks. */
 export const weeklyPoints = (week: number, teamId: string, place: number, fieldSize: number) => {
   const rivalry = RIVALRY_WEEKS[week];
   if (rivalry) return rivalry.includes(teamId) ? RIVALRY_WIN_POINTS : 0;
-  if (week === 1) return LEGACY_WEEK1_FINISH_POINTS[place] ?? 1;
   return pointsForFinish(place, fieldSize);
 };
