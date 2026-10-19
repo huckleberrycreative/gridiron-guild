@@ -438,10 +438,6 @@ Deno.serve(async (req) => {
       const rosterProj = new Map<number, number>();
       for (const t of league.teams ?? []) {
         let sum = 0;
-        if (t.id === 5) {
-          const e0 = (t.roster?.entries ?? [])[0];
-          console.log('dbg t5 entries', (t.roster?.entries ?? []).length, 'stats', JSON.stringify((e0?.playerPoolEntry?.player?.stats ?? []).map((s: any) => [s.scoringPeriodId, s.statSourceId, s.statSplitTypeId, s.appliedTotal])), 'sp', scoringPeriod, 'cur', curPeriod);
-        }
         for (const entry of t.roster?.entries ?? []) {
           if ([20, 21].includes(entry.lineupSlotId)) continue;
           const stats: any[] = entry.playerPoolEntry?.player?.stats ?? [];
