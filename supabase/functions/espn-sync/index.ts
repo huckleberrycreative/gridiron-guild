@@ -471,9 +471,26 @@ Deno.serve(async (req) => {
       // franchises appear in the projected grid.
       if (!finalWeeks.has(curPeriod)) {
         const covered = new Set(projRows.map((r) => r.team_id));
+        // Season-average fallback for teams ESPN omits from the roster/scoreboard
+        // payload (empty roster entries and no live projection).
+        const { data: seasonScores } = await admin
+          .from('weekly_scores')
+          .select('team_id, score')
+          .eq('season_year', SEASON);
+        const avgByTeam = new Map<string, number>();
+        for (const r of seasonScores ?? []) {
+          const agg = avgByTeam.get(r.team_id);
+          const scores = (agg as any)?.scores ?? [];
+          scores.push(Number(r.score));
+          avgByTeam.set(r.team_id, scores as any);
+        }
+        const seasonAvg = (teamId: string) => {
+          const scores = (avgByTeam.get(teamId) as any as number[]) ?? [];
+          return scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        };
         for (const [espnId, teamId] of teamIdByEspn) {
           if (covered.has(teamId)) continue;
-          const projected = rosterProj.get(espnId) ?? 0;
+          const projected = rosterProj.get(espnId) || seasonAvg(teamId);
           if (!projected) continue;
           projRows.push({ season_year: SEASON, week: curPeriod, team_id: teamId, projected, live_score: null, updated_at: new Date().toISOString() });
         }
