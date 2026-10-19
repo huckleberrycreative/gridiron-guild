@@ -215,7 +215,7 @@ const Season2026 = () => {
                               )}
                             >
                               <span className="absolute top-0.5 right-1 text-[9px] font-semibold opacity-80">
-                                {cell.points}
+                                {isProj ? `${cell.points} pts` : cell.points}
                               </span>
                               {cell.score.toFixed(1)}
                               {isProj && live != null && (

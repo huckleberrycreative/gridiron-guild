@@ -460,6 +460,18 @@ Deno.serve(async (req) => {
           projRows.push({ season_year: SEASON, week: curPeriod, team_id: teamId, projected, live_score: live, updated_at: new Date().toISOString() });
         }
       }
+      // Fill in any mapped team missing from the schedule (bye, final matchup, or
+      // ESPN omitting live projections) using the roster-based fallback so all ten
+      // franchises appear in the projected grid.
+      if (!finalWeeks.has(curPeriod)) {
+        const covered = new Set(projRows.map((r) => r.team_id));
+        for (const [espnId, teamId] of teamIdByEspn) {
+          if (covered.has(teamId)) continue;
+          const projected = rosterProj.get(espnId) ?? 0;
+          if (!projected) continue;
+          projRows.push({ season_year: SEASON, week: curPeriod, team_id: teamId, projected, live_score: null, updated_at: new Date().toISOString() });
+        }
+      }
       // Clear stale projections (finished weeks) then save current
       await admin.from('projected_weekly_scores').delete().eq('season_year', SEASON).neq('week', projRows.length ? curPeriod : -1);
       if (projRows.length) {
