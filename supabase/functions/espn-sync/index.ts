@@ -441,8 +441,14 @@ Deno.serve(async (req) => {
         for (const entry of t.roster?.entries ?? []) {
           if ([20, 21].includes(entry.lineupSlotId)) continue;
           const stats: any[] = entry.playerPoolEntry?.player?.stats ?? [];
-          const act = stats.find((s) => s.statSourceId === 0 && s.statSplitTypeId === 1 && s.scoringPeriodId === scoringPeriod);
-          const prj = stats.find((s) => s.statSourceId === 1 && s.statSplitTypeId === 1 && s.scoringPeriodId === scoringPeriod);
+          const weekly = stats.filter((s) => s.statSplitTypeId === 1);
+          const nearest = (sourceId: number) =>
+            weekly.find((s) => s.statSourceId === sourceId && s.scoringPeriodId === scoringPeriod) ??
+            weekly
+              .filter((s) => s.statSourceId === sourceId && s.scoringPeriodId <= scoringPeriod)
+              .sort((a, b) => b.scoringPeriodId - a.scoringPeriodId)[0];
+          const act = nearest(0);
+          const prj = nearest(1);
           sum += act && (act.appliedTotal ?? 0) !== 0 ? act.appliedTotal : (prj?.appliedTotal ?? 0);
         }
         rosterProj.set(t.id, sum);
