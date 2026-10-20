@@ -87,7 +87,6 @@ export default function EspnSync() {
           'teams',
           'standings',
           'active-season-standings',
-          'projected-scores',
         ].forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       }
     } catch (e: any) {

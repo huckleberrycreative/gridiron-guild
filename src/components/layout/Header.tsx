@@ -39,7 +39,7 @@ function EspnRefreshButton({
         title: 'Rosters refreshed',
         description: `${data?.teamsSynced ?? 0} teams updated from ESPN.`,
       });
-      ['player-salaries', 'injury-rows', 'weekly-scores', 'teams', 'standings','active-season-standings'].forEach((k) =>
+      ['player-salaries', 'injury-rows', 'weekly-scores', 'weekly-scores-admin', 'teams', 'standings', 'active-season-standings'].forEach((k) =>
         queryClient.invalidateQueries({ queryKey: [k] })
       );
     } catch (e: any) {
