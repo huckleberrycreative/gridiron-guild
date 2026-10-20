@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Derive admin standings from weekly scores (top 4 W, 5th T, rest L) and refresh everywhere after ESPN sync
+- [x] Add explicit Save button to admin Weekly Scores; test derivation rules and verify the live save flow
+
 - [x] Give the Fanatics a −10 Power Ranks deduction that opens their own Hexed poster
 - [x] Delete Roast My Team page, its modules and tests, and all navigation, routing and SEO wiring
 - [x] Replace Roast season outlook with representative Power Ranks simulation scenarios

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { weeklyPoints, RIVALRY_WEEKS } from '@/hooks/useWeeklyScores';
+import { deriveStandings } from '@/lib/standingsFromScores';
 
 export interface TeamWithStandings {
   id: string;
@@ -104,58 +104,20 @@ export function useActiveSeasonStandings(includeProjected = false) {
 
       // Derive standings from entered weekly scores when available
       if (weekly && weekly.length > 0) {
-        const byWeek = new Map<number, { teamId: string; score: number }[]>();
-        weekly.forEach((r: any) => {
-          const list = byWeek.get(r.week) || [];
-          list.push({ teamId: r.team_id, score: Number(r.score) });
-          byWeek.set(r.week, list);
-        });
-
-        const totals = new Map<
-          string,
-          { points: number; pf: number; wins: number; losses: number; ties: number; weeks: number }
-        >();
-
-        Array.from(byWeek.entries())
-          .sort((a, b) => a[0] - b[0])
-          .forEach(([week, rows]) => {
-            const ordered = [...rows].sort((a, b) => b.score - a.score);
-            const fieldSize = ordered.length;
-            ordered.forEach((row, index) => {
-              const pts = weeklyPoints(week, row.teamId, index, fieldSize);
-              const cur =
-                totals.get(row.teamId) || { points: 0, pf: 0, wins: 0, losses: 0, ties: 0, weeks: 0 };
-              cur.points += pts;
-              cur.pf += row.score;
-              cur.weeks += 1;
-              // Weekly finish: Top 4 = W, 5th = TIE, bottom = L
-              if (RIVALRY_WEEKS[week]) {
-                if (pts > 0) cur.wins += 1;
-                else cur.losses += 1;
-              } else if (index < 4) cur.wins += 1;
-              else if (index === 4) cur.ties += 1;
-              else cur.losses += 1;
-              totals.set(row.teamId, cur);
-            });
-          });
-
-        const derived: TeamWithStandings[] = Array.from(totals.entries())
-          .map(([teamId, t]) => ({
-            id: teamId,
-            name: teamInfo.get(teamId)?.name || 'Unknown Team',
-            owner: teamInfo.get(teamId)?.owner || 'Unknown Owner',
-            rank: 0,
-            totalPoints: t.points,
-            pointsFor: t.pf,
-            wins: t.wins,
-            losses: t.losses,
-            ties: t.ties,
-            avgPPW: t.weeks > 0 ? t.pf / t.weeks : 0,
-          }))
-          .sort((a, b) => b.totalPoints - a.totalPoints || b.pointsFor - a.pointsFor)
-          .map((row, i) => ({ ...row, rank: i + 1 }));
-
-        return derived;
+        return deriveStandings(
+          weekly.map((r: any) => ({ week: r.week, teamId: r.team_id, score: Number(r.score) }))
+        ).map((s): TeamWithStandings => ({
+          id: s.teamId,
+          name: teamInfo.get(s.teamId)?.name || 'Unknown Team',
+          owner: teamInfo.get(s.teamId)?.owner || 'Unknown Owner',
+          rank: s.rank,
+          totalPoints: s.points,
+          pointsFor: s.pf,
+          wins: s.wins,
+          losses: s.losses,
+          ties: s.ties,
+          avgPPW: s.avgPPW,
+        }));
       }
 
       // Fallback: stored standings table
