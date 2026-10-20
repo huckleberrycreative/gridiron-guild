@@ -79,9 +79,16 @@ export default function EspnSync() {
           title: 'Rosters refreshed',
           description: `${data?.teamsSynced ?? 0} teams updated from ESPN.`,
         });
-        ['player-salaries', 'injury-rows', 'weekly-scores', 'teams'].forEach((k) =>
-          queryClient.invalidateQueries({ queryKey: [k] })
-        );
+        [
+          'player-salaries',
+          'injury-rows',
+          'weekly-scores',
+          'weekly-scores-admin',
+          'teams',
+          'standings',
+          'active-season-standings',
+          'projected-scores',
+        ].forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       }
     } catch (e: any) {
       toast({ title: 'Sync failed', description: e.message, variant: 'destructive' });
