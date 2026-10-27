@@ -54,6 +54,7 @@ const WEEKS = Array.from({ length: 18 }, (_, i) => i + 1);
 
 export default function WeeklyRecaps() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [uploadingFeatured, setUploadingFeatured] = useState(false);
   const [editingRecap, setEditingRecap] = useState<WeeklyRecap | null>(null);
   const [formData, setFormData] = useState({
     title: '',
