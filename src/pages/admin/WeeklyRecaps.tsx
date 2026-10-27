@@ -365,15 +365,49 @@ export default function WeeklyRecaps() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="featured_image">Featured Image URL</Label>
+                <Label htmlFor="featured_image">Featured Image</Label>
                 <Input
                   id="featured_image"
-                  value={formData.featured_image}
-                  onChange={(e) =>
-                    setFormData({ ...formData, featured_image: e.target.value })
-                  }
-                  placeholder="https://..."
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingFeatured}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file) return;
+                    if (!file.type.startsWith('image/')) {
+                      toast({ title: 'Please choose an image file', variant: 'destructive' });
+                      return;
+                    }
+                    if (file.size > 20 * 1024 * 1024) {
+                      toast({ title: 'Image must be under 20MB', variant: 'destructive' });
+                      return;
+                    }
+                    setUploadingFeatured(true);
+                    try {
+                      const ext = file.name.split('.').pop() || 'png';
+                      const path = `blog-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+                      const { error } = await supabase.storage.from('media').upload(path, file, { contentType: file.type });
+                      if (error) throw error;
+                      const { data } = supabase.storage.from('media').getPublicUrl(path);
+                      setFormData((f) => ({ ...f, featured_image: data.publicUrl }));
+                      toast({ title: 'Image uploaded' });
+                    } catch (err: any) {
+                      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+                    } finally {
+                      setUploadingFeatured(false);
+                    }
+                  }}
                 />
+                {uploadingFeatured && <p className="text-sm text-muted-foreground">Uploading…</p>}
+                {formData.featured_image && (
+                  <div className="flex items-start gap-3">
+                    <img src={formData.featured_image} alt="Featured" className="h-24 rounded border object-cover" />
+                    <Button type="button" variant="outline" size="sm" onClick={() => setFormData({ ...formData, featured_image: '' })}>
+                      Remove
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
