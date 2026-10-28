@@ -57,7 +57,7 @@ export function DynastyRanks() {
                           <thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="pb-2">Player</th><th className="pb-2">Pos</th><th className="pb-2 text-right">2027 salary</th><th className="pb-2 text-right">Proj PPW</th></tr></thead>
                           <tbody>{[...t.keepers, ...t.practiceSquad].map(p => (
                             <tr key={p.id} className="border-b border-border">
-                              <td className="py-2 pr-2">{p.name}{p.practiceSquad && <span className="block text-[11px] text-muted-foreground">Practice Squad · exempt</span>}</td>
+                              <td className="py-2 pr-2">{p.name}{p.proposedTag && <span className="block text-[11px] text-primary">Proposed FT · ${p.originalSalary?.toFixed(1)} → $100.0</span>}{p.franchiseTag && <span className="block text-[11px] text-primary">Existing FT</span>}{p.practiceSquad && <span className="block text-[11px] text-muted-foreground">Practice Squad · exempt</span>}</td>
                               <td className="py-2 text-muted-foreground">{p.position}</td>
                               <td className="py-2 text-right tabular-nums">${p.s27.toFixed(1)}</td>
                               <td className="py-2 text-right tabular-nums">{p.ppg.toFixed(1)}</td>
@@ -65,6 +65,7 @@ export function DynastyRanks() {
                           ))}</tbody>
                         </table>
                         <p className="text-xs text-muted-foreground">Weekly comparison uses the legal starting-lineup output of each team's optimized core, including available Practice Squad players. Practice Squad salaries do not count toward allocation.</p>
+                        {t.proposedTags.length > 0 && <p className="text-xs text-primary">{t.proposedTags.length} proposed franchise tag{t.proposedTags.length === 1 ? '' : 's'} using {t.openTagSlots} open slot{t.openTagSlots === 1 ? '' : 's'}. Saved contracts are unchanged.</p>}
                         {t.luxuryTax && <p className="text-sm text-destructive">Luxury tax: 50% additional dues · $9.0 draft budget</p>}
                       </DialogContent>
                     </Dialog>

@@ -107,6 +107,8 @@ const injuryAdjustedOutput = (roster: Asset[]) => {
 const keeperPlan = (roster: Asset[]) => optimizeKeepers(roster.map(p => ({
   ...p, ppg: p.nextPpg, s27: p.tagBroken?.posMax ?? p.effectiveSalary,
   deadCap: p.tagBroken?.deadCap ?? 0,
+  franchiseTag: p.franchiseTag && p.effectiveSalary === 100,
+  tagEligible: !p.tagBroken && (!p.franchiseTag || p.effectiveSalary > 100),
 })));
 
 // Handcuffs: backup RB -> the NFL starter he'd replace. A handcuff is worth far
@@ -954,6 +956,7 @@ const TradeAnalyzer = () => {
               <div key={label} className="min-w-0">
                 <p className="font-semibold">{label} · {plan.keepers.length} keepers · {plan.route}-player route</p>
                 <p className="mt-1 text-muted-foreground">{names(plan.keepers) || 'None'}</p>
+                {plan.proposedTags.map(p => <p key={p.id} className="mt-1 text-primary">Proposed FT: {p.name} · ${p.originalSalary?.toFixed(1)} → $100.0</p>)}
                 {plan.practiceSquad.length > 0 && <p className="mt-1 text-muted-foreground">Exempt PS: {names(plan.practiceSquad)}</p>}
                 <p className="mt-1 tabular-nums">{plan.ppw.toFixed(1)} retained pts/wk · ${plan.payroll.toFixed(1)} payroll</p>
                 <p className="tabular-nums">${plan.draftBudget.toFixed(1)} draft budget{plan.deadCap > 0 ? ` · $${plan.deadCap.toFixed(1)} dead cap` : ''}</p>

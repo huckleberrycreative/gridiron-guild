@@ -1,8 +1,8 @@
 import { ANNUAL_CAP, nextSeasonPpg, optimizeKeepers } from './keeperOptimizer';
-export type DynastyInput = { id: string; name: string; position: string; ppg: number; s27: number; value: number; teamId: string | null; team: string; age: number | null; practiceSquad?: boolean };
+export type DynastyInput = { id: string; name: string; position: string; ppg: number; s27: number; value: number; teamId: string | null; team: string; age: number | null; practiceSquad?: boolean; ft?: boolean };
 export const CAP = ANNUAL_CAP;
 const SIMS = 5000;
-type P = { id: string; name: string; position: string; ppg: number; s27: number; value: number; practiceSquad?: boolean };
+type P = { id: string; name: string; position: string; ppg: number; s27: number; value: number; practiceSquad?: boolean; franchiseTag: boolean; tagEligible: boolean; proposedTag?: boolean; originalSalary?: number };
 
 /** Compare like-for-like optimized retained lineups, including exempt Practice Squad output. */
 export function coreWeeklyComparison(ppw: number, cores: { ppw: number }[]) {
@@ -15,7 +15,7 @@ export function calculateDynastyRanks(rows: DynastyInput[]) {
     rows.forEach((r) => {
       if (!r.teamId) return;
       const t = byTeam.get(r.teamId) ?? { name: r.team, players: [] };
-      t.players.push({ id: r.id, name: r.name, position: r.position, ppg: nextSeasonPpg(r.ppg, r.position, r.age), s27: r.s27, value: r.value, practiceSquad: r.practiceSquad });
+      t.players.push({ id: r.id, name: r.name, position: r.position, ppg: nextSeasonPpg(r.ppg, r.position, r.age), s27: r.s27, value: r.value, practiceSquad: r.practiceSquad, franchiseTag: !!r.ft && r.s27 === 100, tagEligible: !r.ft || r.s27 > 100 });
       byTeam.set(r.teamId, t);
     });
 

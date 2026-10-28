@@ -2,9 +2,12 @@ import { bestLineup } from './seasonSimulation';
 
 export const ANNUAL_CAP = 1000;
 export const SEVEN_KEEPER_BUDGET = 600;
+export const FRANCHISE_TAG_SALARY = 100;
+export const FRANCHISE_TAG_SLOTS = 2;
 export type KeeperPlayer = {
   id: string; name: string; position: string; ppg: number; s27: number;
   practiceSquad?: boolean; deadCap?: number;
+  franchiseTag?: boolean; tagEligible?: boolean; proposedTag?: boolean; originalSalary?: number;
 };
 const PRIME: Record<string, number> = { QB: 32, RB: 26, WR: 29, TE: 30 };
 export function nextSeasonPpg(ppg: number, position: string, age: number | null | undefined) {
@@ -21,6 +24,8 @@ export function nextSeasonPpg(ppg: number, position: string, age: number | null 
 export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
   const active = roster.filter(p => !p.practiceSquad).sort((a, b) => a.id.localeCompare(b.id));
   const practiceSquad = roster.filter(p => p.practiceSquad);
+  const occupiedTags = roster.filter(p => p.franchiseTag).length;
+  const openTagSlots = Math.max(0, FRANCHISE_TAG_SLOTS - occupiedTags);
   // Broken-tag obligations survive even if the acquired player is not retained.
   const deadCap = roster.reduce((sum, p) => sum + Math.max(0, p.deadCap ?? 0), 0);
   const score = (keepers: T[]) => bestLineup([...keepers, ...practiceSquad].map(p => ({ ...p, projected: true })))
@@ -30,21 +35,32 @@ export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
   let payroll = 0;
   let route: 5 | 7 = 5;
   const selected: T[] = [];
-  const consider = (salary: number, candidateRoute: 5 | 7) => {
+  const tagAllocation = (players: T[]) => {
+    const newTags = [...players].filter(p => !p.franchiseTag && p.tagEligible === true && p.s27 > FRANCHISE_TAG_SALARY)
+      .sort((a, b) => b.s27 - a.s27 || a.id.localeCompare(b.id)).slice(0, openTagSlots);
+    const taggedIds = new Set(newTags.map(p => p.id));
+    const adjusted = players.map(p => taggedIds.has(p.id)
+      ? { ...p, s27: FRANCHISE_TAG_SALARY, proposedTag: true, originalSalary: p.s27 }
+      : p);
+    return { adjusted, salary: adjusted.reduce((sum, p) => sum + Math.max(0, p.s27), 0) };
+  };
+  const consider = (candidateRoute: 5 | 7) => {
+    const { adjusted, salary } = tagAllocation(selected);
+    if (candidateRoute === 7 && salary > SEVEN_KEEPER_BUDGET) return;
     const output = score(selected);
     if (output > ppw + 1e-9 || (Math.abs(output - ppw) < 1e-9 &&
       (salary < payroll || (salary === payroll && selected.length > keepers.length)))) {
-      keepers = [...selected]; ppw = output; payroll = salary; route = candidateRoute;
+      keepers = adjusted; ppw = output; payroll = salary; route = candidateRoute;
     }
   };
   const search = (index: number, salary: number, target: number, candidateRoute: 5 | 7) => {
-    if (selected.length === target) { consider(salary, candidateRoute); return; }
+    if (selected.length === target) { consider(candidateRoute); return; }
     if (active.length - index < target - selected.length) return;
     for (let i = index; i <= active.length - (target - selected.length); i++) {
       const p = active[i];
       const nextSalary = salary + Math.max(0, p.s27);
-      if (candidateRoute === 7 && nextSalary > SEVEN_KEEPER_BUDGET) continue;
       selected.push(p);
+      if (candidateRoute === 7 && tagAllocation(selected).salary > SEVEN_KEEPER_BUDGET) { selected.pop(); continue; }
       search(i + 1, nextSalary, target, candidateRoute);
       selected.pop();
     }
@@ -57,6 +73,7 @@ export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
   const capSpace = ANNUAL_CAP - committed;
   return {
     keepers, practiceSquad, excluded: active.filter(p => !ids.has(p.id)), route,
+    proposedTags: keepers.filter(p => p.proposedTag), occupiedTags, openTagSlots,
     ppw, payroll, deadCap, committed, capSpace, luxuryTax,
     draftBudget: luxuryTax ? 9 : Math.max(0, capSpace),
     // Salary utility credits only the selected group and its available auction budget.
