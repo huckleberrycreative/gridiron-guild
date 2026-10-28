@@ -24,22 +24,22 @@ export function nextSeasonPpg(ppg: number, position: string, age: number | null 
 export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
   const active = roster.filter(p => !p.practiceSquad).sort((a, b) => a.id.localeCompare(b.id));
   const practiceSquad = roster.filter(p => p.practiceSquad);
-  const occupiedTags = roster.filter(p => p.franchiseTag).length;
-  const openTagSlots = Math.max(0, FRANCHISE_TAG_SLOTS - occupiedTags);
   // Broken-tag obligations survive even if the acquired player is not retained.
   const deadCap = roster.reduce((sum, p) => sum + Math.max(0, p.deadCap ?? 0), 0);
   const score = (keepers: T[]) => bestLineup([...keepers, ...practiceSquad].map(p => ({ ...p, projected: true })))
     .reduce((sum, p) => sum + p.ppg, 0);
-  let keepers: T[] = [];
+  let keepers: (T & { proposedTag?: boolean; originalSalary?: number })[] = [];
   let ppw = Number.NEGATIVE_INFINITY;
   let payroll = 0;
   let route: 5 | 7 = 5;
   const selected: T[] = [];
   const tagAllocation = (players: T[]) => {
+    const occupiedTags = [...players, ...practiceSquad].filter(p => p.franchiseTag).length;
+    const openTagSlots = Math.max(0, FRANCHISE_TAG_SLOTS - occupiedTags);
     const newTags = [...players].filter(p => !p.franchiseTag && p.tagEligible === true && p.s27 > FRANCHISE_TAG_SALARY)
       .sort((a, b) => b.s27 - a.s27 || a.id.localeCompare(b.id)).slice(0, openTagSlots);
     const taggedIds = new Set(newTags.map(p => p.id));
-    const adjusted = players.map(p => taggedIds.has(p.id)
+    const adjusted: (T & { proposedTag?: boolean; originalSalary?: number })[] = players.map(p => taggedIds.has(p.id)
       ? { ...p, s27: FRANCHISE_TAG_SALARY, proposedTag: true, originalSalary: p.s27 }
       : p);
     return { adjusted, salary: adjusted.reduce((sum, p) => sum + Math.max(0, p.s27), 0) };
@@ -68,6 +68,8 @@ export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
   search(0, 0, Math.min(5, active.length), 5);
   if (active.length >= 7) search(0, 0, 7, 7);
   const ids = new Set(keepers.map(p => p.id));
+  const occupiedTags = [...keepers, ...practiceSquad].filter(p => p.franchiseTag).length;
+  const openTagSlots = Math.max(0, FRANCHISE_TAG_SLOTS - occupiedTags);
   const committed = payroll + deadCap;
   const luxuryTax = committed > ANNUAL_CAP;
   const capSpace = ANNUAL_CAP - committed;

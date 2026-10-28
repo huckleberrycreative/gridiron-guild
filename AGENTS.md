@@ -2,7 +2,7 @@
 
 - Best Salaries uses an isolated pure bestSalaries scoring-per-dollar model with observed PPG, explicit projection fallbacks and all forward contract years; join original salary records to exclude unknown starting contracts and infer missing later years with progression rather than shared repeated-cost fallbacks, without changing Trade Analyzer valuation.
 
-- Dynasty ranks and Trade Analyzer share the pure keeperOptimizer for exact next-season legal keeper-lineup selection and before/after displacement; rank retained lineup output, keep Practice Squad separate, and preserve current-season and individual market values so nonkeepers cannot inflate dynasty strength.
+- Dynasty ranks and Trade Analyzer share the pure keeperOptimizer for exact next-season legal keeper-lineup selection, hypothetical tag allocation and before/after displacement; keep proposed contracts separate from saved contracts and reject broken-tag retagging so scenario savings never overwrite salary records or erase penalties.
 
 - Trade Finder uses a pure tradeFinder module with Trade Value Chart exchange values, directional received-versus-sent value targets and roster-aware weekly lineup gains; isolate search and assessment rules for deterministic testing without changing Trade Analyzer valuation.
 - Trade Finder applies submitted player IDs only to outgoing candidates, never to the retained roster; assigned Practice Squad players are selectable assets but count toward lineup utility only as active incoming additions, preventing protected-player and bench-strength distortions.
