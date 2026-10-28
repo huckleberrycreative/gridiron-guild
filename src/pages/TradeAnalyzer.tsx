@@ -369,7 +369,7 @@ const TradeAnalyzer = () => {
         xs
           .map((p) => cuffVal(p, owner))
           .sort((x, y) => y - x)
-          .reduce((s, v, i) => s + v * Math.pow(0.5, i), 0);
+          .reduce((s, v, i) => s + v * Math.pow(0.7, i), 0);
       const valueIn = pkg(gained, after);
       const valueOut = pkg([...lost, ...drops], before);
       const handcuffs = [
@@ -385,10 +385,10 @@ const TradeAnalyzer = () => {
       const score = Math.round((overall * 0.5 + valueScore * 0.2 * 0.5 * valueWeight * contention) * 10) / 10;
       // Separate lenses on the same % scale, ignoring the team's situation.
       // Win-now: this season's lineup and injury depth only.
-      const winNowGrade = Math.round((parts.winNow * 0.8 + parts.depth * 0.2) * 0.6 * 10) / 10;
+      const winNowGrade = Math.round((parts.winNow * 0.8 + parts.depth * 0.2) * 10) / 10;
       // Dynasty: optimized retained scoring and budget, never whole-package market value.
       const dynastyGrade =
-        Math.round((parts.dynasty * 0.8 + parts.cap * 0.2) * 0.5 * 10) / 10;
+        Math.round((parts.dynasty * 0.8 + parts.cap * 0.2) * 10) / 10;
       const situation = situationFor(teamId);
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
