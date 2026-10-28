@@ -56,10 +56,11 @@ const PowerRanks = () => {
             <div className="mt-6 rounded-lg border border-border bg-muted/40 p-5 text-sm text-muted-foreground">
               <h2 className="mb-2 font-serif text-lg font-semibold text-primary">How the Dynasty grade works</h2>
               <ul className="list-disc space-y-1 pl-5">
-                <li><strong>2027 roster:</strong> every player's 2027 salary. Teams over the $1,000 cap cut their worst points-per-dollar players until they fit.</li>
+                <li><strong>2027 keepers:</strong> compare five players at any salary against seven totaling at most $600. Choose the group with the highest legal starting-lineup output; salary breaks scoring ties. Practice Squad is separate and exempt.</li>
                 <li><strong>Next-year scoring:</strong> each player's projected PPG, aged a year — players past their prime decline, young players get a growth bump.</li>
-                <li><strong>Lineup:</strong> best legal nine from what's left, plus small credit for cap space and roster Trade Value.</li>
-                <li><strong>Title odds:</strong> 5,000 simulated 2027 seasons with offseason uncertainty, top 4 to the playoffs.</li>
+                <li><strong>Salary cap:</strong> $1,000 annually. Five keepers may exceed it with a 50% luxury tax on dues and the Constitution's $9 minimum draft budget.</li>
+                <li><strong>Lineup:</strong> scoring comes only from optimized keepers and available Practice Squad players. Unfilled positions receive no invented auction-player points; extra nonkeepers add no strength.</li>
+                <li><strong>Title odds:</strong> 5,000 schedule-neutral simulations of retained-player strength with offseason uncertainty, top 4 to the playoffs. These are pre-auction estimates, not a forecast of completed 2027 rosters.</li>
               </ul>
             </div>
           </>
