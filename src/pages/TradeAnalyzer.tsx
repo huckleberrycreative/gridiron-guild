@@ -1024,14 +1024,15 @@ const TradeAnalyzer = () => {
               <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
                 <h2 className="font-display uppercase tracking-wider text-xs font-bold text-foreground mb-2">How the grade works</h2>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li><b className="text-foreground">Half Trade Value</b> — the number next to each name, from the Trade Value Chart. Your best player in the deal counts fully; extras count less.</li>
-                  <li><b className="text-foreground">Half Power Rank impact</b> — does your starting lineup actually get better, this year and long term, counting injuries, depth and salary.</li>
+                  <li><b className="text-foreground">Market value</b> — exchanged players retain their Trade Value Chart values; extra pieces count less. This influences the blended assessment in proportion to current contention, not the dynasty grade.</li>
+                  <li><b className="text-foreground">Roster impact</b> — current lineup and injury depth are assessed separately from the optimized 2027 keeper lineup and its salary commitments.</li>
                   <li>Taking back more players than you send? Your lowest-value players already on your roster (never incoming or practice squad players) get cut to make room, and they count as value you give up.</li>
                   <li><b className="text-foreground">Handcuffs</b> — a backup RB is worth +20 Trade Value to the team that rosters his NFL starter (e.g. Emmett Johnson behind Kenneth Walker for the Fanatics), and only his normal value elsewhere.</li>
                   <li>Contenders are judged more on this season; rebuilding teams more on the future.</li>
                   <li>The grade is the % your team gets better or worse. Within ±2% is <b className="text-foreground">Fair</b>; ±2–5% favors one side; beyond ±5% is <b className="text-foreground">Lopsided</b>.</li>
                   <li><b className="text-foreground">Franchise tags</b> — trade a franchised player for anyone who isn't franchised and the tag breaks: the new team pays the positional max every year plus the Constitution's dead cap penalty (150% / 75% / 50% / 25% of the max, by contract year).</li>
-                  <li><b className="text-foreground">Win-now</b> = this season only (lineup + injury depth). <b className="text-foreground">Dynasty</b> = long term (full-health roster, future salary, Trade Value scores). <b className="text-foreground">Blended</b> = the big number, weighted by where your team stands.</li>
+                  <li><b className="text-foreground">Win-now</b> = this season only (lineup + injury depth). <b className="text-foreground">Dynasty</b> = 80% optimized keeper scoring change and 20% retained scoring-plus-budget change, scaled to the grade. <b className="text-foreground">Blended</b> = the big number, weighted by where your team stands.</li>
+                  <li><b className="text-foreground">2027 keepers</b> — five at any salary or seven totaling at most $600, under the $1,000 annual model. Both teams re-optimize after every trade; nonkeepers add no dynasty scoring, and displaced players' lost output is already included. Practice Squad stays separate and exempt.</li>
                 </ul>
               </div>
             </>

@@ -26,7 +26,7 @@ export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
   const score = (keepers: T[]) => bestLineup([...keepers, ...practiceSquad].map(p => ({ ...p, projected: true })))
     .reduce((sum, p) => sum + p.ppg, 0);
   let keepers: T[] = [];
-  let ppw = score([]);
+  let ppw = Number.NEGATIVE_INFINITY;
   let payroll = 0;
   let route: 5 | 7 = 5;
   const selected: T[] = [];

@@ -55,6 +55,10 @@ describe('2027 keeper rules', () => {
     expect(plan.ppw).toBe(50); expect(plan.payroll).toBe(801);
   });
   it('is deterministic regardless of input order', () => expect(optimizeKeepers(roster()).keepers).toEqual(optimizeKeepers(roster().reverse()).keepers));
+  it('still selects a legal group when all players have zero scoring', () => {
+    const plan = optimizeKeepers(roster().map(p => ({ ...p, ppg: 0 })));
+    expect(plan.keepers.length).toBe(5); expect(plan.ppw).toBe(0);
+  });
   it('shares next-season aging rather than applying present injuries to dynasty output', () => {
     expect(nextSeasonPpg(10, 'RB', 26)).toBeCloseTo(9.1); expect(nextSeasonPpg(10, 'WR', 22)).toBeCloseTo(10.8);
   });
