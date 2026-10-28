@@ -954,7 +954,7 @@ const TradeAnalyzer = () => {
           {Math.abs(r.winNowPpw - (r.lineupAfterTotal - r.lineupBeforeTotal)) >= 1 && (
             <p className="px-2 py-1 text-[10px] text-muted-foreground">
               This week's lineup changes by {(r.lineupAfterTotal - r.lineupBeforeTotal).toFixed(1)} pts, but over the rest of the season it's {r.winNowPpw >= 0 ? '+' : ''}{r.winNowPpw.toFixed(1)} pts/wk
-              {r.returning.length > 0 ? ` because ${names(r.returning)} return${r.returning.length === 1 ? 's' : ''} from injury and take back a starting spot.` : ' once injuries and returns are counted.'}
+              {r.returning.length > 0 ? ` because ${names(r.returning)} return${r.returning.length === 1 ? 's' : ''} from injury on your roster either way.` : ' once injuries and returns are counted.'}
             </p>
           )}
         </div>
