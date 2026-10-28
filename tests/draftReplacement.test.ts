@@ -27,8 +27,7 @@ it('optimizes completed scoring rather than favoring seven weaker retained playe
   const plan = optimizeKeepers([...baseline, star], levels);
   expect(plan.route).toBe(5);
   expect(plan.keepers.some(p => p.id === 'star')).toBe(true);
-  // 30-point star + four 11-point keepers + three 10-point FLEX fills + 20? No:
-  // QB replacement 15 + three eligible replacement fills 10 each = 45.
+  // 30-point star + four 11-point keepers + two QB fills (15 each) + two FLEX fills (10 each).
   expect(plan.ppw).toBe(124);
 });
 it('averages the position-specific replacement scoring tier, not elite players or Practice Squad', () => {
