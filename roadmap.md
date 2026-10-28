@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Optimize legal 2027 keeper groups for Dynasty Power Ranks and Trade Analyzer
+- [ ] Show before/after keeper changes, cap room and luxury-tax exposure
+- [ ] Test keeper constraints and verify real-team dynasty/trade results
+
 - [x] Derive admin standings from weekly scores (top 4 W, 5th T, rest L) and refresh everywhere after ESPN sync
 - [x] Add explicit Save button to admin Weekly Scores; test derivation rules and verify the live save flow
 
