@@ -1,70 +1,26 @@
-export type DynastyInput = { id: string; name: string; position: string; ppg: number; s27: number; value: number; teamId: string | null; team: string; age: number | null };
-export const CAP = 1000;
+import { ANNUAL_CAP, nextSeasonPpg, optimizeKeepers } from './keeperOptimizer';
+export type DynastyInput = { id: string; name: string; position: string; ppg: number; s27: number; value: number; teamId: string | null; team: string; age: number | null; practiceSquad?: boolean };
+export const CAP = ANNUAL_CAP;
 const SIMS = 5000;
-const PRIME: Record<string, number> = { QB: 32, RB: 26, WR: 29, TE: 30 };
-
-type P = { id: string; name: string; position: string; ppg: number; s27: number; value: number };
-
-// Next-season PPG: age decline past prime, growth for young players
-const nextPpg = (r: DynastyInput) => {
-  const age = r.age as number | null;
-  let m = 1;
-  if (age != null) {
-    const a = age + 1;
-    if (a > PRIME[r.position]) m = Math.max(0.45, 1 - (a - PRIME[r.position]) * (r.position === 'RB' ? 0.09 : 0.08));
-    else if (a <= 24) m = 1.08;
-    else if (a <= 26) m = 1.03;
-  }
-  return r.ppg * m;
-};
-
-// Best legal nine: QB, RB, RB, WR, WR, 3 FLEX (RB/WR/TE), OP (any)
-const bestNine = (list: P[]) => {
-  const pool = [...list].sort((a, b) => b.ppg - a.ppg);
-  const used = new Set<string>();
-  const take = (ok: (p: P) => boolean) => {
-    const p = pool.find((x) => !used.has(x.id) && ok(x));
-    if (p) used.add(p.id);
-    return p?.ppg ?? 0;
-  };
-  let total = 0;
-  total += take((p) => p.position === 'QB');
-  total += take((p) => p.position === 'RB') + take((p) => p.position === 'RB');
-  total += take((p) => p.position === 'WR') + take((p) => p.position === 'WR');
-  for (let i = 0; i < 3; i++) total += take((p) => p.position !== 'QB');
-  total += take(() => true);
-  return total;
-};
+type P = { id: string; name: string; position: string; ppg: number; s27: number; value: number; practiceSquad?: boolean };
 
 export function calculateDynastyRanks(rows: DynastyInput[]) {
     const byTeam = new Map<string, { name: string; players: P[] }>();
     rows.forEach((r) => {
       if (!r.teamId) return;
       const t = byTeam.get(r.teamId) ?? { name: r.team, players: [] };
-      t.players.push({ id: r.id, name: r.name, position: r.position, ppg: nextPpg(r), s27: r.s27, value: r.value });
+      t.players.push({ id: r.id, name: r.name, position: r.position, ppg: nextSeasonPpg(r.ppg, r.position, r.age), s27: r.s27, value: r.value, practiceSquad: r.practiceSquad });
       byTeam.set(r.teamId, t);
     });
 
     const out = Array.from(byTeam.entries()).map(([id, t]) => {
-      // Fit the 2027 roster under the cap: cut worst points-per-dollar players first
-      let kept = [...t.players];
-      const cut: P[] = [];
-      let payroll = kept.reduce((a, p) => a + p.s27, 0);
-      while (payroll > CAP && kept.length) {
-        kept.sort((a, b) => a.ppg / Math.max(1, a.s27) - b.ppg / Math.max(1, b.s27));
-        const worst = kept.find((p) => p.s27 > 1) ?? kept[0];
-        kept = kept.filter((p) => p !== worst);
-        cut.push(worst);
-        payroll -= worst.s27;
-      }
-      const ppw = bestNine(kept);
-      const avgTv = kept.length ? kept.reduce((a, p) => a + p.value, 0) / kept.length : 0;
-      return { id, name: t.name, ppw, payroll, space: CAP - payroll, cut, avgTv };
+      const plan = optimizeKeepers(t.players);
+      return { id, name: t.name, ...plan, space: plan.capSpace, cut: plan.excluded };
     });
 
     if (out.length < 5) return [];
-    // Strength = projected lineup + small credit for cap space and roster value
-    const strength = out.map((t) => t.ppw + Math.max(0, t.space) * 0.02 + t.avgTv * 0.1);
+    // Rank retained legal lineup output, not market value of players that cannot be kept.
+    const strength = out.map((t) => t.ppw);
     // Monte Carlo: 13-week season, top 4 make playoffs, semis + 2-week final
     const champ = new Array(out.length).fill(0);
     const top4 = new Array(out.length).fill(0);
