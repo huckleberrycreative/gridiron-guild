@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
+import { keeperChanges, nextSeasonPpg, optimizeKeepers } from '@/lib/keeperOptimizer';
 import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -55,6 +56,7 @@ type Asset = {
   effectiveSalary: number;
   futureSalary: number;
   healthyPpg: number;
+  nextPpg: number;
   injuryStatus: string;
   weeksOut: number;
   out: boolean;
@@ -102,14 +104,10 @@ const injuryAdjustedOutput = (roster: Asset[]) => {
   return sum / starters.length;
 };
 
-const capEfficiency = (roster: Asset[]) => {
-  const spend = roster.reduce(
-    (s, p) => s + p.effectiveSalary + p.futureSalary * 0.25,
-    0
-  );
-  const production = healthyLineupPpw(roster) + injuryAdjustedOutput(roster) * 0.5;
-  return production / Math.max(50, spend / 100);
-};
+const keeperPlan = (roster: Asset[]) => optimizeKeepers(roster.map(p => ({
+  ...p, ppg: p.nextPpg, s27: p.tagBroken?.posMax ?? p.effectiveSalary,
+  deadCap: p.tagBroken?.deadCap ?? 0,
+})));
 
 // Handcuffs: backup RB -> the NFL starter he'd replace. A handcuff is worth far
 // more to the fantasy team that rosters that starter (insurance) than elsewhere.
@@ -231,6 +229,7 @@ const TradeAnalyzer = () => {
       position: s.position,
       ppg: healthyPpg * availability,
       healthyPpg,
+      nextPpg: nextSeasonPpg(tv.get(s.id)?.ppg ?? healthyPpg, s.position, tv.get(s.id)?.age),
       injuryStatus,
       weeksOut,
       out,
@@ -256,11 +255,13 @@ const TradeAnalyzer = () => {
 
   const evaluate = (roster: Asset[]) => {
     const active = roster.filter((p) => !p.practiceSquad);
+    const keepers = keeperPlan(roster);
     return {
       winNow: restOfSeasonPpw(active, weeksLeft),
-      dynasty: healthyLineupPpw(active),
+      dynasty: keepers.ppw,
       depth: injuryAdjustedOutput(active),
-      cap: capEfficiency(active),
+      cap: keepers.capUtility,
+      keepers,
     };
   };
 
@@ -325,6 +326,8 @@ const TradeAnalyzer = () => {
       after = after.filter((p) => !dropIds.has(p.id));
       const b = evaluate(before);
       const a = evaluate(after);
+      const changes = keeperChanges(b.keepers, a.keepers);
+      const nonkeeperIncoming = gained.filter(p => !p.practiceSquad && !a.keepers.keepers.some(k => k.id === p.id));
       const pct = (x: number, y: number) => (y === 0 ? 0 : ((x - y) / y) * 100);
       const parts = {
         winNow: pct(a.winNow, b.winNow),
@@ -342,12 +345,8 @@ const TradeAnalyzer = () => {
         parts.cap * 0.14;
       const winNowPpw = a.winNow - b.winNow;
       const dynastyPpw = a.dynasty - b.dynasty;
-      const salaryDelta =
-        gained.reduce((s, p) => s + p.effectiveSalary, 0) -
-        lost.reduce((s, p) => s + p.effectiveSalary, 0);
-      const futureDelta =
-        gained.reduce((s, p) => s + p.futureSalary, 0) -
-        lost.reduce((s, p) => s + p.futureSalary, 0);
+      const salaryDelta = a.keepers.committed - b.keepers.committed;
+      const futureDelta = salaryDelta;
       const counts: Record<string, { before: number; after: number }> = {};
       for (const pos of ['QB', 'RB', 'WR', 'TE']) {
         counts[pos] = {
@@ -379,13 +378,13 @@ const TradeAnalyzer = () => {
       const fitScore = overall;
       // Long-term trade value matters more to teams whose season is slipping away.
       const valueWeight = 0.6 + 0.8 * (1 - contention);
-      const score = Math.round((overall * 0.5 + valueScore * 0.2 * 0.5 * valueWeight) * 10) / 10;
+      const score = Math.round((overall * 0.5 + valueScore * 0.2 * 0.5 * valueWeight * contention) * 10) / 10;
       // Separate lenses on the same % scale, ignoring the team's situation.
       // Win-now: this season's lineup and injury depth only.
       const winNowGrade = Math.round((parts.winNow * 0.8 + parts.depth * 0.2) * 0.6 * 10) / 10;
-      // Dynasty: full-health roster, future cap efficiency and Trade Value Chart scores.
+      // Dynasty: optimized retained scoring and budget, never whole-package market value.
       const dynastyGrade =
-        Math.round(((parts.dynasty * 0.6 + parts.cap * 0.4) * 0.5 + valueScore * 0.25 * 0.6) * 10) / 10;
+        Math.round((parts.dynasty * 0.8 + parts.cap * 0.2) * 0.5 * 10) / 10;
       const situation = situationFor(teamId);
       const ppgDelta =
         gained.reduce((s, p) => s + p.healthyPpg, 0) -
@@ -440,6 +439,11 @@ const TradeAnalyzer = () => {
         overall,
         winNowPpw,
         dynastyPpw,
+        keeperBefore: b.keepers,
+        keeperAfter: a.keepers,
+        keeperAdded: changes.added,
+        keeperDisplaced: changes.displaced,
+        nonkeeperIncoming,
         contention,
         situation,
         salaryDelta,
@@ -761,7 +765,7 @@ const TradeAnalyzer = () => {
     }
 
     // If a roster-specific bull short-circuited the mode chain, bear still needs a value.
-    if (!bear!) {
+    if (!bear) {
       bear = lineupDown
         ? pick([
             `You'd be giving back ${Math.abs(r.winNowPpw).toFixed(1)} points a week from your starting lineup — that's real ground to concede.`,
@@ -852,6 +856,11 @@ const TradeAnalyzer = () => {
     if (tb?.tagBroken) {
       bear = `${tb.name}'s franchise tag doesn't travel — he jumps to the $${tb.tagBroken.posMax} positional max, and you eat a $${tb.tagBroken.deadCap} dead cap hit (Year ${tb.tagBroken.contractYear} penalty) on top. ` + bear;
     }
+    if (r.nonkeeperIncoming.length) {
+      bear = `${names(r.nonkeeperIncoming)} ${r.nonkeeperIncoming.length === 1 ? 'does' : 'do'} not make your optimized 2027 keeper group; this is not a retained-lineup upgrade. ` + bear;
+    } else if (r.keeperDisplaced.length) {
+      bear = `Your re-optimized keeper group loses ${names(r.keeperDisplaced)}. The dynasty grade already accounts for that lost production, rather than counting the incoming player on top of everyone else. ` + bear;
+    }
     return { bull, bear, base };
   };
 
@@ -938,12 +947,31 @@ const TradeAnalyzer = () => {
             <p className="px-2 py-1 text-[10px] text-muted-foreground truncate">Leaves the lineup: {names(r.benchedOut)}</p>
           )}
         </div>
+        <section className="mb-3 border-y border-border py-3 text-xs">
+          <h4 className="mb-2 font-semibold text-primary">Optimized 2027 keepers</h4>
+          <div className="grid grid-cols-2 gap-3">
+            {[{ label: 'Before', plan: r.keeperBefore }, { label: 'After', plan: r.keeperAfter }].map(({ label, plan }) => (
+              <div key={label} className="min-w-0">
+                <p className="font-semibold">{label} · {plan.keepers.length} keepers · {plan.route}-player route</p>
+                <p className="mt-1 text-muted-foreground">{names(plan.keepers) || 'None'}</p>
+                {plan.practiceSquad.length > 0 && <p className="mt-1 text-muted-foreground">Exempt PS: {names(plan.practiceSquad)}</p>}
+                <p className="mt-1 tabular-nums">{plan.ppw.toFixed(1)} retained pts/wk · ${plan.payroll.toFixed(1)} payroll</p>
+                <p className="tabular-nums">${plan.draftBudget.toFixed(1)} draft budget{plan.deadCap > 0 ? ` · $${plan.deadCap.toFixed(1)} dead cap` : ''}</p>
+                {plan.luxuryTax && <p className="text-destructive">Luxury tax: 50% additional dues</p>}
+              </div>
+            ))}
+          </div>
+          {r.keeperAdded.length > 0 && <p className="mt-2 text-primary">Added to keepers: {names(r.keeperAdded)}</p>}
+          {r.keeperDisplaced.length > 0 && <p className="mt-1 text-destructive">No longer kept: {names(r.keeperDisplaced)}</p>}
+          {r.nonkeeperIncoming.length > 0 && <p className="mt-1 text-muted-foreground">Incoming but not kept: {names(r.nonkeeperIncoming)}</p>}
+          <p className="mt-2 text-muted-foreground">Retained-player forecast only; open lineup spots await the draft. Salary changes reflect the optimized group, not the entire roster.</p>
+        </section>
         <div className="grid grid-cols-4 gap-1.5 text-center">
           {[
             { k: 'Trade value', v: `${Math.round(r.valueIn)} in / ${Math.round(r.valueOut)} out`, good: r.valueIn >= r.valueOut },
             { k: 'This season', v: `${r.winNowPpw >= 0 ? '+' : ''}${r.winNowPpw.toFixed(1)} pts/wk`, good: r.winNowPpw >= 0 },
             { k: 'Long term', v: `${r.dynastyPpw >= 0 ? '+' : ''}${r.dynastyPpw.toFixed(1)} pts/wk`, good: r.dynastyPpw >= 0 },
-            { k: 'Salary', v: `${r.salaryDelta > 0 ? '+' : r.salaryDelta < 0 ? '−' : ''}$${Math.abs(r.salaryDelta)}`, good: r.salaryDelta <= 0 },
+            { k: 'Keeper cost', v: `${r.salaryDelta > 0 ? '+' : r.salaryDelta < 0 ? '−' : ''}$${Math.abs(r.salaryDelta).toFixed(1)}`, good: r.salaryDelta <= 0 },
           ].map((m) => (
             <div key={m.k} className="rounded-md bg-muted/50 border border-border/60 px-1 py-1.5">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.k}</div>
