@@ -4,6 +4,12 @@ export const CAP = ANNUAL_CAP;
 const SIMS = 5000;
 type P = { id: string; name: string; position: string; ppg: number; s27: number; value: number; practiceSquad?: boolean };
 
+/** Compare like-for-like optimized retained lineups, including exempt Practice Squad output. */
+export function coreWeeklyComparison(ppw: number, cores: { ppw: number }[]) {
+  const average = cores.length ? cores.reduce((sum, core) => sum + core.ppw, 0) / cores.length : 0;
+  return { average, aboveAverage: ppw - average };
+}
+
 export function calculateDynastyRanks(rows: DynastyInput[]) {
     const byTeam = new Map<string, { name: string; players: P[] }>();
     rows.forEach((r) => {
