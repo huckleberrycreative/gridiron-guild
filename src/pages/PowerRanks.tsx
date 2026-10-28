@@ -60,8 +60,8 @@ const PowerRanks = () => {
                 <li><strong>Next-year scoring:</strong> each player's projected PPG, aged a year — players past their prime decline, young players get a growth bump.</li>
                 <li><strong>Franchise tags:</strong> optimize available $100 tags alongside keeper selection. Retained existing tags occupy the two slots; tags on unkept players free their slots. Proposed tags do not change saved contracts.</li>
                 <li><strong>Salary cap:</strong> $1,000 annually. Five keepers may exceed it with a 50% luxury tax on dues and the Constitution's $9 minimum draft budget.</li>
-                <li><strong>Lineup:</strong> scoring comes only from optimized keepers and available Practice Squad players. Unfilled positions receive no invented auction-player points; extra nonkeepers add no strength.</li>
-                <li><strong>Title odds:</strong> 5,000 schedule-neutral simulations of retained-player strength with offseason uncertainty, top 4 to the playoffs. These are pre-auction estimates, not a forecast of completed 2027 rosters.</li>
+                <li><strong>Fall-draft replenishment:</strong> every open starting spot receives an average replacement-level player at an eligible position. The baseline averages the league's lower-quartile scoring tier at each position. Five- and seven-player keeper groups are compared as completed nine-player lineups, including available Practice Squad players.</li>
+                <li><strong>Title odds:</strong> 5,000 schedule-neutral simulations of completed-lineup strength with offseason uncertainty, top 4 to the playoffs. Draft additions use the same replacement averages for everyone, not predicted auction results.</li>
               </ul>
             </div>
           </>
