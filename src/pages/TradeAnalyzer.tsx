@@ -330,7 +330,6 @@ const TradeAnalyzer = () => {
       after = after.filter((p) => !dropIds.has(p.id));
       const b = evaluate(before);
       const a = evaluate(after);
-      console.log('DBG', teamId, weeksLeft, JSON.stringify({b:[b.winNow,b.depth],a:[a.winNow,a.depth]}), JSON.stringify(after.filter(p=>!p.practiceSquad).map(p=>[p.name,p.healthyPpg.toFixed(1),p.ppg.toFixed(1),p.injuryStatus,p.weeksOut])));
       const changes = keeperChanges(b.keepers, a.keepers);
       const nonkeeperIncoming = gained.filter(p => !p.practiceSquad && !a.keepers.keepers.some(k => k.id === p.id));
       const pct = (x: number, y: number) => (y === 0 ? 0 : ((x - y) / y) * 100);
