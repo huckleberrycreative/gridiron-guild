@@ -5,6 +5,28 @@ import { calculateDynastyRanks } from '../src/lib/dynastyRanks';
 const positions = ['QB', 'RB', 'RB', 'WR', 'WR', 'RB', 'WR'];
 const roster = (salary = 80): KeeperPlayer[] => positions.map((position, i) => ({ id: `${i}`, name: `Player ${i}`, position, ppg: 10, s27: salary }));
 describe('2027 keeper rules', () => {
+  it('tags Josh Allen from $180 to $100 when a slot is available', () => {
+    const allen = { id: 'allen', name: 'Josh Allen', position: 'QB', ppg: 22, s27: 180, tagEligible: true };
+    const plan = optimizeKeepers([allen, ...roster().slice(1)]);
+    expect(plan.keepers.find(p => p.id === 'allen')?.s27).toBe(100);
+    expect(plan.proposedTags.find(p => p.id === 'allen')?.originalSalary).toBe(180);
+    expect(allen.s27).toBe(180);
+  });
+  it('releases the tag of an unkept player rather than blocking a better core', () => {
+    const players = roster().map((p, i) => ({ ...p, franchiseTag: i < 2, s27: i < 2 ? 100 : 80 }));
+    const plan = optimizeKeepers([...players, { id: 'allen', name: 'Josh Allen', position: 'QB', ppg: 30, s27: 180, tagEligible: true }]);
+    expect(plan.proposedTags.some(p => p.id === 'allen')).toBe(true);
+    expect(plan.keepers.filter(p => p.franchiseTag).length + plan.proposedTags.length).toBeLessThanOrEqual(2);
+  });
+  it('does not propose a third tag while retaining two existing tags', () => {
+    const players = roster().map((p, i) => ({ ...p, s27: 100, franchiseTag: i < 2 }));
+    const plan = optimizeKeepers([...players.slice(0,4), { id: 'allen', name: 'Josh Allen', position: 'QB', ppg: 30, s27: 180, tagEligible: true }]);
+    expect(plan.openTagSlots).toBe(0); expect(plan.proposedTags.length).toBe(0);
+  });
+  it('does not tag an explicitly ineligible player or erase dead cap', () => {
+    const plan = optimizeKeepers([{ id: 'broken', name: 'Broken', position: 'QB', ppg: 30, s27: 180, tagEligible: false, deadCap: 135 }]);
+    expect(plan.proposedTags.length).toBe(0); expect(plan.payroll).toBe(180); expect(plan.deadCap).toBe(135);
+  });
   it('sets the annual cap to $1,000', () => expect(ANNUAL_CAP).toBe(1000));
   it('allows seven keepers at exactly $600', () => {
     expect(SEVEN_KEEPER_BUDGET).toBe(600);

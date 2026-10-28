@@ -58,6 +58,7 @@ const PowerRanks = () => {
               <ul className="list-disc space-y-1 pl-5">
                 <li><strong>2027 keepers:</strong> compare five players at any salary against seven totaling at most $600. Choose the group with the highest legal starting-lineup output; salary breaks scoring ties. Practice Squad is separate and exempt.</li>
                 <li><strong>Next-year scoring:</strong> each player's projected PPG, aged a year — players past their prime decline, young players get a growth bump.</li>
+                <li><strong>Franchise tags:</strong> optimize available $100 tags alongside keeper selection. Retained existing tags occupy the two slots; tags on unkept players free their slots. Proposed tags do not change saved contracts.</li>
                 <li><strong>Salary cap:</strong> $1,000 annually. Five keepers may exceed it with a 50% luxury tax on dues and the Constitution's $9 minimum draft budget.</li>
                 <li><strong>Lineup:</strong> scoring comes only from optimized keepers and available Practice Squad players. Unfilled positions receive no invented auction-player points; extra nonkeepers add no strength.</li>
                 <li><strong>Title odds:</strong> 5,000 schedule-neutral simulations of retained-player strength with offseason uncertainty, top 4 to the playoffs. These are pre-auction estimates, not a forecast of completed 2027 rosters.</li>
