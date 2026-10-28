@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Include fall-draft replacement players in next-season keeper optimization and trade scoring
+- [x] Show completed lineup estimates and verify five/seven keeper comparisons
+
 - [x] Optimize legal 2027 keeper groups for Dynasty Power Ranks and Trade Analyzer
 - [x] Show before/after keeper changes, cap room and luxury-tax exposure
 - [x] Test keeper constraints and verify real-team dynasty/trade results

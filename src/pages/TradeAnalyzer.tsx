@@ -4,6 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useTeams, usePlayerSalaries, type PlayerSalaryWithDetails } from '@/hooks/usePlayerSalaries';
 import { cn } from '@/lib/utils';
 import { keeperChanges, nextSeasonPpg, optimizeKeepers } from '@/lib/keeperOptimizer';
+import { replacementLevels, type ReplacementLevels } from '@/lib/draftReplacement';
 import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -104,12 +105,12 @@ const injuryAdjustedOutput = (roster: Asset[]) => {
   return sum / starters.length;
 };
 
-const keeperPlan = (roster: Asset[]) => optimizeKeepers(roster.map(p => ({
+const keeperPlan = (roster: Asset[], replacements: ReplacementLevels) => optimizeKeepers(roster.map(p => ({
   ...p, ppg: p.nextPpg, s27: p.tagBroken?.posMax ?? p.effectiveSalary,
   deadCap: p.tagBroken?.deadCap ?? 0,
   franchiseTag: p.franchiseTag && p.effectiveSalary === 100,
   tagEligible: !p.tagBroken && (!p.franchiseTag || p.effectiveSalary > 100),
-})));
+})), replacements);
 
 // Handcuffs: backup RB -> the NFL starter he'd replace. A handcuff is worth far
 // more to the fantasy team that rosters that starter (insurance) than elsewhere.
@@ -135,7 +136,8 @@ const TradeAnalyzer = () => {
   const [selA, setSelA] = useState<Set<string>>(new Set(searchParams.get('send')?.split(',').filter(Boolean)));
   const [selB, setSelB] = useState<Set<string>>(new Set(searchParams.get('receive')?.split(',').filter(Boolean)));
   const { rows: powerRows, weeksPlayed } = usePowerRankRows();
-  const { byId: tv } = useTradeValues();
+  const { byId: tv, rows: valueRows } = useTradeValues();
+  const replacements = useMemo(() => replacementLevels(valueRows.map(r => ({ ...r, ppg: nextSeasonPpg(r.ppg, r.position, r.age) }))), [valueRows]);
   const valueOf = (id: string) => tv.get(id)?.value ?? 0;
   // Dynasty asset value for trades: half Trade Value Chart (cap-aware), half
   // dynasty market value (exponential by dynasty rank, so a top-15 asset is
@@ -257,7 +259,7 @@ const TradeAnalyzer = () => {
 
   const evaluate = (roster: Asset[]) => {
     const active = roster.filter((p) => !p.practiceSquad);
-    const keepers = keeperPlan(roster);
+    const keepers = keeperPlan(roster, replacements);
     return {
       winNow: restOfSeasonPpw(active, weeksLeft),
       dynasty: keepers.ppw,
@@ -958,7 +960,8 @@ const TradeAnalyzer = () => {
                 <p className="mt-1 text-muted-foreground">{names(plan.keepers) || 'None'}</p>
                 {plan.proposedTags.map(p => <p key={p.id} className="mt-1 text-primary">Proposed FT: {p.name} · ${p.originalSalary?.toFixed(1)} → $100.0</p>)}
                 {plan.practiceSquad.length > 0 && <p className="mt-1 text-muted-foreground">Exempt PS: {names(plan.practiceSquad)}</p>}
-                <p className="mt-1 tabular-nums">{plan.ppw.toFixed(1)} retained pts/wk · ${plan.payroll.toFixed(1)} payroll</p>
+                <p className="mt-1 tabular-nums">{plan.ppw.toFixed(1)} lineup pts/wk · ${plan.payroll.toFixed(1)} keeper payroll</p>
+                <p className="mt-1 text-muted-foreground">{plan.draftReplacements.length} draft replacements · {plan.replacementPpw.toFixed(1)} pts/wk</p>
                 <p className="tabular-nums">${plan.draftBudget.toFixed(1)} draft budget{plan.deadCap > 0 ? ` · $${plan.deadCap.toFixed(1)} dead cap` : ''}</p>
                 {plan.luxuryTax && <p className="text-destructive">Luxury tax: 50% additional dues</p>}
               </div>
@@ -967,7 +970,7 @@ const TradeAnalyzer = () => {
           {r.keeperAdded.length > 0 && <p className="mt-2 text-primary">Added to keepers: {names(r.keeperAdded)}</p>}
           {r.keeperDisplaced.length > 0 && <p className="mt-1 text-destructive">No longer kept: {names(r.keeperDisplaced)}</p>}
           {r.nonkeeperIncoming.length > 0 && <p className="mt-1 text-muted-foreground">Incoming but not kept: {names(r.nonkeeperIncoming)}</p>}
-          <p className="mt-2 text-muted-foreground">Retained-player forecast only; open lineup spots await the draft. Salary changes reflect the optimized group, not the entire roster.</p>
+          <p className="mt-2 text-muted-foreground">Open starting spots receive average position-appropriate fall-draft replacements, using the same baseline before and after. Salary changes reflect the keeper group, not assumed draft purchases.</p>
         </section>
         <div className="grid grid-cols-4 gap-1.5 text-center">
           {[

@@ -1,4 +1,5 @@
 import { bestLineup } from './seasonSimulation';
+import { completedDraftLineup, type ReplacementLevels } from './draftReplacement';
 
 export const ANNUAL_CAP = 1000;
 export const SEVEN_KEEPER_BUDGET = 600;
@@ -20,14 +21,16 @@ export function nextSeasonPpg(ppg: number, position: string, age: number | null 
   return ppg * multiplier;
 }
 
-/** Exact keeper search. Vacant starting slots stay vacant; no invented auction acquisitions. */
-export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
+/** Exact keeper search with a fixed, position-aware fall-draft completion baseline. */
+export function optimizeKeepers<T extends KeeperPlayer>(roster: T[], replacements?: ReplacementLevels) {
   const active = roster.filter(p => !p.practiceSquad).sort((a, b) => a.id.localeCompare(b.id));
   const practiceSquad = roster.filter(p => p.practiceSquad);
   // Broken-tag obligations survive even if the acquired player is not retained.
   const deadCap = roster.reduce((sum, p) => sum + Math.max(0, p.deadCap ?? 0), 0);
-  const score = (keepers: T[]) => bestLineup([...keepers, ...practiceSquad].map(p => ({ ...p, projected: true })))
-    .reduce((sum, p) => sum + p.ppg, 0);
+  const lineupFor = (keepers: T[]) => replacements
+    ? completedDraftLineup([...keepers, ...practiceSquad], replacements)
+    : bestLineup([...keepers, ...practiceSquad].map(p => ({ ...p, projected: true })));
+  const score = (keepers: T[]) => lineupFor(keepers).reduce((sum, p) => sum + p.ppg, 0);
   let keepers: (T & { proposedTag?: boolean; originalSalary?: number })[] = [];
   let ppw = Number.NEGATIVE_INFINITY;
   let payroll = 0;
@@ -73,14 +76,18 @@ export function optimizeKeepers<T extends KeeperPlayer>(roster: T[]) {
   const committed = payroll + deadCap;
   const luxuryTax = committed > ANNUAL_CAP;
   const capSpace = ANNUAL_CAP - committed;
+  const lineup = lineupFor(keepers);
+  const draftReplacements = lineup.filter(p => 'replacement' in p && p.replacement === true);
+  const replacementPpw = draftReplacements.reduce((sum, p) => sum + p.ppg, 0);
   return {
     keepers, practiceSquad, excluded: active.filter(p => !ids.has(p.id)), route,
     proposedTags: keepers.filter(p => p.proposedTag), occupiedTags, openTagSlots,
     ppw, payroll, deadCap, committed, capSpace, luxuryTax,
+    draftReplacements, replacementPpw, retainedPpw: ppw - replacementPpw,
     draftBudget: luxuryTax ? 9 : Math.max(0, capSpace),
     // Salary utility credits only the selected group and its available auction budget.
     capUtility: ppw + (luxuryTax ? 9 : Math.max(0, capSpace)) * 0.02,
-    lineup: bestLineup([...keepers, ...practiceSquad].map(p => ({ ...p, projected: true }))),
+    lineup,
   };
 }
 

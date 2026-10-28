@@ -22,7 +22,7 @@ export function DynastyRanks() {
             <th className="w-12 px-2 py-3 text-left">#</th>
             <th className="w-[26%] px-2 py-3 text-left">Team</th>
             <th className="px-2 py-3">Dynasty Grade</th>
-            <th className="px-2 py-3">Keeper PPW</th>
+            <th className="px-2 py-3">2027 Lineup PPW</th>
             <th className="px-2 py-3">Keeper Payroll</th>
             <th className="px-2 py-3">Draft Budget</th>
             <th className="px-2 py-3">Playoff Odds</th>
@@ -50,8 +50,8 @@ export function DynastyRanks() {
                         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border py-3 text-sm">
                           <div><dt className="text-muted-foreground">Total salary allocation</dt><dd className="font-semibold tabular-nums">${t.committed.toFixed(1)} / $1,000.0</dd></div>
                           <div><dt className="text-muted-foreground">Weekly points above average</dt><dd className={cn('font-semibold tabular-nums', coreWeeklyComparison(t.ppw, teams).aboveAverage < 0 ? 'text-destructive' : 'text-primary')}>{coreWeeklyComparison(t.ppw, teams).aboveAverage >= 0 ? '+' : ''}{coreWeeklyComparison(t.ppw, teams).aboveAverage.toFixed(1)} pts/wk</dd></div>
-                          <div><dt className="text-muted-foreground">Core weekly points</dt><dd className="tabular-nums">{t.ppw.toFixed(1)}</dd></div>
-                          <div><dt className="text-muted-foreground">League average core</dt><dd className="tabular-nums">{coreWeeklyComparison(t.ppw, teams).average.toFixed(1)} pts/wk</dd></div>
+                          <div><dt className="text-muted-foreground">Completed lineup weekly points</dt><dd className="tabular-nums">{t.ppw.toFixed(1)}</dd></div>
+                          <div><dt className="text-muted-foreground">League average completed lineup</dt><dd className="tabular-nums">{coreWeeklyComparison(t.ppw, teams).average.toFixed(1)} pts/wk</dd></div>
                         </dl>
                         <table className="w-full text-sm">
                           <thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="pb-2">Player</th><th className="pb-2">Pos</th><th className="pb-2 text-right">2027 salary</th><th className="pb-2 text-right">Proj PPW</th></tr></thead>
@@ -64,7 +64,12 @@ export function DynastyRanks() {
                             </tr>
                           ))}</tbody>
                         </table>
-                        <p className="text-xs text-muted-foreground">Weekly comparison uses the legal starting-lineup output of each team's optimized core, including available Practice Squad players. Practice Squad salaries do not count toward allocation.</p>
+                        {t.draftReplacements.length > 0 && <div className="border-t border-border pt-3 text-sm">
+                          <h3 className="mb-2 font-semibold text-primary">Fall-draft replenishment</h3>
+                          {t.draftReplacements.map(p => <div key={p.id} className="flex justify-between gap-3 py-1"><span>{'slot' in p ? String(p.slot) : p.position} · {p.name}</span><span className="tabular-nums">{p.ppg.toFixed(1)} pts/wk</span></div>)}
+                          <p className="mt-2 font-semibold tabular-nums">{t.retainedPpw.toFixed(1)} retained + {t.replacementPpw.toFixed(1)} draft = {t.ppw.toFixed(1)} pts/wk</p>
+                        </div>}
+                        <p className="text-xs text-muted-foreground">Weekly comparison uses completed nine-player lineups: optimized keepers, available Practice Squad players and average replacement-level draft players in every open spot. Draft replacement points are estimates, not named acquisitions; Practice Squad salaries are exempt.</p>
                         {t.proposedTags.length > 0 && <p className="text-xs text-primary">{t.proposedTags.length} proposed franchise tag{t.proposedTags.length === 1 ? '' : 's'} using {t.openTagSlots} open slot{t.openTagSlots === 1 ? '' : 's'}. Saved contracts are unchanged.</p>}
                         {t.luxuryTax && <p className="text-sm text-destructive">Luxury tax: 50% additional dues · $9.0 draft budget</p>}
                       </DialogContent>

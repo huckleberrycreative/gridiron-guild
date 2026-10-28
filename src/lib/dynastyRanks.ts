@@ -1,4 +1,5 @@
 import { ANNUAL_CAP, nextSeasonPpg, optimizeKeepers } from './keeperOptimizer';
+import { replacementLevels } from './draftReplacement';
 export type DynastyInput = { id: string; name: string; position: string; ppg: number; s27: number; value: number; teamId: string | null; team: string; age: number | null; practiceSquad?: boolean; ft?: boolean };
 export const CAP = ANNUAL_CAP;
 const SIMS = 5000;
@@ -11,6 +12,7 @@ export function coreWeeklyComparison(ppw: number, cores: { ppw: number }[]) {
 }
 
 export function calculateDynastyRanks(rows: DynastyInput[]) {
+    const replacements = replacementLevels(rows.map(r => ({ ...r, ppg: nextSeasonPpg(r.ppg, r.position, r.age) })));
     const byTeam = new Map<string, { name: string; players: P[] }>();
     rows.forEach((r) => {
       if (!r.teamId) return;
@@ -20,7 +22,7 @@ export function calculateDynastyRanks(rows: DynastyInput[]) {
     });
 
     const out = Array.from(byTeam.entries()).map(([id, t]) => {
-      const plan = optimizeKeepers(t.players);
+      const plan = optimizeKeepers(t.players, replacements);
       return { id, name: t.name, ...plan, space: plan.capSpace, cut: plan.excluded };
     });
 
