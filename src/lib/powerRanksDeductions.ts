@@ -4,7 +4,7 @@ import fanaticsHexed from '@/assets/fanatics-hexed.png.asset.json';
 export type PowerRanksDeduction = { amount: number; image: string; label: string };
 
 const HEXED: { match: RegExp; deduction: PowerRanksDeduction }[] = [
-  { match: /fanatics/i, deduction: { amount: 25, image: fanaticsHexed.url, label: 'Fanatics' } },
+  { match: /fanatics/i, deduction: { amount: 50, image: fanaticsHexed.url, label: 'Fanatics' } },
 ];
 
 /** The team's display-only deduction, or null when they carry none. */
