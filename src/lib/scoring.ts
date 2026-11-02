@@ -5,18 +5,9 @@
 // Points awarded by weekly finish: 1st = 20 ... 10th = 0
 export const WEEKLY_FINISH_POINTS = [20, 18, 16, 14, 8, 4, 3, 2, 1, 0];
 
-export const pointsForFinish = (place: number, fieldSize: number) => {
-  if (fieldSize >= 10) return WEEKLY_FINISH_POINTS[place] ?? 0;
-  // Smaller fields (per the Constitution): no more than 50% of teams are
-  // rewarded for true "wins." Top 4 keep 20/18/16/14, the next spot is the
-  // 8-point "tie" zone, and the rest scale down to 0.
-  if (place <= 3) return WEEKLY_FINISH_POINTS[place];
-  const tieSpot = Math.ceil(fieldSize / 2) - 1; // 0-indexed midpoint
-  if (place === tieSpot) return 8;
-  if (place < tieSpot) return WEEKLY_FINISH_POINTS[place];
-  const remaining = fieldSize - 1 - tieSpot;
-  return Math.max(0, Math.round(8 - ((place - tieSpot) * 8) / Math.max(1, remaining)));
-};
+// Missing projection rows must never change the league's scoring scale.
+export const pointsForFinish = (place: number, _fieldSize: number) =>
+  WEEKLY_FINISH_POINTS[place] ?? 0;
 
 // Rivalry weeks are head-to-head: winners get +15 standings points, losers 0.
 export const RIVALRY_WIN_POINTS = 15;

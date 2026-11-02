@@ -14,3 +14,4 @@
 - Fetch public NFL schedule/defense inputs through the fixed-URL cached nfl-schedule edge function because ESPN's browser CORS support is unreliable; bundle the dated verified snapshot inside the function so upstream outages return successful fallback data rather than 502, and retain the client snapshot fallback with disclosure.
 - Trade/waiver valuation uses 2027+ salaries only; the current-year salary column is historical (last year's locked-in number), except 2026 draftees and waiver pickups whose current salary carries forward.
 - Standings everywhere (public, homepage, season grid, admin) derive from weekly_scores via the pure scoring/standingsFromScores modules — never hand-edit the regular_season_standings table; weekly finish gives top 4 a W, 5th a T, 6th-10th an L, with rivalry weeks head-to-head.
+- Weekly finish scoring uses the fixed league scale even with incomplete score/projection rows; missing data must not trigger smaller-field interpolation.

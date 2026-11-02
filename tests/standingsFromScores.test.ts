@@ -5,6 +5,18 @@ const week = (w: number, scores: number[]) =>
   scores.map((score, i) => ({ week: w, teamId: `t${i + 1}`, score }));
 
 describe('deriveStandings', () => {
+  test('Week 8 uses the fixed scale even when projection rows are missing', () => {
+    const awards = [20, 18, 16, 14, 8, 4, 3, 2, 1, 0];
+    for (const fieldSize of [8, 9, 10]) {
+      const rows = week(8, Array.from({ length: fieldSize }, (_, i) => 120 - i));
+      const byId = new Map(deriveStandings(rows).map((s) => [s.teamId, s]));
+      for (let i = 0; i < fieldSize; i++) {
+        expect(byId.get(`t${i + 1}`)?.points).toBe(awards[i]);
+      }
+      expect(byId.get('t6')?.points).toBe(4);
+    }
+  });
+
   test('awards 20/18/16/14/8/4/3/2/1/0 by weekly finish', () => {
     const rows = week(1, [110, 109, 108, 107, 106, 105, 104, 103, 102, 101]);
     const standings = deriveStandings(rows);
