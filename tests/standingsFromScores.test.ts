@@ -81,3 +81,27 @@ describe('deriveStandings', () => {
     expect(byId.get('tX')!.losses).toBe(1);
   });
 });
+
+describe('blowout bonus', () => {
+  test('winning a week by more than 20 points earns +1 standings point', () => {
+    const rows = week(8, [141, 120, 119, 118, 117, 116, 115, 114, 113, 112]);
+    const byId = new Map(deriveStandings(rows).map((s) => [s.teamId, s]));
+    expect(byId.get('t1')!.points).toBe(21); // 20 + 1 bonus (won by 21)
+    expect(byId.get('t2')!.points).toBe(18);
+  });
+
+  test('winning by exactly 20 points earns no bonus', () => {
+    const rows = week(8, [140, 120, 119, 118, 117, 116, 115, 114, 113, 112]);
+    const byId = new Map(deriveStandings(rows).map((s) => [s.teamId, s]));
+    expect(byId.get('t1')!.points).toBe(20);
+  });
+
+  test('no blowout bonus in rivalry weeks', () => {
+    const rows = [
+      { week: 4, teamId: '11111111-0001-0001-0001-000000000006', score: 150 },
+      { week: 4, teamId: 'tX', score: 100 },
+    ];
+    const byId = new Map(deriveStandings(rows).map((s) => [s.teamId, s]));
+    expect(byId.get('11111111-0001-0001-0001-000000000006')!.points).toBe(15);
+  });
+});
