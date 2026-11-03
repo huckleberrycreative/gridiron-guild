@@ -39,8 +39,10 @@ export function deriveStandings(rows: ScoreRow[]): DerivedStanding[] {
     .forEach(([week, weekRows]) => {
       const ordered = [...weekRows].sort((a, b) => b.score - a.score);
       const fieldSize = ordered.length;
+      const winnerMargin =
+        fieldSize > 1 ? ordered[0].score - ordered[1].score : 0;
       ordered.forEach((row, index) => {
-        const pts = weeklyPoints(week, row.teamId, index, fieldSize);
+        const pts = weeklyPoints(week, row.teamId, index, fieldSize, winnerMargin);
         const cur =
           totals.get(row.teamId) || { points: 0, pf: 0, wins: 0, losses: 0, ties: 0, weeks: 0 };
         cur.points += pts;
