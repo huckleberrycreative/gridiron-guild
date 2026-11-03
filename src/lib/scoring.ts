@@ -20,9 +20,21 @@ export const RIVALRY_WEEKS: Record<number, string[]> = {
   ],
 };
 
-/** Standings points for a team's weekly finish, honoring rivalry weeks. */
-export const weeklyPoints = (week: number, teamId: string, place: number, fieldSize: number) => {
+// Winning a week by more than 20 points earns a +1 standings-point bonus.
+export const BLOWOUT_MARGIN = 20;
+export const BLOWOUT_BONUS = 1;
+
+/** Standings points for a team's weekly finish, honoring rivalry weeks and the
+ * blowout bonus. `margin` is the winner's scoring margin over 2nd place. */
+export const weeklyPoints = (
+  week: number,
+  teamId: string,
+  place: number,
+  fieldSize: number,
+  margin = 0,
+) => {
   const rivalry = RIVALRY_WEEKS[week];
   if (rivalry) return rivalry.includes(teamId) ? RIVALRY_WIN_POINTS : 0;
-  return pointsForFinish(place, fieldSize);
+  const base = pointsForFinish(place, fieldSize);
+  return place === 0 && margin > BLOWOUT_MARGIN ? base + BLOWOUT_BONUS : base;
 };

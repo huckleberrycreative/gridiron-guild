@@ -69,11 +69,13 @@ const Season2026 = () => {
         .filter((s) => s.week === w)
         .sort((a, b) => b.score - a.score);
       const inner = new Map<string, { score: number; place: number; points: number }>();
+      const winnerMargin =
+        weekScores.length > 1 ? weekScores[0].score - weekScores[1].score : 0;
       weekScores.forEach((s, i) => {
         inner.set(s.teamId, {
           score: s.score,
           place: i,
-          points: weeklyPoints(w, s.teamId, i, weekScores.length),
+          points: weeklyPoints(w, s.teamId, i, weekScores.length, winnerMargin),
         });
       });
       grid.set(w, inner);
