@@ -89,6 +89,10 @@ const routeMeta: Record<string, RouteMeta> = {
     title: "2026 Season — Men's League Fantasy Football",
     description: "Live 2026 Men's League rosters, fall draft budgets, and the countdown to the fall draft.",
   },
+  '/playoff-simulator': {
+    title: "Playoff Simulator — Men's League Fantasy Football",
+    description: "Simulate the Men's League Weeks 14-17 playoffs from current rosters and projections.",
+  },
   '/rivalry-week': {
     title: "Rivalry Week — Men's League Fantasy Football",
     description: "Historic Men's League rivalries and current trophy ownership for every matchup.",
