@@ -70,7 +70,13 @@ interface NavItem {
 }
 
 const navLinks: NavItem[] = [
-  { href: '/season-2026', label: '2026 Season' },
+  {
+    label: '2026 Season',
+    children: [
+      { href: '/season-2026', label: 'Season Overview', description: 'Standings, scores and weekly grid' },
+      { href: '/playoff-simulator', label: 'Playoff Simulator', description: 'Spin a Weeks 14-17 playoff run' },
+    ],
+  },
   {
     label: 'GM Tools',
     children: [
