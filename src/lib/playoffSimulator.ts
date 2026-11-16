@@ -1,5 +1,5 @@
 import { byeWeekFor } from './byeWeeks';
-import { INJURY_ONSET, semifinalScore, matchupMultiplier, bestLineup, healthyRoster, type SimPlayer, type ScheduleContext } from './seasonSimulation';
+import { INJURY_ONSET, matchupMultiplier, bestLineup, healthyRoster, type SimPlayer, type ScheduleContext } from './seasonSimulation';
 
 export const PLAYOFF_WEEKS = [14, 15, 16, 17] as const;
 export type PlayoffTeam = { id: string; name: string; roster: SimPlayer[] };
@@ -77,11 +77,16 @@ function summarize(e: PlayoffEntry, all: PlayoffEntry[], champ: PlayoffEntry, ru
 }
 
 /** One Monte Carlo playoff run. Seeds 1-2 keep their best of Weeks 14/15, 3-4 average, 5 keeps the lowest; top two advance to a two-week (16+17) head-to-head final. */
-export function simulatePlayoffs(seeded: PlayoffTeam[], schedule: ScheduleContext, seedKey: string): PlayoffResult {
+export const toiletRuleFor = (seed: number): PlayoffEntry['semiRule'] => seed <= 7 ? 'best' : 'average';
+const applyRule = (rule: PlayoffEntry['semiRule'], a: number, b: number) => rule === 'best' ? Math.max(a, b) : rule === 'average' ? (a + b) / 2 : Math.min(a, b);
+
+export function simulatePlayoffs(seeded: PlayoffTeam[], schedule: ScheduleContext, seedKey: string, opts: { firstSeed?: number; ruleFor?: (seed: number) => PlayoffEntry['semiRule'] } = {}): PlayoffResult {
+  const firstSeed = opts.firstSeed ?? 1, ruleFor = opts.ruleFor ?? semiRuleFor;
   const rnd = rngFor(seedKey);
   const entries: PlayoffEntry[] = seeded.map((team, i) => {
     const weeks = simulateTeamWeeks(team, schedule, rnd);
-    return { seed: i + 1, team, weeks, semiScore: r1(semifinalScore(i + 1, weeks[14].score, weeks[15].score)), semiRule: semiRuleFor(i + 1), advanced: false, finalScore: null, champion: false, summary: '' };
+    const seed = firstSeed + i, rule = ruleFor(seed);
+    return { seed, team, weeks, semiScore: r1(applyRule(rule, weeks[14].score, weeks[15].score)), semiRule: rule, advanced: false, finalScore: null, champion: false, summary: '' };
   });
   const finalists = [...entries].sort((a, b) => b.semiScore - a.semiScore || a.seed - b.seed).slice(0, 2);
   finalists.forEach(f => { f.advanced = true; f.finalScore = r1(f.weeks[16].score + f.weeks[17].score); });

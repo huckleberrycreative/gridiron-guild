@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePowerRankRows } from '@/hooks/usePowerRanks';
 import { getTeamLogo } from '@/components/TeamLogo';
 import { cn } from '@/lib/utils';
-import { PLAYOFF_WEEKS, simulatePlayoffs, type PlayoffEntry, type PlayoffResult } from '@/lib/playoffSimulator';
+import { PLAYOFF_WEEKS, simulatePlayoffs, semiRuleFor, toiletRuleFor, type PlayoffEntry, type PlayoffResult } from '@/lib/playoffSimulator';
 
 const RULE_LABEL = { best: 'Best of Wk 14/15', average: 'Average of Wk 14/15', lowest: 'Lowest of Wk 14/15' } as const;
 
@@ -45,11 +45,22 @@ function SemiCard({ e }: { e: PlayoffEntry }) {
   );
 }
 
-export default function PlayoffSimulator() {
+type Mode = 'playoff' | 'toilet';
+const MODES = {
+  playoff: { title: 'Playoff Simulator', first: 1, count: 5, ruleFor: semiRuleFor, final: 'Championship', winner: 'Champion',
+    intro: 'Spin a full Weeks 14–17 playoff run built on current rosters, byes, injuries and matchups. Seeds 1–2 keep their best Week 14/15 score, seeds 3–4 average them, and seed 5 keeps the lowest. The top two advance to a two-week championship.' },
+  toilet: { title: 'Toilet Bowl Simulator', first: 6, count: 4, ruleFor: toiletRuleFor, final: 'Toilet Bowl Final', winner: 'Toilet Bowl Winner',
+    intro: 'Spin a full Weeks 14–17 consolation run for seeds 6–9, built on current rosters, byes, injuries and matchups. Seeds 6–7 keep their best Week 14/15 score and seeds 8–9 average them. The top two advance to a two-week Toilet Bowl final.' },
+};
+
+export function ToiletBowlSimulator() { return <PlayoffSimulator mode="toilet" />; }
+
+export default function PlayoffSimulator({ mode = 'playoff' }: { mode?: Mode }) {
+  const M = MODES[mode];
   const { rows, loading, schedule } = usePowerRankRows('actual');
   const ranked = useMemo(() => [...rows].sort((a, b) => b.team.totalPoints - a.team.totalPoints), [rows]);
   const [seeds, setSeeds] = useState<string[]>([]);
-  useEffect(() => { if (!seeds.length && ranked.length >= 5) setSeeds(ranked.slice(0, 5).map(r => r.team.id)); }, [ranked, seeds.length]);
+  useEffect(() => { if (!seeds.length && ranked.length >= 5) setSeeds(ranked.slice(M.first - 1, M.first - 1 + M.count).map(r => r.team.id)); }, [ranked, seeds.length]);
   const [reels, setReels] = useState<('idle' | 'spinning' | 'done')[]>(['idle', 'idle', 'idle', 'idle']);
   const [result, setResult] = useState<PlayoffResult | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -61,7 +72,7 @@ export default function PlayoffSimulator() {
 
   const run = () => {
     const teams = seeds.map(id => rows.find(r => r.team.id === id)!).map(r => ({ id: r.team.id, name: r.team.name, roster: r.roster }));
-    setResult(simulatePlayoffs(teams, schedule, `${seeds.join('|')}:${Date.now()}`));
+    setResult(simulatePlayoffs(teams, schedule, `${seeds.join('|')}:${Date.now()}`, { firstSeed: M.first, ruleFor: M.ruleFor }));
     setShowResult(false);
     timers.current.forEach(clearTimeout);
     setReels(['spinning', 'spinning', 'spinning', 'spinning']);
@@ -75,11 +86,11 @@ export default function PlayoffSimulator() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-10 max-w-6xl">
-        <h1 className="font-display text-4xl font-bold text-primary">Playoff Simulator</h1>
-        <p className="mt-2 text-muted-foreground max-w-3xl">Spin a full Weeks 14–17 playoff run built on current rosters, byes, injuries and matchups. Seeds 1–2 keep their best Week 14/15 score, seeds 3–4 average them, and seed 5 keeps the lowest. The top two advance to a two-week championship.</p>
+        <h1 className="font-display text-4xl font-bold text-primary">{M.title}</h1>
+        <p className="mt-2 text-muted-foreground max-w-3xl">{M.intro}</p>
 
         <div className="mt-6 flex flex-col items-center gap-4 rounded-xl border bg-card p-6">
-          <Button size="lg" onClick={run} disabled={loading || seeds.length < 5 || duplicate || spinning} className="px-10 text-lg">
+          <Button size="lg" onClick={run} disabled={loading || seeds.length < M.count || duplicate || spinning} className="px-10 text-lg">
             {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}Run Simulation
           </Button>
           <div className="grid w-full max-w-3xl grid-cols-4 gap-3">
@@ -88,12 +99,12 @@ export default function PlayoffSimulator() {
         </div>
 
         <h2 className="mt-8 font-display text-2xl font-bold">Playoff Seeds</h2>
-        <p className="text-sm text-muted-foreground">Defaults to the current top five in the standings. Swap in any team.</p>
+        <p className="text-sm text-muted-foreground">{mode === 'playoff' ? 'Defaults to the current top five in the standings.' : 'Defaults to the current 6th–9th place teams in the standings.'} Swap in any team.</p>
         {duplicate && <p className="text-sm text-destructive mt-1">Each team can only hold one seed.</p>}
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {[0, 1, 2, 3, 4].map(i => (
+          {Array.from({ length: M.count }, (_, i) => i).map(i => (
             <div key={i} className="rounded-lg border p-3">
-              <div className="text-xs font-bold text-muted-foreground mb-1">#{i + 1} seed · {RULE_LABEL[i < 2 ? 'best' : i < 4 ? 'average' : 'lowest']}</div>
+              <div className="text-xs font-bold text-muted-foreground mb-1">#{M.first + i} seed · {RULE_LABEL[M.ruleFor(M.first + i)]}</div>
               <Select value={seeds[i]} onValueChange={v => setSeeds(s => s.map((x, j) => (j === i ? v : x)))} disabled={spinning}>
                 <SelectTrigger><SelectValue placeholder="Pick team" /></SelectTrigger>
                 <SelectContent>{ranked.map(r => <SelectItem key={r.team.id} value={r.team.id}>{r.team.name}</SelectItem>)}</SelectContent>
@@ -108,7 +119,7 @@ export default function PlayoffSimulator() {
             <p className="text-sm text-muted-foreground">Top two scores advance.</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{result.entries.map(e => <SemiCard key={e.team.id} e={e} />)}</div>
 
-            <h2 className="mt-8 font-display text-2xl font-bold">Championship · Weeks 16–17</h2>
+            <h2 className="mt-8 font-display text-2xl font-bold">{M.final} · Weeks 16–17</h2>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
               {finalists.map(e => (
                 <div key={e.team.id} className={cn('rounded-lg border-2 p-4', e.champion ? 'border-green-600 bg-green-50' : 'border-border')}>
@@ -120,7 +131,7 @@ export default function PlayoffSimulator() {
             </div>
             <div className="mt-6 rounded-xl bg-primary p-6 text-center text-primary-foreground">
               <Trophy className="mx-auto h-10 w-10" />
-              <div className="mt-2 text-sm uppercase tracking-widest opacity-80">Champion</div>
+              <div className="mt-2 text-sm uppercase tracking-widest opacity-80">{M.winner}</div>
               <div className="flex items-center justify-center gap-3 mt-1"><Logo name={champ.team.name} size="h-10 w-10" /><span className="font-display text-3xl font-bold">{champ.team.name}</span></div>
             </div>
 

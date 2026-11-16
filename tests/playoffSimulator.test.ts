@@ -25,3 +25,10 @@ describe('playoff simulator', () => {
     expect(champ.finalScore!).toBeCloseTo(champ.weeks[16].score + champ.weeks[17].score, 0);
   });
 });
+import { toiletRuleFor } from '../src/lib/playoffSimulator';
+test('toilet bowl: seeds 6-7 best, 8-9 average, top two advance', () => {
+  expect([6,7,8,9].map(toiletRuleFor)).toEqual(['best','best','average','average']);
+  const r = simulatePlayoffs([team('a',12),team('b',12),team('c',12),team('d',12)], emptySchedule, 'z', { firstSeed: 6, ruleFor: toiletRuleFor });
+  expect(r.entries.map(e => e.seed)).toEqual([6,7,8,9]);
+  expect(r.entries.filter(e => e.advanced).length).toBe(2);
+});
