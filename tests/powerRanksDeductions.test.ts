@@ -8,10 +8,8 @@ describe('Power Ranks display deductions', () => {
     expect(d?.image).toContain('fanatics-hexed');
   });
 
-  test('West NY MW Fire Ants take a 25-point deduction shown with their uploaded Hexed poster', () => {
-    const d = deductionFor('West NY MW Fire Ants');
-    expect(d?.amount).toBe(25);
-    expect(d?.image).toContain('fire-ants-hexed');
+  test('West NY MW Fire Ants carry no deduction', () => {
+    expect(deductionFor('West NY MW Fire Ants')).toBeNull();
   });
 
   test('Austin Area Brock Party carries no deduction', () => {

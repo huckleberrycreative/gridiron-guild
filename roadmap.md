@@ -43,3 +43,5 @@
 
 - [x] Finish and verify secure commissioner-only admin login
 - [x] Invite jackson.boyd.ferrell@gmail.com and send a profile setup email
+
+- [x] Remove the West NY MW Fire Ants −25 Hexed deduction from Power Ranks and retire its poster
