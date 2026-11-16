@@ -75,6 +75,7 @@ const navLinks: NavItem[] = [
     children: [
       { href: '/season-2026', label: 'Season Overview', description: 'Standings, scores and weekly grid' },
       { href: '/playoff-simulator', label: 'Playoff Simulator', description: 'Spin a Weeks 14-17 playoff run' },
+      { href: '/toilet-bowl-simulator', label: 'Toilet Bowl Simulator', description: 'Spin the seeds 6-9 consolation bracket' },
     ],
   },
   {

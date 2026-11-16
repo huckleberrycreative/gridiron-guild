@@ -25,7 +25,7 @@ import Pantheon from "./pages/Pantheon";
 import Manifesto from "./pages/Manifesto";
 import Season2025 from "./pages/Season2025";
 import Season2026 from "./pages/Season2026";
-import PlayoffSimulator from "./pages/PlayoffSimulator";
+import PlayoffSimulator, { ToiletBowlSimulator } from "./pages/PlayoffSimulator";
 import RivalryWeek from "./pages/RivalryWeek";
 import RookieDraft from "./pages/RookieDraft";
 import OfficialRosters2026 from "./pages/OfficialRosters2026";
@@ -88,6 +88,7 @@ const App = () => (
               <Route path="/season-2025" element={<Season2025 />} />
               <Route path="/season-2026" element={<Season2026 />} />
               <Route path="/playoff-simulator" element={<PlayoffSimulator />} />
+              <Route path="/toilet-bowl-simulator" element={<ToiletBowlSimulator />} />
               <Route path="/rivalry-week" element={<RivalryWeek />} />
               <Route path="/rookie-draft" element={<RookieDraft />} />
               <Route path="/official-rosters-2026" element={<OfficialRosters2026 />} />
