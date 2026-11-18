@@ -870,54 +870,72 @@ const TradeAnalyzer = () => {
     return { bull, bear, base };
   };
 
-  const renderVerdict = (label: string, r: Result) => {
+  const verdictLabel = (v: number) =>
+    Math.abs(v) <= 2 ? 'Fair' : Math.abs(v) <= 5 ? (v > 0 ? 'Favors you' : 'Against you') : 'Lopsided';
+
+  // Compact headline card: the one number plus the three lenses. Everything
+  // wordy lives in the full breakdown below the rosters.
+  const renderGrade = (label: string, r: Result) => {
     const up = r.score >= 0;
-    const c = cases(r);
     return (
-      <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="min-w-0">
-            <h3 className="font-display font-bold uppercase tracking-wide text-sm truncate">{label}</h3>
+      <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          {getTeamLogo(label) && (
+            <img src={getTeamLogo(label)} alt="" className="h-8 w-8 shrink-0 object-contain" />
+          )}
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display font-bold uppercase tracking-wide text-xs truncate">{label}</h3>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               {r.situation.mode === 'rebuild' ? 'Rebuilding' : r.situation.mode === 'contender' ? 'Contending' : 'On the bubble'} · {Math.round(r.situation.playoff)}% playoff odds
             </p>
-            <p className="text-xs text-muted-foreground truncate">Gets: {names(r.gained)}</p>
-            {r.tagBreaks.map((p) => p.tagBroken && (
-              <p key={p.id} className="text-xs text-destructive truncate" title="Franchise tag broken by trade — salary reverts to positional max plus dead cap penalty">
-                Tag broken: {p.name} → ${p.tagBroken.posMax}/yr + ${p.tagBroken.deadCap} dead cap
-              </p>
-            ))}
-            {r.drops.length > 0 && (
-              <p className="text-xs text-destructive truncate">Must cut to make room: {names(r.drops)}</p>
-            )}
           </div>
           <div className={cn('flex items-center gap-1 shrink-0', up ? 'text-emerald-600' : 'text-destructive')}>
-            {up ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+            {up ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
             <div className="text-right">
-              <span className="font-mono text-3xl font-extrabold tabular-nums">{up ? '+' : ''}{r.score.toFixed(1)}%</span>
-              <div className="text-[10px] font-bold uppercase tracking-wider">
-                {Math.abs(r.score) <= 2 ? 'Fair' : Math.abs(r.score) <= 5 ? (up ? 'Favors you' : 'Against you') : 'Lopsided'}
-              </div>
+              <span className="font-mono text-xl font-extrabold tabular-nums">{up ? '+' : ''}{r.score.toFixed(1)}%</span>
+              <div className="text-[9px] font-bold uppercase tracking-wider">{verdictLabel(r.score)}</div>
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-1.5 text-center mb-3">
+        <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
           {[
             { k: 'Win-now', v: r.winNowGrade },
             { k: 'Dynasty', v: r.dynastyGrade },
             { k: 'Blended', v: r.score },
           ].map((g) => (
-            <div key={g.k} className="rounded-md border border-border/60 bg-muted/40 px-1 py-1.5">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{g.k}</div>
-              <div className={cn('font-mono text-base font-extrabold tabular-nums', g.v >= 0 ? 'text-emerald-600' : 'text-destructive')}>
+            <div key={g.k} className="rounded-md border border-border/60 bg-muted/40 px-1 py-1">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{g.k}</div>
+              <div className={cn('font-mono text-sm font-extrabold tabular-nums', g.v >= 0 ? 'text-emerald-600' : 'text-destructive')}>
                 {g.v > 0 ? '+' : ''}{g.v.toFixed(1)}%
-              </div>
-              <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                {Math.abs(g.v) <= 2 ? 'Fair' : Math.abs(g.v) <= 5 ? (g.v > 0 ? 'Favors you' : 'Against you') : 'Lopsided'}
               </div>
             </div>
           ))}
         </div>
+      </div>
+    );
+  };
+
+  // Full breakdown: lives below the rosters so the picker never jumps around.
+  const renderDetail = (label: string, r: Result) => {
+    const c = cases(r);
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h3 className="font-display font-bold uppercase tracking-wide text-sm truncate">{label}</h3>
+          <span className={cn('shrink-0 font-mono text-sm font-extrabold tabular-nums', r.score >= 0 ? 'text-emerald-600' : 'text-destructive')}>
+            {r.score >= 0 ? '+' : ''}{r.score.toFixed(1)}% · {verdictLabel(r.score)}
+          </span>
+        </div>
+        <p className="mb-1 text-xs text-muted-foreground">Gets: {names(r.gained)}</p>
+        <p className="mb-2 text-xs text-muted-foreground">Gives: {names(r.lost)}</p>
+        {r.tagBreaks.map((p) => p.tagBroken && (
+          <p key={p.id} className="text-xs text-destructive" title="Franchise tag broken by trade — salary reverts to positional max plus dead cap penalty">
+            Tag broken: {p.name} → ${p.tagBroken.posMax}/yr + ${p.tagBroken.deadCap} dead cap
+          </p>
+        ))}
+        {r.drops.length > 0 && (
+          <p className="text-xs text-destructive">Must cut to make room: {names(r.drops)}</p>
+        )}
         <ul className="space-y-1.5 text-sm mb-3">
           <li><span className="font-bold text-emerald-600">Bull:</span> {c.bull}</li>
           <li><span className="font-bold text-destructive">Bear:</span> {c.bear}</li>
@@ -1030,17 +1048,17 @@ const TradeAnalyzer = () => {
                 ))}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] lg:items-start">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,340px)] lg:items-start">
                 <div className={cn('grid gap-3 md:grid-cols-2', mobileView !== 'rosters' && 'hidden lg:grid')}>
                   {renderColumn('A')}
                   {renderColumn('B')}
                 </div>
 
-                <aside className={cn('space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1', mobileView !== 'results' && 'hidden lg:block')}>
+                <aside className={cn('space-y-3 lg:sticky lg:top-20 lg:pr-1', mobileView !== 'results' && 'hidden lg:block')}>
                   {analysis ? (
                     <>
-                      {renderVerdict(teamName(teamA), analysis.A)}
-                      {renderVerdict(teamName(teamB), analysis.B)}
+                      {renderGrade(teamName(teamA), analysis.A)}
+                      {renderGrade(teamName(teamB), analysis.B)}
                     </>
                   ) : (
                     <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -1049,6 +1067,13 @@ const TradeAnalyzer = () => {
                   )}
                 </aside>
               </div>
+
+              {analysis && (
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  {renderDetail(teamName(teamA), analysis.A)}
+                  {renderDetail(teamName(teamB), analysis.B)}
+                </div>
+              )}
 
               <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
                 <h2 className="font-display uppercase tracking-wider text-xs font-bold text-foreground mb-2">How the grade works</h2>
