@@ -39,6 +39,7 @@ export interface SeasonEntry {
   /** Standings ("aggregate") points; null when the source sheet did not record them. */
   ap: number | null;
   pf: number;
+  ties?: number;
 }
 
 export interface PlayoffEntry {
@@ -57,6 +58,8 @@ export interface SeasonHistory {
   entries: SeasonEntry[];
   playoffs: PlayoffEntry[];
   note?: string;
+  /** Live season: no playoff results yet; excluded from finish and playoff career stats. */
+  inProgress?: boolean;
 }
 
 const e = (gov: string, team: string, wins: number, losses: number, ap: number | null, pf: number): SeasonEntry => ({ gov, team, wins, losses, ap, pf });

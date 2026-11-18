@@ -4,10 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { TeamLogo } from '@/components/TeamLogo';
 import { SortableTable, type Column } from '@/components/SortableTable';
-import { ALL_SEASON_ROWS, careerRow, governor, ordinal, weeklyHeadToHead, type SeasonRow, type HeadToHead } from '@/lib/leagueHistory';
+import { careerRow, governor, ordinal, weeklyHeadToHead, type SeasonRow, type HeadToHead } from '@/lib/leagueHistory';
 import { GovLink, ResultBadge, StatTile, fmt1, pct, record } from '@/components/history/HistoryBits';
 import { ArrowLeft, Trophy, TrendingDown, TrendingUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLeagueHistory } from '@/hooks/useLeagueHistory';
 
 const seasonCols: Column<SeasonRow>[] = [
   { key: 'year', label: 'Year', sortable: true },
@@ -32,8 +33,9 @@ const h2hCols: Column<HeadToHead & { pctv: number }>[] = [
 export default function GovernorProfile() {
   const { slug = '' } = useParams();
   const g = governor(slug);
-  const c = careerRow(slug);
-  const rows = ALL_SEASON_ROWS.filter((r) => r.gov === slug);
+  const { history } = useLeagueHistory();
+  const c = careerRow(slug, history.rows);
+  const rows = history.rows.filter((r) => r.gov === slug);
 
   const { data: profile } = useQuery({
     queryKey: ['governor-profile', g?.currentTeam],
@@ -50,11 +52,13 @@ export default function GovernorProfile() {
     );
   }
 
-  const best = [...rows].sort((a, b) => a.rank - b.rank || b.pf - a.pf)[0];
-  const worst = [...rows].sort((a, b) => b.rank - a.rank || a.pf - b.pf)[0];
-  const h2h = weeklyHeadToHead(slug).map((h) => ({ ...h, pctv: h.wins + h.losses ? h.wins / (h.wins + h.losses + h.ties) : 0 }));
+  const done = rows.filter((r) => !r.inProgress);
+  const best = [...done].sort((a, b) => a.rank - b.rank || b.pf - a.pf)[0];
+  const worst = [...done].sort((a, b) => b.rank - a.rank || a.pf - b.pf)[0];
+  const h2h = weeklyHeadToHead(slug, history.weekly).map((h) => ({ ...h, pctv: h.wins + h.losses ? h.wins / (h.wins + h.losses + h.ties) : 0 }));
   const teamNames = [...new Set(rows.map((r) => r.team))];
   const maxField = Math.max(...rows.map((r) => r.fieldSize));
+  const live = rows.find((r) => r.inProgress);
 
   return (
     <Layout>
@@ -88,7 +92,7 @@ export default function GovernorProfile() {
               <StatTile label="Avg Finish" value={fmt1(c.avgRank)} sub={`Best ${ordinal(c.bestRank)} · Worst ${ordinal(c.worstRank)}`} />
               <StatTile label="Points / Week" value={fmt1(c.ppw)} sub={`${fmt1(c.pfPerSeason)} per season`} />
               <StatTile label="Standings Pts" value={c.ap} sub={`${fmt1(c.apPerSeason)} per season`} />
-              <StatTile label="Best / Worst Wk" value={c.highWeek === null ? '—' : `${fmt1(c.highWeek)}`} sub={c.lowWeek === null ? '2017–23 data' : `Low ${fmt1(c.lowWeek)}`} />
+              <StatTile label="Best / Worst Wk" value={c.highWeek === null ? '—' : `${fmt1(c.highWeek)}`} sub={c.lowWeek === null ? 'No weekly data' : `Low ${fmt1(c.lowWeek)}`} />
             </div>
           </div>
 
@@ -118,14 +122,14 @@ export default function GovernorProfile() {
                 <div key={r.year} className="flex min-w-[44px] flex-1 flex-col items-center gap-1">
                   <span className="text-xs font-bold">{ordinal(r.rank)}</span>
                   <div className="flex h-28 w-full items-end">
-                    <div className={cn('w-full rounded-t', r.result === 'Champion' ? 'bg-gold' : r.seed ? 'bg-primary' : 'bg-muted-foreground/30')} style={{ height: `${h}%` }} />
+                    <div className={cn('w-full rounded-t', r.inProgress ? 'bg-accent/60' : r.result === 'Champion' ? 'bg-gold' : r.seed ? 'bg-primary' : 'bg-muted-foreground/30')} style={{ height: `${h}%` }} />
                   </div>
                   <span className="text-[11px] text-muted-foreground">{r.year}</span>
                 </div>
               );
             })}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">Gold = title · Navy = playoff team · Grey = missed playoffs.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Gold = title · Navy = playoff team · Grey = missed playoffs{live ? ` · Red = ${live.year} current standing (through Week ${history.liveWeeks})` : ''}.</p>
 
           <h2 className="mb-3 mt-8 font-display text-xl font-bold">Season-by-Season</h2>
           <SortableTable data={rows} columns={seasonCols} defaultSortKey="year" />
@@ -147,7 +151,7 @@ export default function GovernorProfile() {
           {h2h.length > 0 && (
             <>
               <h2 className="mb-1 mt-8 font-display text-xl font-bold">Week-by-Week Scoring vs. Each Governor</h2>
-              <p className="mb-3 text-sm text-muted-foreground">How often {g.short} outscored each rival in the same week (2017–2023 weekly data).</p>
+              <p className="mb-3 text-sm text-muted-foreground">How often {g.short} outscored each rival in the same week (2017–2023{history.liveYear ? ` and ${history.liveYear}` : ''} weekly data).</p>
               <SortableTable data={h2h} columns={h2hCols} defaultSortKey="pctv" />
             </>
           )}

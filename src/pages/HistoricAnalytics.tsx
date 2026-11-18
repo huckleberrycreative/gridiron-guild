@@ -4,11 +4,11 @@ import { SortableTable, type Column } from '@/components/SortableTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { SEASONS } from '@/data/leagueHistory';
-import { ALL_SEASON_ROWS, ALL_WEEKS, CAREERS, CHAMPIONS, YEARS, governor, ordinal, type CareerRow, type SeasonRow, type WeekScore } from '@/lib/leagueHistory';
+import { governor, ordinal, type CareerRow, type SeasonRow, type WeekScore } from '@/lib/leagueHistory';
 import { GovLink, ResultBadge, StatTile, fmt1, pct, record } from '@/components/history/HistoryBits';
 import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLeagueHistory } from '@/hooks/useLeagueHistory';
 
 const careerCols: Column<CareerRow>[] = [
   { key: 'name', label: 'Governor', sortable: true, render: (_, r) => <GovLink slug={r.slug} /> },
@@ -54,27 +54,31 @@ function bestBy<T>(xs: T[], f: (x: T) => number | null, dir: 1 | -1 = 1): T {
 }
 
 export default function HistoricAnalytics() {
-  const [year, setYear] = useState(String(YEARS[YEARS.length - 1]));
+  const { history } = useLeagueHistory();
+  const { rows: ALL_SEASON_ROWS, weeks: ALL_WEEKS, careers: CAREERS, champions: CHAMPIONS, years: YEARS, seasons: SEASONS } = history;
+  const [picked, setYear] = useState<string | null>(null);
+  const year = picked ?? String(YEARS[YEARS.length - 1]);
   const [scope, setScope] = useState<'active' | 'all'>('active');
   const [weekView, setWeekView] = useState<'high' | 'low'>('high');
   const careers = CAREERS.filter((c) => scope === 'all' || c.active);
-  const season = SEASONS.find((s) => String(s.year) === year)!;
+  const season = SEASONS.find((s) => String(s.year) === year) ?? SEASONS[SEASONS.length - 1];
   const seasonRows = ALL_SEASON_ROWS.filter((r) => String(r.year) === year);
 
   const weeks = useMemo(() => {
     const sorted = [...ALL_WEEKS].sort((a, b) => (weekView === 'high' ? b.score - a.score : a.score - b.score));
     return sorted.slice(0, 25).map((w) => ({ ...w, name: governor(w.gov)?.name ?? w.gov }));
-  }, [weekView]);
+  }, [weekView, ALL_WEEKS]);
 
   const records = useMemo(() => {
     const hi = bestBy(ALL_WEEKS, (w) => w.score);
     const lo = bestBy(ALL_WEEKS, (w) => w.score, -1);
-    const pf = bestBy(ALL_SEASON_ROWS, (r) => r.ppw);
-    const lowPf = bestBy(ALL_SEASON_ROWS, (r) => r.ppw, -1);
-    const ap = bestBy(ALL_SEASON_ROWS, (r) => r.ap);
+    const doneRows = ALL_SEASON_ROWS.filter((r) => !r.inProgress);
+    const pf = bestBy(doneRows, (r) => r.ppw);
+    const lowPf = bestBy(doneRows, (r) => r.ppw, -1);
+    const ap = bestBy(doneRows, (r) => r.ap);
     const final = bestBy(ALL_SEASON_ROWS.filter((r) => r.result === 'Champion'), (r) => r.final);
-    const steady = bestBy(ALL_SEASON_ROWS.filter((r) => r.stdDev !== null), (r) => r.stdDev, -1);
-    const perfect = ALL_SEASON_ROWS.filter((r) => r.losses === 0 && r.ties === 0);
+    const steady = bestBy(doneRows.filter((r) => r.stdDev !== null), (r) => r.stdDev, -1);
+    const perfect = doneRows.filter((r) => r.losses === 0 && r.ties === 0);
     const titles = bestBy(CAREERS, (c) => c.titles);
     const winPct = bestBy(CAREERS.filter((c) => c.seasons >= 3), (c) => c.winPct);
     const name = (s: string) => governor(s)?.name ?? s;
@@ -90,7 +94,7 @@ export default function HistoricAnalytics() {
       { label: 'Most championships', value: String(titles.titles), who: titles.slug, when: titles.titleYears.join(', ') },
       { label: 'Best career win % (3+ yrs)', value: pct(winPct.winPct), who: winPct.slug, when: record(winPct.wins, winPct.losses, winPct.ties) },
     ];
-  }, []);
+  }, [ALL_WEEKS, ALL_SEASON_ROWS, CAREERS]);
 
   const gridGovs = CAREERS.filter((c) => scope === 'all' || c.active).sort((a, b) => a.avgRank - b.avgRank);
 
@@ -99,13 +103,13 @@ export default function HistoricAnalytics() {
       <section className="py-10 md:py-14">
         <div className="container mx-auto px-4">
           <h1 className="font-display text-3xl font-bold md:text-4xl">HISTORIC ANALYTICS</h1>
-          <p className="mb-6 text-muted-foreground">Every season since 2017, calculated from the league's official records.</p>
+          <p className="mb-6 text-muted-foreground">{`Every season since 2017${history.liveYear ? `, including ${history.liveYear} through Week ${history.liveWeeks}` : ''}, calculated from the league's official records.`}</p>
 
           <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             <StatTile label="Seasons" value={YEARS.length} sub={`${YEARS[0]}–${YEARS[YEARS.length - 1]}`} />
             <StatTile label="Governors" value={CAREERS.length} sub={`${CAREERS.filter((c) => c.active).length} active`} />
             <StatTile label="Most Titles" value={records[8].value} sub={governor(records[8].who)?.name} />
-            <StatTile label="Weekly Scores Logged" value={ALL_WEEKS.length.toLocaleString()} sub="2017–2023" />
+            <StatTile label="Weekly Scores Logged" value={ALL_WEEKS.length.toLocaleString()} sub={history.liveYear ? `2017–2023 + ${history.liveYear} Wk 1–${history.liveWeeks}` : "2017–2023"} />
           </div>
 
           <Tabs defaultValue="alltime">
@@ -134,7 +138,7 @@ export default function HistoricAnalytics() {
                 <span className="text-sm text-muted-foreground">{season.entries.length} teams · {season.weeks} weeks{season.note ? ` · ${season.note}` : ''}</span>
               </div>
               <SortableTable data={seasonRows} columns={seasonCols} defaultSortKey="rank" defaultSortAsc />
-              <p className="mt-2 text-xs text-muted-foreground">Playoff seeds hold ranks 1–{season.playoffs.length}; Wk 14–15 is the standings-adjusted semifinal score. A Wk 16–17 score for a non-finalist is the consolation game.</p>
+              {season.inProgress ? <p className="mt-2 text-xs text-muted-foreground">Live standings from saved weekly scores (20/18/16/14/8/4/3/2/1/0 finish points; top 4 = W, 5th = T).</p> : <p className="mt-2 text-xs text-muted-foreground">Playoff seeds hold ranks 1–{season.playoffs.length}; Wk 14–15 is the standings-adjusted semifinal score. A Wk 16–17 score for a non-finalist is the consolation game.</p>}
             </TabsContent>
 
             <TabsContent value="champions">
@@ -192,7 +196,7 @@ export default function HistoricAnalytics() {
                           return (
                             <td key={y} className="px-1 py-1 text-center">
                               {r ? (
-                                <span title={`${r.team} · ${record(r.wins, r.losses, r.ties)} · ${r.result}`} className={cn('inline-block min-w-[40px] rounded px-1.5 py-1 text-xs font-semibold', r.result === 'Champion' ? 'bg-gold text-gold-foreground' : r.result === 'Runner-Up' ? 'bg-primary text-primary-foreground' : r.seed ? 'bg-primary/15 text-primary' : 'text-muted-foreground')}>
+                                <span title={`${r.team} · ${record(r.wins, r.losses, r.ties)} · ${r.result}`} className={cn('inline-block min-w-[40px] rounded px-1.5 py-1 text-xs font-semibold', r.inProgress ? 'border border-dashed border-accent text-accent' : r.result === 'Champion' ? 'bg-gold text-gold-foreground' : r.result === 'Runner-Up' ? 'bg-primary text-primary-foreground' : r.seed ? 'bg-primary/15 text-primary' : 'text-muted-foreground')}>
                                   {ordinal(r.rank)}
                                 </span>
                               ) : <span className="text-muted-foreground/40">·</span>}
@@ -205,7 +209,7 @@ export default function HistoricAnalytics() {
                   </tbody>
                 </table>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">Gold = champion · Navy = runner-up · Light navy = other playoff team.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Gold = champion · Navy = runner-up · Light navy = other playoff team · Dashed red = current live standing.</p>
             </TabsContent>
           </Tabs>
         </div>

@@ -1,7 +1,8 @@
 import { GOVERNORS, SEASONS, HEARTBREAK, type SeasonHistory, type Governor } from '@/data/leagueHistory';
 import { WEEKLY_SCORES } from '@/data/historyWeeklyScores';
 
-export type PlayoffResult = 'Champion' | 'Runner-Up' | 'Semifinalist' | 'Purgatory' | 'Missed';
+export type PlayoffResult = 'Champion' | 'Runner-Up' | 'Semifinalist' | 'Purgatory' | 'Missed' | 'In Progress';
+export type WeeklyMap = Record<number, Record<string, number[]>>;
 
 export interface SeasonRow {
   year: number;
@@ -10,6 +11,7 @@ export interface SeasonRow {
   team: string;
   rank: number;
   fieldSize: number;
+  inProgress: boolean;
   wins: number;
   losses: number;
   ties: number;
@@ -72,7 +74,7 @@ function stdDev(xs: number[]): number | null {
 }
 
 /** Playoff teams take ranks 1..n by seed; everyone else follows by standings points, then wins, then PF. */
-export function seasonRows(season: SeasonHistory): SeasonRow[] {
+export function seasonRows(season: SeasonHistory, weekly: WeeklyMap = WEEKLY_SCORES): SeasonRow[] {
   const seeds = new Map(season.playoffs.map((p) => [p.gov, p]));
   const champion = season.playoffs.filter((p) => p.finalist).sort((a, b) => (b.final ?? 0) - (a.final ?? 0))[0]?.gov;
   const others = season.entries
@@ -84,10 +86,11 @@ export function seasonRows(season: SeasonHistory): SeasonRow[] {
   ];
   return ordered.map((x, i) => {
     const p = seeds.get(x.gov);
-    const ties = Math.max(0, season.weeks - x.wins - x.losses);
-    const weeks = WEEKLY_SCORES[season.year]?.[x.gov] ?? [];
+    const ties = x.ties ?? Math.max(0, season.weeks - x.wins - x.losses);
+    const weeks = (weekly[season.year]?.[x.gov] ?? []).filter((n) => typeof n === 'number');
     let result: PlayoffResult = 'Missed';
-    if (p) {
+    if (season.inProgress) result = 'In Progress';
+    else if (p) {
       if (p.finalist) result = x.gov === champion ? 'Champion' : 'Runner-Up';
       else result = p.seed === 5 ? 'Purgatory' : 'Semifinalist';
     }
@@ -99,13 +102,14 @@ export function seasonRows(season: SeasonHistory): SeasonRow[] {
       team: x.team,
       rank: i + 1,
       fieldSize: season.entries.length,
+      inProgress: Boolean(season.inProgress),
       wins: x.wins,
       losses: x.losses,
       ties,
-      winPct: (x.wins + ties / 2) / season.weeks,
+      winPct: (x.wins + ties / 2) / Math.max(1, x.wins + x.losses + ties),
       ap: x.ap,
       pf: x.pf,
-      ppw: round1(x.pf / season.weeks),
+      ppw: round1(x.pf / Math.max(1, x.wins + x.losses + ties)),
       weeks,
       highWeek: weeks.length ? Math.max(...weeks) : null,
       lowWeek: weeks.length ? Math.min(...weeks) : null,
@@ -119,11 +123,7 @@ export function seasonRows(season: SeasonHistory): SeasonRow[] {
   });
 }
 
-export const ALL_SEASON_ROWS: SeasonRow[] = SEASONS.flatMap(seasonRows);
-export const YEARS = SEASONS.map((s) => s.year);
-export const ACTIVE_YEAR = Math.max(...YEARS);
-
-export function careerRow(slug: string, rows: SeasonRow[] = ALL_SEASON_ROWS): CareerRow | null {
+export function careerRow(slug: string, rows: SeasonRow[]): CareerRow | null {
   const g = govBySlug.get(slug);
   const mine = rows.filter((r) => r.gov === slug);
   if (!g || !mine.length) return null;
@@ -131,7 +131,8 @@ export function careerRow(slug: string, rows: SeasonRow[] = ALL_SEASON_ROWS): Ca
   const games = sum((r) => r.wins + r.losses + r.ties);
   const knownAp = mine.filter((r) => r.ap !== null);
   const weeks = mine.flatMap((r) => r.weeks);
-  const playoffRows = mine.filter((r) => r.seed !== null);
+  const done = mine.filter((r) => !r.inProgress);
+  const playoffRows = done.filter((r) => r.seed !== null);
   // Advancing from Weeks 14–15 is a win; elimination there is a loss; the final is one more W or L.
   let pw = 0, pl = 0;
   for (const r of playoffRows) {
@@ -156,11 +157,11 @@ export function careerRow(slug: string, rows: SeasonRow[] = ALL_SEASON_ROWS): Ca
     pf: round1(sum((r) => r.pf)),
     pfPerSeason: round1(sum((r) => r.pf) / mine.length),
     ppw: games ? round1(sum((r) => r.pf) / games) : 0,
-    avgRank: round1(sum((r) => r.rank) / mine.length),
-    bestRank: Math.min(...mine.map((r) => r.rank)),
-    worstRank: Math.max(...mine.map((r) => r.rank)),
+    avgRank: done.length ? round1(done.reduce((a, r) => a + r.rank, 0) / done.length) : 0,
+    bestRank: done.length ? Math.min(...done.map((r) => r.rank)) : 0,
+    worstRank: done.length ? Math.max(...done.map((r) => r.rank)) : 0,
     playoffs: playoffRows.length,
-    playoffPct: playoffRows.length / mine.length,
+    playoffPct: done.length ? playoffRows.length / done.length : 0,
     titles: mine.filter((r) => r.result === 'Champion').length,
     finals: mine.filter((r) => r.result === 'Champion' || r.result === 'Runner-Up').length,
     playoffWins: pw,
@@ -172,33 +173,51 @@ export function careerRow(slug: string, rows: SeasonRow[] = ALL_SEASON_ROWS): Ca
   };
 }
 
-export const CAREERS: CareerRow[] = GOVERNORS.map((g) => careerRow(g.slug)).filter((c): c is CareerRow => c !== null);
-
 export interface ChampionRow { year: number; champion: string; runnerUp: string; champScore: number; runnerScore: number; champTeam: string }
-export const CHAMPIONS: ChampionRow[] = SEASONS.map((s) => {
-  const rows = seasonRows(s);
-  const c = rows.find((r) => r.result === 'Champion')!;
-  const ru = rows.find((r) => r.result === 'Runner-Up')!;
-  return { year: s.year, champion: c.gov, runnerUp: ru.gov, champScore: c.final ?? 0, runnerScore: ru.final ?? 0, champTeam: c.team };
-});
-
 export interface WeekScore { year: number; week: number; gov: string; score: number }
-export const ALL_WEEKS: WeekScore[] = Object.entries(WEEKLY_SCORES).flatMap(([y, byGov]) =>
-  Object.entries(byGov).flatMap(([gov, scores]) => scores.map((score, i) => ({ year: Number(y), week: i + 1, gov, score }))),
-);
-
 export interface HeadToHead { opponent: string; wins: number; losses: number; ties: number }
+
+export interface LeagueHistory {
+  seasons: SeasonHistory[];
+  rows: SeasonRow[];
+  careers: CareerRow[];
+  champions: ChampionRow[];
+  weeks: WeekScore[];
+  years: number[];
+  weekly: WeeklyMap;
+  liveYear: number | null;
+  liveWeeks: number;
+}
+
+export function buildHistory(extraSeasons: SeasonHistory[] = [], extraWeekly: WeeklyMap = {}): LeagueHistory {
+  const seasons = [...SEASONS, ...extraSeasons].sort((a, b) => a.year - b.year);
+  const weekly: WeeklyMap = { ...WEEKLY_SCORES, ...extraWeekly };
+  const rows = seasons.flatMap((s) => seasonRows(s, weekly));
+  const careers = GOVERNORS.map((g) => careerRow(g.slug, rows)).filter((c): c is CareerRow => c !== null);
+  const champions = seasons.filter((s) => !s.inProgress).map((s) => {
+    const sr = rows.filter((r) => r.year === s.year);
+    const c = sr.find((r) => r.result === 'Champion')!;
+    const ru = sr.find((r) => r.result === 'Runner-Up')!;
+    return { year: s.year, champion: c.gov, runnerUp: ru.gov, champScore: c.final ?? 0, runnerScore: ru.final ?? 0, champTeam: c.team };
+  });
+  const weeks = Object.entries(weekly).flatMap(([y, byGov]) =>
+    Object.entries(byGov).flatMap(([gov, scores]) => scores.flatMap((score, i) => (typeof score === 'number' ? [{ year: Number(y), week: i + 1, gov, score }] : []))),
+  );
+  const live = seasons.find((s) => s.inProgress);
+  return { seasons, rows, careers, champions, weeks, years: seasons.map((s) => s.year), weekly, liveYear: live?.year ?? null, liveWeeks: live?.weeks ?? 0 };
+}
+
 /** Same-week scoring comparison (who outscored whom) across seasons with weekly data. */
-export function weeklyHeadToHead(slug: string): HeadToHead[] {
+export function weeklyHeadToHead(slug: string, weekly: WeeklyMap): HeadToHead[] {
   const out = new Map<string, HeadToHead>();
-  for (const [, byGov] of Object.entries(WEEKLY_SCORES)) {
+  for (const byGov of Object.values(weekly)) {
     const mine = byGov[slug];
     if (!mine) continue;
     for (const [opp, theirs] of Object.entries(byGov)) {
       if (opp === slug) continue;
       const h = out.get(opp) ?? { opponent: opp, wins: 0, losses: 0, ties: 0 };
       mine.forEach((s, i) => {
-        if (theirs[i] === undefined) return;
+        if (typeof s !== 'number' || typeof theirs[i] !== 'number') return;
         if (s > theirs[i]) h.wins++; else if (s < theirs[i]) h.losses++; else h.ties++;
       });
       out.set(opp, h);
@@ -206,6 +225,8 @@ export function weeklyHeadToHead(slug: string): HeadToHead[] {
   }
   return [...out.values()];
 }
+
+export const STATIC_HISTORY = buildHistory();
 
 export const ordinal = (n: number) => {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;

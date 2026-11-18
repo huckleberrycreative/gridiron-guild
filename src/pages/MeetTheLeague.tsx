@@ -4,7 +4,8 @@ import { Layout } from '@/components/layout/Layout';
 import { TeamLogo } from '@/components/TeamLogo';
 import { SortableTable, type Column } from '@/components/SortableTable';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { CAREERS, ordinal, type CareerRow } from '@/lib/leagueHistory';
+import { ordinal, type CareerRow } from '@/lib/leagueHistory';
+import { useLeagueHistory } from '@/hooks/useLeagueHistory';
 import { GovLink, fmt1, pct, record } from '@/components/history/HistoryBits';
 import { Trophy, User } from 'lucide-react';
 
@@ -22,6 +23,8 @@ const columns: Column<CareerRow>[] = [
 const MeetTheLeague = () => {
   const [scope, setScope] = useState<'active' | 'all'>('active');
   const navigate = useNavigate();
+  const { history } = useLeagueHistory();
+  const CAREERS = history.careers;
   const list = CAREERS.filter((c) => scope === 'all' || c.active).sort((a, b) => b.titles - a.titles || b.winPct - a.winPct);
 
   return (
@@ -68,7 +71,7 @@ const MeetTheLeague = () => {
 
           <h2 className="mb-3 mt-10 font-display text-xl font-bold">Career Leaderboard</h2>
           <SortableTable data={list} columns={columns} defaultSortKey="titles" onRowClick={(r) => navigate(`/meet-the-league/${r.slug}`)} />
-          <p className="mt-2 text-xs text-muted-foreground">Seasons 2017–2025. Click any column to sort.</p>
+          <p className="mt-2 text-xs text-muted-foreground">{`Seasons 2017–${history.liveYear ?? 2025}${history.liveYear ? ` (${history.liveYear} through Week ${history.liveWeeks}; finishes and playoffs count completed seasons only)` : ''}. Click any column to sort.`}</p>
         </div>
       </section>
     </Layout>

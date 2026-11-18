@@ -20,6 +20,7 @@ const RESULT_STYLE: Record<PlayoffResult, string> = {
   'Runner-Up': 'bg-primary/10 text-primary border-primary/30',
   Semifinalist: 'bg-secondary text-secondary-foreground border-border',
   Purgatory: 'bg-muted text-muted-foreground border-border',
+  'In Progress': 'bg-accent/10 text-accent border-accent/30',
   Missed: 'bg-transparent text-muted-foreground border-transparent',
 };
 
