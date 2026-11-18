@@ -282,3 +282,12 @@ export const HEARTBREAK: Record<number, Record<string, number>> = {
   2020: { dino: 25, ben: 42, carlos: 25, james: 8, william: 25, johnny: 17, aicklen: 25, brett: 8, blake: 17 },
   2021: { dino: 9, ben: 9, carlos: 27, james: 27, william: 18, johnny: 36, aicklen: 27, brett: 9, blake: 9, davis: 9, jackson: 55 },
 };
+
+/** "Consistency Rank" per season as recorded in the source sheet (2017–2021 only; 1 = most consistent). */
+export const CONSISTENCY: Record<number, Record<string, number>> = {
+  2017: { dino: 9, ben: 13, carlos: 7, james: 5, william: 9, johnny: 12, aicklen: 9, weezy: 3, hobart: 7, josh: 11, texas: 5, matt: 1, davis: 4, curtis: 2 },
+  2018: { dino: 3, ben: 9, carlos: 12, james: 6, william: 12, johnny: 7, aicklen: 9, brett: 5, weezy: 1, hobart: 7, josh: 4, texas: 14, matt: 2 },
+  2019: { dino: 11, ben: 1, carlos: 7, james: 3, william: 4, johnny: 13, aicklen: 8, brett: 2, weezy: 9, hobart: 6, josh: 11, texas: 14, tyler: 4 },
+  2020: { dino: 5, ben: 2, carlos: 5, james: 3, william: 5, johnny: 4, aicklen: 1, brett: 3, blake: 9 },
+  2021: { dino: 5, ben: 8, carlos: 2, james: 2, william: 7, johnny: 10, aicklen: 2, brett: 9, blake: 11, davis: 5, jackson: 1 },
+};

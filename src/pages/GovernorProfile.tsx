@@ -20,6 +20,8 @@ const seasonCols: Column<SeasonRow>[] = [
   { key: 'ppw', label: 'PPW', sortable: true, align: 'right', render: (v) => fmt1(v as number) },
   { key: 'highWeek', label: 'High', sortable: true, align: 'right', render: (v) => fmt1(v as number | null) },
   { key: 'lowWeek', label: 'Low', sortable: true, align: 'right', render: (v) => fmt1(v as number | null) },
+  { key: 'heartbreak', label: 'Heartbreak', sortable: true, align: 'right', render: (v) => (v === null ? '—' : `${v}%`) },
+  { key: 'consistency', label: 'Consist. Rk', sortable: true, align: 'center', render: (v) => (v === null ? '—' : `#${v}`) },
   { key: 'result', label: 'Playoffs', sortable: true, align: 'center', render: (_, r) => <ResultBadge result={r.result} /> },
 ];
 

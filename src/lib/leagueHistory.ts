@@ -1,4 +1,4 @@
-import { GOVERNORS, SEASONS, HEARTBREAK, type SeasonHistory, type Governor } from '@/data/leagueHistory';
+import { GOVERNORS, SEASONS, HEARTBREAK, CONSISTENCY, type SeasonHistory, type Governor } from '@/data/leagueHistory';
 import { WEEKLY_SCORES } from '@/data/historyWeeklyScores';
 
 export type PlayoffResult = 'Champion' | 'Runner-Up' | 'Semifinalist' | 'Purgatory' | 'Missed' | 'In Progress';
@@ -28,6 +28,7 @@ export interface SeasonRow {
   semi: number | null;
   final: number | null;
   heartbreak: number | null;
+  consistency: number | null;
 }
 
 export interface CareerRow {
@@ -61,6 +62,7 @@ export interface CareerRow {
   highWeek: number | null;
   lowWeek: number | null;
   titleYears: number[];
+  heartbreakAvg: number | null;
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -119,6 +121,7 @@ export function seasonRows(season: SeasonHistory, weekly: WeeklyMap = WEEKLY_SCO
       semi: p?.semi ?? null,
       final: p?.final ?? null,
       heartbreak: HEARTBREAK[season.year]?.[x.gov] ?? null,
+      consistency: CONSISTENCY[season.year]?.[x.gov] ?? null,
     };
   });
 }
@@ -169,6 +172,7 @@ export function careerRow(slug: string, rows: SeasonRow[]): CareerRow | null {
     playoffWinPct: pw + pl ? pw / (pw + pl) : 0,
     highWeek: weeks.length ? Math.max(...weeks) : null,
     lowWeek: weeks.length ? Math.min(...weeks) : null,
+    heartbreakAvg: (() => { const h = mine.filter((r) => r.heartbreak !== null); return h.length ? round1(h.reduce((a, r) => a + (r.heartbreak ?? 0), 0) / h.length) : null; })(),
     titleYears: mine.filter((r) => r.result === 'Champion').map((r) => r.year),
   };
 }

@@ -25,6 +25,7 @@ const careerCols: Column<CareerRow>[] = [
   { key: 'ppw', label: 'PPW', sortable: true, align: 'right', render: (v) => fmt1(v as number) },
   { key: 'avgRank', label: 'Avg Fin', sortable: true, align: 'right', render: (v) => fmt1(v as number) },
   { key: 'highWeek', label: 'Best Wk', sortable: true, align: 'right', render: (v) => fmt1(v as number | null) },
+  { key: 'heartbreakAvg', label: 'Heartbreak', sortable: true, align: 'right', render: (v) => (v === null ? '—' : `${fmt1(v as number)}%`) },
 ];
 
 const seasonCols: Column<SeasonRow>[] = [
@@ -37,6 +38,8 @@ const seasonCols: Column<SeasonRow>[] = [
   { key: 'ppw', label: 'PPW', sortable: true, align: 'right', render: (v) => fmt1(v as number) },
   { key: 'highWeek', label: 'High', sortable: true, align: 'right', render: (v) => fmt1(v as number | null) },
   { key: 'stdDev', label: 'Std Dev', sortable: true, align: 'right', render: (v) => fmt1(v as number | null) },
+  { key: 'heartbreak', label: 'Heartbreak', sortable: true, align: 'right', render: (v) => (v === null ? '—' : `${v}%`) },
+  { key: 'consistency', label: 'Consist. Rk', sortable: true, align: 'center', render: (v) => (v === null ? '—' : `#${v}`) },
   { key: 'semi', label: 'Wk 14–15', sortable: true, align: 'right', render: (v) => fmt1(v as number | null) },
   { key: 'final', label: 'Wk 16–17', sortable: true, align: 'right', render: (v) => fmt1(v as number | null) },
   { key: 'result', label: 'Result', sortable: true, align: 'center', render: (_, r) => <ResultBadge result={r.result} /> },
