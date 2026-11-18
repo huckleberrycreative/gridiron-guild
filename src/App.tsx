@@ -19,6 +19,7 @@ import TeamCaptains from "./pages/TeamCaptains";
 import PracticeSquad from "./pages/PracticeSquad";
 import CoachingCarousel from "./pages/CoachingCarousel";
 import MeetTheLeague from "./pages/MeetTheLeague";
+import GovernorProfile from "./pages/GovernorProfile";
 import Lore from "./pages/Lore";
 import HistoricAnalytics from "./pages/HistoricAnalytics";
 import Pantheon from "./pages/Pantheon";
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/practice-squad" element={<PracticeSquad />} />
               <Route path="/coaching-carousel" element={<CoachingCarousel />} />
               <Route path="/meet-the-league" element={<MeetTheLeague />} />
+              <Route path="/meet-the-league/:slug" element={<GovernorProfile />} />
               <Route path="/lore" element={<Lore />} />
               <Route path="/historic-analytics" element={<HistoricAnalytics />} />
               <Route path="/pantheon" element={<Pantheon />} />
