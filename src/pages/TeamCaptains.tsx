@@ -182,11 +182,11 @@ const TeamCaptains = () => {
           </div>
 
           {/* Grid */}
-          <div className="rounded-md border border-border bg-card">
-            <table className="w-full table-fixed text-xs">
+          <div className="rounded-md border border-border bg-card overflow-x-auto">
+            <table className="w-full min-w-[900px] lg:min-w-0 table-fixed text-xs">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
-                  <th className="w-16 p-2 text-center font-display">Week</th>
+                  <th className="sticky left-0 z-10 w-14 bg-muted p-2 text-center font-display">Week</th>
                   {teams.map((t) => {
                     const ta = teamAvgs.get(t.id);
                     return (
@@ -207,7 +207,7 @@ const TeamCaptains = () => {
                   const locked = weekLocked(w);
                   return (
                     <tr key={w} className={cn('border-b border-border last:border-0', locked && 'bg-muted/30')}>
-                      <td className="p-2 text-center font-display font-bold">
+                      <td className="sticky left-0 z-10 bg-card p-2 text-center font-display font-bold shadow-[2px_0_4px_-2px_hsl(var(--foreground)/0.15)]">
                         <span className="inline-flex items-center gap-1">
                           {w}
                           {locked && <Lock size={11} className="text-muted-foreground" />}
@@ -230,8 +230,8 @@ const TeamCaptains = () => {
                            return (
                               <td key={t.id} className="p-1.5 text-center align-middle">
                                 {player ? (
-                                  <div className="flex items-baseline justify-center gap-1">
-                                    <span className={cn('min-w-0 truncate font-medium', playerLocked && 'text-red-600')} title={playerLocked ? `${player.name} — locked, can't be used again` : player.name}>{player.name}</span>
+                                  <div className="flex flex-col items-center leading-tight">
+                                    <span className={cn('max-w-full truncate font-medium', playerLocked && 'text-red-600')} title={playerLocked ? `${player.name} — locked, can't be used again` : player.name}>{player.name}</span>
                                   <span className="shrink-0 text-[10px] text-muted-foreground">{pts != null ? fmt(pts) : '—'}</span>
                                 </div>
                               ) : (

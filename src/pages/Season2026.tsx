@@ -154,10 +154,10 @@ const Season2026 = () => {
             </div>
           ) : (
             <div className="rounded-lg border border-border bg-card shadow-sm overflow-x-auto">
-              <table className="w-full border-collapse text-sm table-fixed">
+              <table className="w-full min-w-[720px] md:min-w-0 border-collapse text-xs md:text-sm table-fixed">
                 <thead>
                   <tr className="bg-muted/60">
-                    <th className="sticky left-0 z-10 bg-muted/60 w-16 px-2 py-2 text-left font-display uppercase tracking-wider text-[10px]">
+                    <th className="sticky left-0 z-10 bg-muted w-14 md:w-16 px-2 py-2 text-left font-display uppercase tracking-wider text-[10px]">
                       Wk
                     </th>
                     {orderedTeams.map((team) => (
@@ -169,7 +169,7 @@ const Season2026 = () => {
                         <TeamLogo
                           teamName={team.name}
                           size="lg"
-                          className="mx-auto w-10 h-10 md:w-12 md:h-12 rounded-md object-contain"
+                          className="mx-auto w-8 h-8 md:w-12 md:h-12 rounded-md object-contain"
                         />
                       </th>
                     ))}
@@ -178,7 +178,7 @@ const Season2026 = () => {
                 <tbody>
                   {allWeeks.map((w) => (
                     <tr key={w} className="border-t border-border/60">
-                      <td className="sticky left-0 z-10 bg-card px-3 py-2 font-display font-bold uppercase text-[11px] whitespace-nowrap">
+                      <td className="sticky left-0 z-10 bg-card px-2 md:px-3 py-2 font-display shadow-[2px_0_4px_-2px_hsl(var(--foreground)/0.15)] font-bold uppercase text-[11px] whitespace-nowrap">
                         Wk {w}
                         {projectedWeeks.has(w) && (
                           <div className="text-[9px] font-bold tracking-wider text-accent">Projected</div>
@@ -207,7 +207,7 @@ const Season2026 = () => {
                             <div
                               title={isProj ? `Projected ${cell.score.toFixed(1)}${live != null ? ` · live ${live.toFixed(1)}` : ''}` : undefined}
                               className={cn(
-                                'relative rounded-md px-2 py-2 text-center font-mono font-bold tabular-nums',
+                                'relative rounded-md px-1 pt-3 pb-1.5 md:px-2 md:py-2 text-center font-mono font-bold tabular-nums',
                                 isProj && 'border-2 border-dashed border-foreground/30 opacity-80 italic',
                                 RIVALRY_WEEKS[w]
                                   ? cell.points > 0
@@ -234,7 +234,7 @@ const Season2026 = () => {
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-border bg-muted/40">
-                    <td className="sticky left-0 z-10 bg-muted/40 px-3 py-2 font-display font-bold uppercase text-[11px]">
+                    <td className="sticky left-0 z-10 bg-muted px-2 md:px-3 py-2 font-display font-bold uppercase text-[11px]">
                       Total
                     </td>
                     {orderedTeams.map((team) => {

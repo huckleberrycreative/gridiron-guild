@@ -133,6 +133,7 @@ const TradeAnalyzer = () => {
   const [proj, setProj] = useState<Record<string, number>>({});
   const [teamA, setTeamA] = useState<string>(searchParams.get('teamA') ?? '');
   const [teamB, setTeamB] = useState<string>(searchParams.get('teamB') ?? '');
+  const [mobileView, setMobileView] = useState<'rosters' | 'results'>('rosters');
   const [selA, setSelA] = useState<Set<string>>(new Set(searchParams.get('send')?.split(',').filter(Boolean)));
   const [selB, setSelB] = useState<Set<string>>(new Set(searchParams.get('receive')?.split(',').filter(Boolean)));
   const { rows: powerRows, weeksPlayed } = usePowerRankRows();
@@ -566,7 +567,7 @@ const TradeAnalyzer = () => {
           </div>
         </div>
 
-        <ul className="divide-y divide-border/40 max-h-[420px] overflow-y-auto">
+        <ul className="divide-y divide-border/40 max-h-[34vh] lg:max-h-[calc(100vh-15rem)] overflow-y-auto">
           {roster.map((p) => {
             const active = sel.has(p.id);
             const v = valueOf(p.id);
@@ -1016,22 +1017,37 @@ const TradeAnalyzer = () => {
             </div>
           ) : (
             <>
-              <div className="mb-5">
-                {analysis ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {renderVerdict(teamName(teamA), analysis.A)}
-                    {renderVerdict(teamName(teamB), analysis.B)}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border py-5 text-sm text-muted-foreground">
-                    <ArrowLeftRight className="h-4 w-4 text-primary" /> Check at least one player below to see the grade.
-                  </div>
-                )}
+              <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 lg:hidden">
+                {(['rosters', 'results'] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setMobileView(v)}
+                    className={cn('rounded-md py-2 text-sm font-semibold transition-colors', mobileView === v ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')}
+                  >
+                    {v === 'rosters' ? `Rosters (${selA.size + selB.size})` : analysis ? 'See grade' : 'Grade'}
+                  </button>
+                ))}
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                {renderColumn('A')}
-                {renderColumn('B')}
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] lg:items-start">
+                <div className={cn('grid gap-3 md:grid-cols-2', mobileView !== 'rosters' && 'hidden lg:grid')}>
+                  {renderColumn('A')}
+                  {renderColumn('B')}
+                </div>
+
+                <aside className={cn('space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1', mobileView !== 'results' && 'hidden lg:block')}>
+                  {analysis ? (
+                    <>
+                      {renderVerdict(teamName(teamA), analysis.A)}
+                      {renderVerdict(teamName(teamB), analysis.B)}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                      <ArrowLeftRight className="h-4 w-4 shrink-0 text-primary" /> Check at least one player to see the grade.
+                    </div>
+                  )}
+                </aside>
               </div>
 
               <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
