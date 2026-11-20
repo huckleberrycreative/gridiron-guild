@@ -194,7 +194,7 @@ const TradeFinder = () => {
               {strategy !== 'win-now' && <div className="mt-1 flex justify-between gap-2"><span className="text-muted-foreground">2027 title estimate</span><span className="font-semibold text-win">{signed(s.futureOddsGain)} pts</span></div>}
               <div className="mt-1 flex justify-between gap-2"><span className="text-muted-foreground">Partner approach</span><span className="font-semibold">{strategies[s.partnerStrategy].label}</span></div>
               {strategy !== 'win-now' && capWarning && <p className="mt-2 text-accent">2027 cap planning required</p>}
-              <Button asChild variant="outline" size="sm" className="mt-4 w-full"><Link to={`/trade-analyzer?${params}`}>Analyze trade<ArrowRight className="ml-2 h-3 w-3" /></Link></Button>
+              <Button asChild variant="outline" size="sm" className="mt-4 w-full"><Link to={`/gm-trade-analyzer?${params}`}>Analyze trade<ArrowRight className="ml-2 h-3 w-3" /></Link></Button>
             </div>
           </article>;
         })}</div>}
